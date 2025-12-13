@@ -77,12 +77,6 @@ Gantt Calendar Plugin Styles - 甘特日历
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	overflow: auto;
-}
-
-/* 周视图和日视图不滚动 */
-.calendar-content:has(.calendar-week-view),
-.calendar-content:has(.calendar-day-view) {
 	overflow: hidden;
 }
 
@@ -92,14 +86,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 	flex-direction: column;
 	gap: 8px;
 	height: 100%;
-}
-
-.calendar-year-title {
-	text-align: center;
-	font-size: 28px;
-	font-weight: 700;
-	margin: 0;
-	color: var(--text-normal);
+	overflow-y: auto;
 }
 
 .calendar-months-grid {
@@ -238,18 +225,8 @@ Gantt Calendar Plugin Styles - 甘特日历
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-}
-
-.calendar-month-view-header {
-	text-align: center;
-	margin-bottom: 12px;
-}
-
-.calendar-month-view-header h2 {
-	font-size: 24px;
-	font-weight: 700;
-	margin: 0;
-	color: var(--text-normal);
+	height: 100%;
+	overflow-y: auto;
 }
 
 .calendar-month-weekdays {
@@ -365,17 +342,6 @@ Gantt Calendar Plugin Styles - 甘特日历
 	height: 100%;
 }
 
-.calendar-week-view-header {
-	display: none;
-}
-
-.calendar-week-view-header h2 {
-	font-size: 20px;
-	font-weight: 700;
-	margin: 0;
-	color: var(--text-normal);
-}
-
 .calendar-week-days-container {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
@@ -441,7 +407,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 /* Day View */
 .calendar-day-view {
 	display: grid;
-	grid-template-rows: auto auto 1fr;
+	grid-template-rows: auto 1fr;
 	gap: 12px;
 	max-width: 100%;
 	margin: 0;
@@ -449,22 +415,6 @@ Gantt Calendar Plugin Styles - 甘特日历
 	flex: 1;
 	overflow: hidden;
 	padding: 12px;
-}
-
-.calendar-day-view-header {
-	text-align: center;
-	padding: 16px;
-	background-color: var(--background-secondary);
-	border-radius: 6px;
-	grid-row: 1;
-	z-index: 10;
-}
-
-.calendar-day-view-header h2 {
-	font-size: 24px;
-	font-weight: 700;
-	margin: 0;
-	color: var(--text-normal);
 }
 
 .calendar-day-details {
@@ -691,7 +641,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 	border-radius: 6px;
 	overflow-y: auto;
 	overflow-x: hidden;
-	grid-row: 3;
+	grid-row: 2;
 	position: relative;
 }
 
@@ -710,7 +660,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 	background-color: var(--background-secondary);
 	border-radius: 6px;
 	margin: 0;
-	grid-row: 2;
+	grid-row: 1;
 	z-index: 10;
 }
 

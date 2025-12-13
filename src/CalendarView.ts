@@ -161,9 +161,6 @@ export class CalendarView extends ItemView {
 		const yearContainer = container.createDiv('calendar-year-container');
 		this.yearContainer = yearContainer; // 保存引用
 
-		const yearTitle = yearContainer.createEl('h2', { text: `${year}` });
-		yearTitle.addClass('calendar-year-title');
-
 		const monthsGrid = yearContainer.createDiv('calendar-months-grid');
 
 		for (let month = 1; month <= 12; month++) {
@@ -244,10 +241,6 @@ export class CalendarView extends ItemView {
 		const monthData = generateMonthCalendar(year, month);
 
 		const monthContainer = container.createDiv('calendar-month-view');
-
-		// Month header
-		const header = monthContainer.createDiv('calendar-month-view-header');
-		header.createEl('h2', { text: formatMonth(year, month) });
 
 		// Week day labels
 		const weekdaysDiv = monthContainer.createDiv('calendar-month-weekdays');
@@ -385,12 +378,6 @@ export class CalendarView extends ItemView {
 
 	private renderDayView(container: HTMLElement): void {
 		const dayContainer = container.createDiv('calendar-day-view');
-
-		// Day header with lunar info
-		const header = dayContainer.createDiv('calendar-day-view-header');
-		const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-		const dateStr = `${this.currentDate.getFullYear()}年${this.currentDate.getMonth() + 1}月${this.currentDate.getDate()}日 ${dayNames[this.currentDate.getDay()]}`;
-		header.createEl('h2', { text: dateStr });
 
 		// Show lunar date
 		const lunarInfo = container.createDiv('calendar-lunar-info');
