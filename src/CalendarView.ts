@@ -503,54 +503,7 @@ export class CalendarView extends ItemView {
 	private renderDayView(container: HTMLElement): void {
 		const dayContainer = container.createDiv('calendar-day-view');
 
-		// Time grid
-		const dayGrid = dayContainer.createDiv('calendar-day-grid');
-
-		// Time axis
-		const timeAxis = dayGrid.createDiv('calendar-time-axis');
-		for (let hour = 0; hour < 24; hour++) {
-			const timeSlot = timeAxis.createDiv('calendar-time-slot');
-			timeSlot.setText(`${String(hour).padStart(2, '0')}:00`);
-		}
-
-		// Day column with hourly slots
-		const dayColumn = dayGrid.createDiv('calendar-day-column-full');
-		for (let hour = 0; hour < 24; hour++) {
-			const hourSlot = dayColumn.createDiv('calendar-hour-slot');
-			if (hour % 2 === 0) {
-				hourSlot.addClass('even-hour');
-			}
-			// Can add events here later
-		}
-
-		// Add current time indicator if today
-		const today = new Date();
-		const isToday = this.currentDate.getFullYear() === today.getFullYear() &&
-			this.currentDate.getMonth() === today.getMonth() &&
-			this.currentDate.getDate() === today.getDate();
-
-		if (isToday) {
-			const hours = today.getHours();
-			const minutes = today.getMinutes();
-			const percentFromTop = (hours * 60 + minutes) / (24 * 60) * 100;
-
-			const indicator = dayGrid.createDiv('calendar-current-time-indicator');
-			indicator.style.top = `${percentFromTop}%`;
-
-			// Update indicator position every minute
-			const updateInterval = window.setInterval(() => {
-				const now = new Date();
-				const hours = now.getHours();
-				const minutes = now.getMinutes();
-				const percentFromTop = (hours * 60 + minutes) / (24 * 60) * 100;
-				indicator.style.top = `${percentFromTop}%`;
-			}, 60000); // Update every minute
-
-			// Clean up interval on view close
-			this.registerInterval(updateInterval);
-		}
-
-		// Add tasks section below the time grid
+		// Tasks section only (time grid removed)
 		const tasksSection = dayContainer.createDiv('calendar-day-tasks-section');
 		const tasksTitle = tasksSection.createEl('h3', { text: '当日任务' });
 		tasksTitle.addClass('calendar-day-tasks-title');

@@ -510,14 +510,14 @@ Gantt Calendar Plugin Styles - 甘特日历
 
 /* Day View */
 .calendar-day-view {
-	display: grid;
-	grid-template-rows: auto 1fr;
+	display: flex;
+	flex-direction: column;
 	gap: 12px;
 	max-width: 100%;
 	margin: 0;
 	height: 100%;
 	flex: 1;
-	overflow: hidden;
+	overflow: auto;
 	padding: 12px;
 }
 
