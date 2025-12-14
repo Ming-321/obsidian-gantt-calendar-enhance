@@ -48,8 +48,10 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: '年视图设置' });
+		// ===== 日历视图设置 =====
+		containerEl.createEl('h2', { text: '日历视图设置' });
 
+		// 年视图农历字号
 		new Setting(containerEl)
 			.setName('年视图农历字号')
 			.setDesc('调整年视图月卡片内农历文字大小（8-18px）')
@@ -63,8 +65,7 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					this.plugin.refreshCalendarViews();
 				}));
 
-		containerEl.createEl('h2', { text: '通用设置' });
-
+		// 一周开始于
 		new Setting(containerEl)
 			.setName('一周开始于:')
 			.setDesc('选择一周的起始日')
@@ -78,71 +79,8 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 				});
 			});
 
-		new Setting(containerEl)
-			.setName('全局任务筛选标记')
-			.setDesc('用于标记任务的前缀符号或文字（如 "🎯 " 或 "TODO"）')
-			.addText(text => text
-				.setPlaceholder('🎯 ')
-				.setValue(this.plugin.settings.globalTaskFilter)
-				.onChange(async (value) => {
-					this.plugin.settings.globalTaskFilter = value;
-					await this.plugin.saveSettings();
-					this.plugin.refreshTaskViews();
-				}));
-
-		new Setting(containerEl)
-			.setName('启用的任务格式')
-			.setDesc('选择要支持的任务格式（Tasks 插件或 Dataview 插件）')
-			.addDropdown(drop => {
-				drop.addOptions({
-					'tasks': 'Tasks 插件格式（使用 emoji 表示日期）',
-					'dataview': 'Dataview 插件格式（使用字段表示日期）',
-				});
-				
-				// 如果都启用，显示"两者"
-				const allEnabled = this.plugin.settings.enabledTaskFormats.includes('tasks') && 
-					this.plugin.settings.enabledTaskFormats.includes('dataview');
-				const onlyTasks = this.plugin.settings.enabledTaskFormats.includes('tasks') && 
-					!this.plugin.settings.enabledTaskFormats.includes('dataview');
-				const onlyDataview = !this.plugin.settings.enabledTaskFormats.includes('tasks') && 
-					this.plugin.settings.enabledTaskFormats.includes('dataview');
-				
-				if (allEnabled) {
-					drop.setValue('both');
-				} else if (onlyTasks) {
-					drop.setValue('tasks');
-				} else if (onlyDataview) {
-					drop.setValue('dataview');
-				}
-
-				drop.onChange(async (value) => {
-					if (value === 'both') {
-						this.plugin.settings.enabledTaskFormats = ['tasks', 'dataview'];
-					} else {
-						this.plugin.settings.enabledTaskFormats = [value];
-					}
-					await this.plugin.saveSettings();
-					this.plugin.refreshTaskViews();
-				});
-				
-				// 添加选项 "two" 的支持
-				drop.addOptions({ 'both': '两者都支持' });
-			});
-
-		// 任务视图显示设置（放在节日颜色设置之前）
-		containerEl.createEl('h2', { text: '任务视图显示' });
-		new Setting(containerEl)
-			.setName('任务文本显示 Global Filter')
-			.setDesc('在任务列表中文本前显示全局筛选前缀（如 🎯）。关闭则仅显示任务描述')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showGlobalFilterInTaskText)
-				.onChange(async (value) => {
-					this.plugin.settings.showGlobalFilterInTaskText = value;
-					await this.plugin.saveSettings();
-					this.plugin.refreshTaskViews();
-				}));
-
-		containerEl.createEl('h2', { text: '节日颜色设置' });
+		// 节日颜色设置
+		containerEl.createEl('h3', { text: '节日颜色设置' });
 		
 		this.createColorSetting(
 			containerEl,
@@ -164,6 +102,57 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			'自定义节气显示颜色',
 			'solarTermColor'
 		);
+
+		// ===== 任务视图设置 =====
+		containerEl.createEl('h2', { text: '任务视图设置' });
+
+		// 全局任务筛选标记
+		new Setting(containerEl)
+			.setName('全局任务筛选标记')
+			.setDesc('用于标记任务的前缀符号或文字（如 "🎯 " 或 "TODO"）')
+			.addText(text => text
+				.setPlaceholder('🎯 ')
+				.setValue(this.plugin.settings.globalTaskFilter)
+				.onChange(async (value) => {
+					this.plugin.settings.globalTaskFilter = value;
+					await this.plugin.saveSettings();
+					this.plugin.refreshTaskViews();
+				}));
+
+		// 启用的任务格式
+		new Setting(containerEl)
+			.setName('启用的任务格式')
+			.setDesc('选择要支持的任务格式（Tasks 插件或 Dataview 插件）')
+			.addDropdown(drop => {
+				drop.addOptions({
+					'tasks': 'Tasks 插件格式（使用 emoji 表示日期）',
+					'dataview': 'Dataview 插件格式（使用字段表示日期）',
+					'both': '两者都支持',
+				});
+
+				const formats = this.plugin.settings.enabledTaskFormats;
+				if (formats.includes('tasks') && formats.includes('dataview')) drop.setValue('both');
+				else if (formats.includes('tasks')) drop.setValue('tasks');
+				else if (formats.includes('dataview')) drop.setValue('dataview');
+
+				drop.onChange(async (value) => {
+					this.plugin.settings.enabledTaskFormats = (value === 'both') ? ['tasks', 'dataview'] : [value];
+					await this.plugin.saveSettings();
+					this.plugin.refreshTaskViews();
+				});
+			});
+
+		// 任务文本是否显示 Global Filter
+		new Setting(containerEl)
+			.setName('任务文本显示 Global Filter')
+			.setDesc('在任务列表中文本前显示全局筛选前缀（如 🎯）。关闭则仅显示任务描述')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showGlobalFilterInTaskText)
+				.onChange(async (value) => {
+					this.plugin.settings.showGlobalFilterInTaskText = value;
+					await this.plugin.saveSettings();
+					this.plugin.refreshTaskViews();
+				}));
 	}
 
 	private createColorSetting(
