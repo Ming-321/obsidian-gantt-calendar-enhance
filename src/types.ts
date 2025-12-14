@@ -1,6 +1,6 @@
 // 日历视图类型定义
 
-export type CalendarViewType = 'year' | 'month' | 'week' | 'day';
+export type CalendarViewType = 'year' | 'month' | 'week' | 'day' | 'task';
 
 export interface CalendarDate {
 	year: number;

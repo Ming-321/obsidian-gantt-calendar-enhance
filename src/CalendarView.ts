@@ -1,6 +1,7 @@
 import { ItemView, WorkspaceLeaf, Plugin } from 'obsidian';
 import { CalendarViewType } from './types';
 import { generateMonthCalendar, getWeekOfDate, formatDate, formatMonth } from './utils';
+import { searchTasks, GanttTask } from './taskManager';
 
 export const CALENDAR_VIEW_ID = 'gantt-calendar-view';
 
@@ -137,6 +138,11 @@ export class CalendarView extends ItemView {
 		todayBtn.addClass('calendar-nav-btn');
 		todayBtn.onclick = () => this.goToToday();
 
+		const isTaskView = this.viewType === 'task';
+		if (isTaskView) {
+			[prevBtn, nextBtn, todayBtn].forEach(btn => btn.setAttr('disabled', 'true'));
+		}
+
 		// View type selector
 		const viewContainer = toolbar.createDiv('calendar-view-selector');
 
@@ -144,10 +150,11 @@ export class CalendarView extends ItemView {
 			'day': '日',
 			'week': '周',
 			'month': '月',
-			'year': '年'
+			'year': '年',
+			'task': '任务'
 		};
 
-		['day', 'week', 'month', 'year'].forEach((type) => {
+		['day', 'week', 'month', 'year', 'task'].forEach((type) => {
 			const btn = viewContainer.createEl('button', {
 				text: viewTypes[type],
 			});
@@ -172,6 +179,9 @@ export class CalendarView extends ItemView {
 				break;
 			case 'day':
 				this.renderDayView(content);
+				break;
+			case 'task':
+				this.renderTaskView(content);
 				break;
 		}
 	}
@@ -462,6 +472,82 @@ export class CalendarView extends ItemView {
 		}
 	}
 
+	private renderTaskView(container: HTMLElement): void {
+		container.addClass('gantt-task-view');
+
+		const header = container.createDiv('gantt-task-view-header');
+		header.createEl('h2', { text: '任务视图' });
+
+		const actions = header.createDiv('gantt-task-view-actions');
+		const refreshBtn = actions.createEl('button', { text: '刷新任务' });
+		refreshBtn.addEventListener('click', () => {
+			this.loadTaskList(statsContainer, listContainer);
+		});
+
+		const filterInfo = container.createDiv('gantt-task-filter-info');
+		filterInfo.setText(`当前筛选标记: "${this.plugin.settings.globalTaskFilter || '（未设置）'}"`);
+
+		const statsContainer = container.createDiv('gantt-task-stats');
+		const listContainer = container.createDiv('gantt-task-list');
+
+		this.loadTaskList(statsContainer, listContainer);
+	}
+
+	private async loadTaskList(statsContainer: HTMLElement, listContainer: HTMLElement): Promise<void> {
+		statsContainer.empty();
+		listContainer.empty();
+		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
+
+		try {
+			const tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter);
+			listContainer.empty();
+
+			const completedCount = tasks.filter(t => t.completed).length;
+			statsContainer.empty();
+			statsContainer.createEl('span', { text: `✓ 已完成: ${completedCount}` });
+			statsContainer.createEl('span', { text: `○ 待完成: ${tasks.length - completedCount}` });
+
+			if (tasks.length === 0) {
+				listContainer.createEl('div', { text: '未找到符合条件的任务', cls: 'gantt-task-empty' });
+				return;
+			}
+
+			tasks.forEach(task => this.renderTaskItem(task, listContainer));
+		} catch (error) {
+			console.error('Error rendering task view', error);
+			listContainer.empty();
+			listContainer.createEl('div', { text: '加载任务时出错', cls: 'gantt-task-empty' });
+		}
+	}
+
+	private renderTaskItem(task: GanttTask, listContainer: HTMLElement): void {
+		const taskItem = listContainer.createDiv('gantt-task-item');
+		taskItem.addClass(task.completed ? 'completed' : 'pending');
+
+		const contentDiv = taskItem.createDiv('gantt-task-content');
+		const checkbox = contentDiv.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+		checkbox.checked = task.completed;
+		checkbox.disabled = true;
+		contentDiv.createEl('span', { text: task.content, cls: 'gantt-task-text' });
+
+		const infoDiv = taskItem.createDiv('gantt-task-info');
+		infoDiv.createEl('span', { text: `${task.fileName} : 第 ${task.lineNumber} 行`, cls: 'gantt-task-file' });
+
+		taskItem.addEventListener('click', async () => {
+			const file = this.app.vault.getAbstractFileByPath(task.filePath);
+			if (file) {
+				const leaf = this.app.workspace.getLeaf();
+				if (leaf) {
+					await leaf.openFile(file as any);
+					const editor = this.app.workspace.activeEditor?.editor;
+					if (editor) {
+						editor.setCursor(task.lineNumber - 1, 0);
+					}
+				}
+			}
+		});
+	}
+
 	private getLunarInfo(date: Date): { lunarText: string; festival: string } {
 		// Import lunar calculation
 		const { getShortLunarText, solarToLunar } = require('./lunar');
@@ -492,6 +578,8 @@ export class CalendarView extends ItemView {
 			case 'day':
 				date.setDate(date.getDate() - 1);
 				break;
+			case 'task':
+				return;
 		}
 		this.currentDate = date;
 		this.render();
@@ -512,12 +600,15 @@ export class CalendarView extends ItemView {
 			case 'day':
 				date.setDate(date.getDate() + 1);
 				break;
+			case 'task':
+				return;
 		}
 		this.currentDate = date;
 		this.render();
 	}
 
 	private goToToday(): void {
+		if (this.viewType === 'task') return;
 		this.currentDate = new Date();
 		this.render();
 	}
@@ -547,6 +638,8 @@ export class CalendarView extends ItemView {
 			}
 			case 'day':
 				return formatDate(this.currentDate, 'YYYY-MM-DD ddd');
+			case 'task':
+				return '任务视图';
 		}
 	}
 }
