@@ -19,6 +19,7 @@ export interface GanttCalendarSettings {
 	lunarFestivalColor: string;
 	solarTermColor: string;
 	globalTaskFilter: string;
+	enabledTaskFormats: string[];
 }
 
 export const DEFAULT_SETTINGS: GanttCalendarSettings = {
@@ -29,6 +30,7 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	lunarFestivalColor: '#e8a041',  // 农历节日 - 橙色
 	solarTermColor: '#52c41a',      // 节气 - 绿色
 	globalTaskFilter: '🎯 ',        // 全局任务筛选标记
+	enabledTaskFormats: ['tasks', 'dataview'], // 启用的任务格式
 };
 
 export class GanttCalendarSettingTab extends PluginSettingTab {
@@ -85,6 +87,45 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					this.plugin.refreshTaskViews();
 				}));
+
+		new Setting(containerEl)
+			.setName('启用的任务格式')
+			.setDesc('选择要支持的任务格式（Tasks 插件或 Dataview 插件）')
+			.addDropdown(drop => {
+				drop.addOptions({
+					'tasks': 'Tasks 插件格式（使用 emoji 表示日期）',
+					'dataview': 'Dataview 插件格式（使用字段表示日期）',
+				});
+				
+				// 如果都启用，显示"两者"
+				const allEnabled = this.plugin.settings.enabledTaskFormats.includes('tasks') && 
+					this.plugin.settings.enabledTaskFormats.includes('dataview');
+				const onlyTasks = this.plugin.settings.enabledTaskFormats.includes('tasks') && 
+					!this.plugin.settings.enabledTaskFormats.includes('dataview');
+				const onlyDataview = !this.plugin.settings.enabledTaskFormats.includes('tasks') && 
+					this.plugin.settings.enabledTaskFormats.includes('dataview');
+				
+				if (allEnabled) {
+					drop.setValue('both');
+				} else if (onlyTasks) {
+					drop.setValue('tasks');
+				} else if (onlyDataview) {
+					drop.setValue('dataview');
+				}
+
+				drop.onChange(async (value) => {
+					if (value === 'both') {
+						this.plugin.settings.enabledTaskFormats = ['tasks', 'dataview'];
+					} else {
+						this.plugin.settings.enabledTaskFormats = [value];
+					}
+					await this.plugin.saveSettings();
+					this.plugin.refreshTaskViews();
+				});
+				
+				// 添加选项 "two" 的支持
+				drop.addOptions({ 'both': '两者都支持' });
+			});
 
 		containerEl.createEl('h2', { text: '节日颜色设置' });
 		

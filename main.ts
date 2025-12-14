@@ -84,7 +84,7 @@ export default class GanttCalendarPlugin extends Plugin {
             name: '搜索所有任务',
             callback: async () => {
                 try {
-                    const tasks = await searchTasks(this.app, this.settings.globalTaskFilter);
+                    const tasks = await searchTasks(this.app, this.settings.globalTaskFilter, this.settings.enabledTaskFormats);
                     new TaskListModal(this.app, tasks).open();
                     new Notice(`找到 ${tasks.length} 个任务`);
                 } catch (error) {

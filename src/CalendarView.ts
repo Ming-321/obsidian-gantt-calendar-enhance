@@ -515,7 +515,7 @@ export class CalendarView extends ItemView {
 		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			const tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter);
+			const tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
 			listContainer.empty();
 
 			const completedCount = tasks.filter(t => t.completed).length;
