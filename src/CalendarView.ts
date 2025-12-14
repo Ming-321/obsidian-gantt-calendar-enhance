@@ -12,6 +12,7 @@ export class CalendarView extends ItemView {
 	private resizeObserver: ResizeObserver | null = null;
 	private yearContainer: HTMLElement | null = null;
 	private plugin: any;
+	private taskFilter: 'all' | 'completed' | 'uncompleted' = 'uncompleted';
 
 	constructor(leaf: WorkspaceLeaf, plugin: any) {
 		super(leaf);
@@ -503,9 +504,39 @@ export class CalendarView extends ItemView {
 		const filterInfo = container.createDiv('gantt-task-filter-info');
 		filterInfo.setText(`当前筛选标记: "${this.plugin.settings.globalTaskFilter || '（未设置）'}"`);
 
+		// Filter buttons: 全部 / 未完成 / 已完成
+		const filterButtons = container.createDiv('gantt-task-filter-buttons');
+		filterButtons.createEl('span', { text: '显示:', cls: 'gantt-filter-label' });
+		const btnAll = filterButtons.createEl('button', { text: '全部', cls: 'gantt-filter-btn' });
+		const btnUncompleted = filterButtons.createEl('button', { text: '未完成', cls: 'gantt-filter-btn' });
+		const btnCompleted = filterButtons.createEl('button', { text: '已完成', cls: 'gantt-filter-btn' });
+
+		const updateActive = () => {
+			btnAll.toggleClass('active', this.taskFilter === 'all');
+			btnUncompleted.toggleClass('active', this.taskFilter === 'uncompleted');
+			btnCompleted.toggleClass('active', this.taskFilter === 'completed');
+		};
+
+		btnAll.addEventListener('click', () => {
+			this.taskFilter = 'all';
+			updateActive();
+			this.loadTaskList(statsContainer, listContainer);
+		});
+		btnUncompleted.addEventListener('click', () => {
+			this.taskFilter = 'uncompleted';
+			updateActive();
+			this.loadTaskList(statsContainer, listContainer);
+		});
+		btnCompleted.addEventListener('click', () => {
+			this.taskFilter = 'completed';
+			updateActive();
+			this.loadTaskList(statsContainer, listContainer);
+		});
+
 		const statsContainer = container.createDiv('gantt-task-stats');
 		const listContainer = container.createDiv('gantt-task-list');
 
+		updateActive();
 		this.loadTaskList(statsContainer, listContainer);
 	}
 
@@ -515,7 +546,14 @@ export class CalendarView extends ItemView {
 		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			const tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+			let tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+
+			// Apply filter by completion state
+			if (this.taskFilter === 'completed') {
+				tasks = tasks.filter(t => t.completed);
+			} else if (this.taskFilter === 'uncompleted') {
+				tasks = tasks.filter(t => !t.completed);
+			}
 			listContainer.empty();
 
 			const completedCount = tasks.filter(t => t.completed).length;
@@ -540,14 +578,57 @@ export class CalendarView extends ItemView {
 		const taskItem = listContainer.createDiv('gantt-task-item');
 		taskItem.addClass(task.completed ? 'completed' : 'pending');
 
-		const contentDiv = taskItem.createDiv('gantt-task-content');
-		const checkbox = contentDiv.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+		// Checkbox
+		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
 		checkbox.checked = task.completed;
 		checkbox.disabled = true;
-		contentDiv.createEl('span', { text: task.content, cls: 'gantt-task-text' });
+		checkbox.addClass('gantt-task-checkbox');
 
-		const infoDiv = taskItem.createDiv('gantt-task-info');
-		infoDiv.createEl('span', { text: `${task.fileName} : 第 ${task.lineNumber} 行`, cls: 'gantt-task-file' });
+		// Task content with global filter prefix if configured
+		const prefix = (this.plugin?.settings?.globalTaskFilter || '').trim();
+		const displayText = prefix ? `${prefix} ${task.content}` : task.content;
+		taskItem.createEl('span', { text: displayText, cls: 'gantt-task-text' });
+
+		// Priority badge
+		if (task.priority) {
+			const priorityIcon = this.getPriorityIcon(task.priority);
+			const priorityEl = taskItem.createDiv('gantt-task-priority-inline');
+			priorityEl.createEl('span', { text: priorityIcon, cls: `gantt-priority-badge priority-${task.priority}` });
+		}
+
+		// Time properties inline
+		const timePropertiesEl = taskItem.createDiv('gantt-task-time-properties-inline');
+		
+		if (task.createdDate) {
+			timePropertiesEl.createEl('span', { text: `创建:${this.formatDateForDisplay(task.createdDate)}`, cls: 'gantt-time-badge gantt-time-created' });
+		}
+		
+		if (task.startDate) {
+			timePropertiesEl.createEl('span', { text: `开始:${this.formatDateForDisplay(task.startDate)}`, cls: 'gantt-time-badge gantt-time-start' });
+		}
+		
+		if (task.scheduledDate) {
+			timePropertiesEl.createEl('span', { text: `计划:${this.formatDateForDisplay(task.scheduledDate)}`, cls: 'gantt-time-badge gantt-time-scheduled' });
+		}
+		
+		if (task.dueDate) {
+			const dueEl = taskItem.createEl('span', { text: `截止:${this.formatDateForDisplay(task.dueDate)}`, cls: 'gantt-time-badge gantt-time-due' });
+			if (task.dueDate < new Date() && !task.completed) {
+				dueEl.addClass('gantt-overdue');
+			}
+			timePropertiesEl.appendChild(dueEl);
+		}
+		
+		if (task.cancelledDate) {
+			timePropertiesEl.createEl('span', { text: `取消:${this.formatDateForDisplay(task.cancelledDate)}`, cls: 'gantt-time-badge gantt-time-cancelled' });
+		}
+		
+		if (task.completionDate) {
+			timePropertiesEl.createEl('span', { text: `完成:${this.formatDateForDisplay(task.completionDate)}`, cls: 'gantt-time-badge gantt-time-completion' });
+		}
+
+		// File location
+		taskItem.createEl('span', { text: `${task.fileName}:${task.lineNumber}`, cls: 'gantt-task-file' });
 
 		taskItem.addEventListener('click', async () => {
 			const file = this.app.vault.getAbstractFileByPath(task.filePath);
@@ -572,6 +653,27 @@ export class CalendarView extends ItemView {
 			lunarText: getShortLunarText(date),
 			festival: lunar.festival,
 		};
+	}
+
+	private getPriorityIcon(priority?: string): string {
+		switch (priority) {
+			case 'highest':
+				return '🔴';
+			case 'high':
+				return '🟠';
+			case 'medium':
+				return '🟡';
+			case 'low':
+				return '🟢';
+			case 'lowest':
+				return '🔵';
+			default:
+				return '⚪';
+		}
+	}
+
+	private formatDateForDisplay(date: Date): string {
+		return formatDate(date, 'YYYY-MM-DD');
 	}
 
 	public switchView(type: CalendarViewType): void {
