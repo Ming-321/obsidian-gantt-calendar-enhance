@@ -1120,21 +1120,13 @@ Gantt Calendar Plugin Styles - 甘特日历
 }
 
 .festival-color-input {
-	width: 50px;
-	height: 40px;
-	border: 2px solid var(--background-modifier-border);
-	border-radius: 4px;
-	cursor: pointer;
-}
-
-.festival-color-input:hover {
-	border-color: var(--interactive-normal);
+	display: none;
 }
 
 .festival-color-swatch {
-	width: 40px;
-	height: 40px;
-	border-radius: 4px;
+	width: 14px;
+	height: 14px;
+	border-radius: 2px;
 	cursor: pointer;
 	border: 1px solid transparent;
 	transition: all 0.2s ease;
@@ -1142,8 +1134,8 @@ Gantt Calendar Plugin Styles - 甘特日历
 }
 
 .festival-color-swatch:hover {
-	transform: scale(1.05);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	transform: scale(1.1);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Task modal sizing */
