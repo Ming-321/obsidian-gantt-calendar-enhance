@@ -12,8 +12,8 @@ export class CalendarView extends ItemView {
 	private resizeObserver: ResizeObserver | null = null;
 	private yearContainer: HTMLElement | null = null;
 	private plugin: any;
-	private taskFilter: 'all' | 'completed' | 'uncompleted' = 'uncompleted';
-	private dateFilter: 'all' | 'today' | 'week' | 'month' = 'all'; // 日期范围筛选：全部、今日、本周、本月
+	private taskFilter: 'all' | 'completed' | 'uncompleted' = 'all'; // 默认显示全部任务（包括已完成和未完成）
+	private dateFilter: 'all' | 'today' | 'week' | 'month' = 'today'; // 默认显示当日任务
 
 	constructor(leaf: WorkspaceLeaf, plugin: any) {
 		super(leaf);
