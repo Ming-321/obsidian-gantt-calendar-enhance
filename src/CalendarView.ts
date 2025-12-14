@@ -549,6 +549,51 @@ export class CalendarView extends ItemView {
 			// Clean up interval on view close
 			this.registerInterval(updateInterval);
 		}
+
+		// Add tasks section below the time grid
+		const tasksSection = dayContainer.createDiv('calendar-day-tasks-section');
+		const tasksTitle = tasksSection.createEl('h3', { text: '当日任务' });
+		tasksTitle.addClass('calendar-day-tasks-title');
+		const tasksList = tasksSection.createDiv('calendar-day-tasks-list');
+
+		// Load and display tasks for current day
+		this.loadDayViewTasks(tasksList);
+	}
+
+	private async loadDayViewTasks(listContainer: HTMLElement): Promise<void> {
+		listContainer.empty();
+		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
+
+		try {
+			let tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+
+			// Get the date field to filter by
+			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
+
+			// Filter tasks for current day
+			const currentDayTasks = tasks.filter(task => {
+				const dateValue = (task as any)[dateField];
+				if (!dateValue) return false;
+				
+				const taskDate = new Date(dateValue);
+				if (isNaN(taskDate.getTime())) return false;
+				
+				return isToday(taskDate);
+			});
+
+			listContainer.empty();
+
+			if (currentDayTasks.length === 0) {
+				listContainer.createEl('div', { text: '暂无任务', cls: 'gantt-task-empty' });
+				return;
+			}
+
+			currentDayTasks.forEach(task => this.renderTaskItem(task, listContainer));
+		} catch (error) {
+			console.error('Error loading day view tasks', error);
+			listContainer.empty();
+			listContainer.createEl('div', { text: '加载任务时出错', cls: 'gantt-task-empty' });
+		}
 	}
 
 	private renderTaskView(container: HTMLElement): void {
