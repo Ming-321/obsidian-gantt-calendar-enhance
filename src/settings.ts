@@ -67,7 +67,7 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// ===== 日历视图设置 =====
-		containerEl.createEl('h2', { text: '日历视图设置' });
+		containerEl.createEl('h1', { text: '日历视图设置' });
 
 		// 年视图农历字号
 		new Setting(containerEl)
@@ -200,7 +200,6 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					this.plugin.refreshCalendarViews();
 				}));
 
-		// ===== 任务视图设置 =====
 		// ===== 年视图设置 =====
 		containerEl.createEl('h2', { text: '年视图设置' });
 
@@ -236,7 +235,7 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		}
 
 		// ===== 任务视图设置 =====
-		containerEl.createEl('h2', { text: '任务视图设置' });
+		containerEl.createEl('h1', { text: '任务视图设置' });
 
 		// 全局任务筛选标记
 		new Setting(containerEl)
