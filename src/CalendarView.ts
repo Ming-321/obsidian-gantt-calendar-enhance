@@ -558,7 +558,7 @@ export class CalendarView extends ItemView {
 		};
 	}
 
-	private switchView(type: CalendarViewType): void {
+	public switchView(type: CalendarViewType): void {
 		this.viewType = type;
 		this.render();
 	}

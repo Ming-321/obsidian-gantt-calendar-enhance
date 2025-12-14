@@ -69,7 +69,12 @@ export default class GanttCalendarPlugin extends Plugin {
             id: 'gantt-calendar-open-task-view',
             name: '打开任务视图',
             callback: async () => {
-                await this.activateTaskView();
+                await this.activateView();
+                const leaf = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_ID)[0];
+                const view = leaf?.view as unknown as CalendarView;
+                if (view?.switchView) {
+                    view.switchView('task');
+                }
             }
         });
 
