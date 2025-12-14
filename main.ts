@@ -1,15 +1,58 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
 import { CalendarView, CALENDAR_VIEW_ID } from './src/CalendarView';
 import { GanttCalendarSettings, DEFAULT_SETTINGS, GanttCalendarSettingTab } from './src/settings';
-import { searchTasks } from './src/taskManager';
+import { searchTasks, TaskCacheManager } from './src/taskManager';
 import { TaskListModal } from './src/taskModal';
 import { TaskView, TASK_VIEW_ID } from './src/TaskView';
 
 export default class GanttCalendarPlugin extends Plugin {
     settings: GanttCalendarSettings;
+    taskCache: TaskCacheManager;
 
     async onload() {
         await this.loadSettings();
+
+        // Initialize task cache manager
+        this.taskCache = new TaskCacheManager(this.app);
+        
+        // Initialize cache in background to avoid blocking plugin load
+        this.taskCache.initialize(this.settings.globalTaskFilter, this.settings.enabledTaskFormats)
+            .then(() => {
+                console.log('[GanttCalendar] Task cache initialized');
+                // Refresh all views after cache is ready
+                this.refreshCalendarViews();
+                this.refreshTaskViews();
+            })
+            .catch(error => {
+                console.error('[GanttCalendar] Failed to initialize task cache:', error);
+                new Notice('任务缓存初始化失败');
+            });
+
+        // Register file change listeners for cache updates
+        this.registerEvent(
+            this.app.vault.on('modify', (file) => {
+                if (file instanceof TFile && file.extension === 'md') {
+                    this.taskCache.updateFileCache(file);
+                }
+            })
+        );
+        
+        this.registerEvent(
+            this.app.vault.on('delete', (file) => {
+                if (file instanceof TFile && file.extension === 'md') {
+                    this.taskCache.removeFileCache(file.path);
+                }
+            })
+        );
+        
+        this.registerEvent(
+            this.app.vault.on('rename', (file, oldPath) => {
+                if (file instanceof TFile && file.extension === 'md') {
+                    this.taskCache.removeFileCache(oldPath);
+                    this.taskCache.updateFileCache(file);
+                }
+            })
+        );
 
         // Register the calendar view
         this.registerView(CALENDAR_VIEW_ID, (leaf) => new CalendarView(leaf, this));
@@ -108,6 +151,11 @@ export default class GanttCalendarPlugin extends Plugin {
     }
 
     onunload() {
+        // Clear task cache
+        if (this.taskCache) {
+            this.taskCache.clear();
+        }
+        
         this.app.workspace.getLeavesOfType(CALENDAR_VIEW_ID).forEach(leaf => leaf.detach());
         this.app.workspace.getLeavesOfType(TASK_VIEW_ID).forEach(leaf => leaf.detach());
     }
@@ -151,6 +199,14 @@ export default class GanttCalendarPlugin extends Plugin {
     async saveSettings() {
         await this.saveData(this.settings);
         this.updateCSSVariables();
+        
+        // Update task cache if settings changed
+        if (this.taskCache) {
+            await this.taskCache.updateSettings(
+                this.settings.globalTaskFilter,
+                this.settings.enabledTaskFormats
+            );
+        }
     }
 
     private updateCSSVariables() {

@@ -176,3 +176,191 @@ function parseDataviewFormat(content: string, task: GanttTask): void {
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+/**
+ * 任务缓存管理器 - 全局单例，用于提升性能
+ * 
+ * 核心功能：
+ * 1. 初始化时扫描整个笔记库，缓存所有任务
+ * 2. 监听文件变化，增量更新受影响文件的任务
+ * 3. 提供快速的任务查询接口，避免重复扫描
+ */
+export class TaskCacheManager {
+	private app: App;
+	private cache: Map<string, GanttTask[]> = new Map(); // 文件路径 -> 任务列表
+	private globalTaskFilter: string = '';
+	private enabledFormats: string[] = ['tasks', 'dataview'];
+	private isInitialized: boolean = false;
+	private isInitializing: boolean = false;
+
+	constructor(app: App) {
+		this.app = app;
+	}
+
+	/**
+	 * 初始化缓存 - 扫描整个笔记库
+	 */
+	async initialize(globalTaskFilter: string, enabledFormats?: string[]): Promise<void> {
+		if (this.isInitializing) {
+			console.log('[TaskCache] Already initializing, skipping...');
+			return;
+		}
+
+		this.isInitializing = true;
+		this.globalTaskFilter = globalTaskFilter;
+		this.enabledFormats = enabledFormats || ['tasks', 'dataview'];
+
+		console.time('[TaskCache] Initial scan');
+		console.log('[TaskCache] Starting initial scan...');
+
+		this.cache.clear();
+		const markdownFiles = this.app.vault.getMarkdownFiles();
+		
+		// 批量处理文件，避免阻塞UI
+		const batchSize = 50;
+		for (let i = 0; i < markdownFiles.length; i += batchSize) {
+			const batch = markdownFiles.slice(i, i + batchSize);
+			await Promise.all(batch.map(file => this.updateFileCache(file)));
+			
+			// 让出主线程，避免卡顿
+			if (i % 200 === 0) {
+				await new Promise(resolve => setTimeout(resolve, 0));
+			}
+		}
+
+		this.isInitialized = true;
+		this.isInitializing = false;
+		
+		const totalTasks = Array.from(this.cache.values()).reduce((sum, tasks) => sum + tasks.length, 0);
+		console.timeEnd('[TaskCache] Initial scan');
+		console.log(`[TaskCache] Initialized with ${totalTasks} tasks from ${markdownFiles.length} files`);
+	}
+
+	/**
+	 * 更新单个文件的缓存
+	 */
+	async updateFileCache(file: TFile): Promise<void> {
+		try {
+			const content = await this.app.vault.read(file);
+			const tasks = this.parseFileTasks(file, content);
+			
+			if (tasks.length > 0) {
+				this.cache.set(file.path, tasks);
+			} else {
+				this.cache.delete(file.path);
+			}
+		} catch (error) {
+			console.error(`[TaskCache] Error updating cache for ${file.path}:`, error);
+			this.cache.delete(file.path);
+		}
+	}
+
+	/**
+	 * 解析单个文件的所有任务
+	 */
+	private parseFileTasks(file: TFile, content: string): GanttTask[] {
+		const tasks: GanttTask[] = [];
+		const lines = content.split('\n');
+
+		lines.forEach((line, index) => {
+			const taskMatch = line.match(/^\s*[-*]\s*\[([ xX])\]\s*(.*)/);
+			if (!taskMatch) return;
+
+			const [, checkedStatus, taskContent] = taskMatch;
+			const isCompleted = checkedStatus.toLowerCase() === 'x';
+
+			// 检查全局筛选标记
+			if (this.globalTaskFilter) {
+				const trimmedContent = taskContent.trim();
+				if (!trimmedContent.startsWith(this.globalTaskFilter)) {
+					return;
+				}
+			}
+
+			// 移除头部筛选标记
+			const contentWithoutFilter = this.globalTaskFilter
+				? taskContent.replace(new RegExp(`^\\s*${escapeRegExp(this.globalTaskFilter)}\\s*`), '')
+				: taskContent;
+
+			const task: GanttTask = {
+				filePath: file.path,
+				fileName: file.basename,
+				lineNumber: index + 1,
+				content: contentWithoutFilter,
+				completed: isCompleted,
+			};
+
+			// 根据启用的格式解析日期
+			if (this.enabledFormats.includes('tasks')) {
+				parseTasksFormat(contentWithoutFilter, task);
+			}
+			if (this.enabledFormats.includes('dataview')) {
+				parseDataviewFormat(contentWithoutFilter, task);
+			}
+
+			tasks.push(task);
+		});
+
+		return tasks;
+	}
+
+	/**
+	 * 移除文件的缓存
+	 */
+	removeFileCache(filePath: string): void {
+		this.cache.delete(filePath);
+	}
+
+	/**
+	 * 获取所有任务（从缓存）
+	 */
+	getAllTasks(): GanttTask[] {
+		// 即使初始化未完成，也返回当前已解析的缓存，避免界面空白
+		const allTasks: GanttTask[] = [];
+		for (const tasks of this.cache.values()) {
+			allTasks.push(...tasks);
+		}
+
+		return allTasks.sort((a, b) => {
+			if (a.fileName !== b.fileName) {
+				return a.fileName.localeCompare(b.fileName);
+			}
+			return a.lineNumber - b.lineNumber;
+		});
+	}
+
+	/**
+	 * 更新配置并重新初始化
+	 */
+	async updateSettings(globalTaskFilter: string, enabledFormats?: string[]): Promise<void> {
+		const needsReinit = 
+			this.globalTaskFilter !== globalTaskFilter ||
+			JSON.stringify(this.enabledFormats) !== JSON.stringify(enabledFormats);
+
+		if (needsReinit) {
+			console.log('[TaskCache] Settings changed, reinitializing cache...');
+			await this.initialize(globalTaskFilter, enabledFormats);
+		}
+	}
+
+	/**
+	 * 获取缓存状态
+	 */
+	getStatus(): { initialized: boolean; fileCount: number; taskCount: number } {
+		const taskCount = Array.from(this.cache.values()).reduce((sum, tasks) => sum + tasks.length, 0);
+		return {
+			initialized: this.isInitialized,
+			fileCount: this.cache.size,
+			taskCount
+		};
+	}
+
+	/**
+	 * 清空缓存
+	 */
+	clear(): void {
+		this.cache.clear();
+		this.isInitialized = false;
+		console.log('[TaskCache] Cache cleared');
+	}
+}

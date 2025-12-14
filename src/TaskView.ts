@@ -64,7 +64,8 @@ export class TaskView extends ItemView {
 		this.listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			const tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter);
+			// Get tasks from cache instead of scanning
+			const tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
 			this.listContainer.empty();
 
 			const completedCount = tasks.filter(t => t.completed).length;

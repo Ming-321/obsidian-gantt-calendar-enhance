@@ -474,7 +474,8 @@ export class CalendarView extends ItemView {
 		columnContainer.empty();
 
 		try {
-			let tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+			// Get tasks from cache instead of scanning
+			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
 
 			// Get the date field to filter by
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
@@ -667,7 +668,8 @@ export class CalendarView extends ItemView {
 		container.empty();
 
 		try {
-			let tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+			// Get tasks from cache instead of scanning
+			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
 
 			// Get the date field to filter by
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
@@ -937,7 +939,8 @@ export class CalendarView extends ItemView {
 		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			let tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+			// Get tasks from cache instead of scanning
+			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
 
 			// Get the date field to filter by
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
@@ -1105,7 +1108,8 @@ export class CalendarView extends ItemView {
 		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			let tasks = await searchTasks(this.app, this.plugin.settings.globalTaskFilter, this.plugin.settings.enabledTaskFormats);
+			// Get tasks from cache instead of scanning
+			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
 
 			// Apply filter by completion state
 			if (this.taskFilter === 'completed') {
