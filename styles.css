@@ -2,6 +2,13 @@
 Gantt Calendar Plugin Styles - 甘特日历
 */
 
+/* CSS Variables for Festival Colors */
+:root {
+	--festival-solar-color: #e74c3c;    /* 阳历节日 - 红色 */
+	--festival-lunar-color: #e8a041;    /* 农历节日 - 橙色 */
+	--festival-solar-term-color: #52c41a; /* 节气 - 绿色 */
+}
+
 /* Calendar View Container */
 .calendar-toolbar {
 	display: flex;
@@ -128,7 +135,6 @@ Gantt Calendar Plugin Styles - 甘特日历
 	grid-template-columns: repeat(7, minmax(0, 1fr));
 	grid-auto-flow: column;
 	width: 100%;
-	column-gap: var(--year-view-column-gap, 0);
 	margin-bottom: 1px;
 }
 
@@ -143,7 +149,6 @@ Gantt Calendar Plugin Styles - 甘特日历
 .calendar-days-grid {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
-	gap: var(--year-view-row-gap, 0) var(--year-view-column-gap, 0) !important;
 	flex: 1;
 }
 
@@ -188,19 +193,19 @@ Gantt Calendar Plugin Styles - 甘特日历
 	font-weight: 600;
 }
 
-/* 阳历节日 - 红色 */
+/* 阳历节日 - 使用CSS变量 */
 .calendar-lunar-text.festival-solar {
-	color: #e74c3c;
+	color: var(--festival-solar-color);
 }
 
-/* 农历传统节日 - 橙色 */
+/* 农历传统节日 - 使用CSS变量 */
 .calendar-lunar-text.festival-lunar {
-	color: #e8a041;
+	color: var(--festival-lunar-color);
 }
 
-/* 二十四节气 - 浅绿色 */
+/* 二十四节气 - 使用CSS变量 */
 .calendar-lunar-text.festival-solarTerm {
-	color: #52c41a;
+	color: var(--festival-solar-term-color);
 }
 
 .calendar-day:hover {
@@ -323,19 +328,19 @@ Gantt Calendar Plugin Styles - 甘特日历
 	font-weight: 600;
 }
 
-/* 月视图：阳历节日 - 红色 */
+/* 月视图：阳历节日 - 使用CSS变量 */
 .calendar-day-cell .calendar-lunar-text.festival-solar {
-	color: #e74c3c;
+	color: var(--festival-solar-color);
 }
 
-/* 月视图：农历传统节日 - 橙色 */
+/* 月视图：农历传统节日 - 使用CSS变量 */
 .calendar-day-cell .calendar-lunar-text.festival-lunar {
-	color: #e8a041;
+	color: var(--festival-lunar-color);
 }
 
-/* 月视图：二十四节气 - 浅绿色 */
+/* 月视图：二十四节气 - 使用CSS变量 */
 .calendar-day-cell .calendar-lunar-text.festival-solarTerm {
-	color: #52c41a;
+	color: var(--festival-solar-term-color);
 }
 
 .calendar-day-cell:hover {
@@ -741,4 +746,63 @@ Gantt Calendar Plugin Styles - 甘特日历
 .gantt-calendar-ribbon:hover {
 	transform: scale(1.1);
 	opacity: 0.8;
+}
+
+/* Festival Color Settings */
+.festival-color-setting {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.festival-color-label {
+	padding: 0 10px;
+}
+
+.festival-color-name {
+	font-weight: 600;
+	color: var(--text-normal);
+	margin-bottom: 4px;
+}
+
+.festival-color-desc {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.festival-color-picker {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	flex-wrap: wrap;
+}
+
+.festival-color-input {
+	width: 50px;
+	height: 40px;
+	border: 2px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.festival-color-input:hover {
+	border-color: var(--interactive-normal);
+}
+
+.festival-color-swatch {
+	width: 40px;
+	height: 40px;
+	border-radius: 4px;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: all 0.2s ease;
+	flex-shrink: 0;
+}
+
+.festival-color-swatch:hover {
+	transform: scale(1.05);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

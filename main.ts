@@ -94,10 +94,18 @@ export default class GanttCalendarPlugin extends Plugin {
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        this.updateCSSVariables();
     }
 
     async saveSettings() {
         await this.saveData(this.settings);
+        this.updateCSSVariables();
+    }
+
+    private updateCSSVariables() {
+        document.documentElement.style.setProperty('--festival-solar-color', this.settings.solarFestivalColor);
+        document.documentElement.style.setProperty('--festival-lunar-color', this.settings.lunarFestivalColor);
+        document.documentElement.style.setProperty('--festival-solar-term-color', this.settings.solarTermColor);
     }
 
     refreshCalendarViews() {

@@ -31,14 +31,11 @@ export class CalendarView extends ItemView {
 	async onOpen(): Promise<void> {
 		this.render();
 		this.setupResizeObserver();
-		this.applyYearViewGapSettings();
 	}
 	
 	public refreshSettings(): void {
 		// 实时应用设置需要重新渲染内容（周起始日、布局等）
 		this.render();
-		// 在渲染完新内容后应用 CSS 变量，避免被容器清空时丢失
-		this.applyYearViewGapSettings();
 	}
 
 	async onClose(): Promise<void> {
@@ -46,31 +43,6 @@ export class CalendarView extends ItemView {
 		if (this.resizeObserver) {
 			this.resizeObserver.disconnect();
 		}
-	}
-
-	private applyYearViewGapSettings(): void {
-		const content = this.containerEl.children[1] as HTMLElement;
-		if (!content) return;
-
-		const rowGap = this.plugin.settings.yearViewRowGap || 0;
-		const columnGap = this.plugin.settings.yearViewColumnGap || 0;
-        const lunarFontSize = this.plugin.settings.yearLunarFontSize || 10;
-
-		// 直接应用到所有 calendar-days-grid 元素确保设置生效
-		const daysGrids = content.querySelectorAll('.calendar-days-grid');
-		daysGrids.forEach((grid: Element) => {
-			(grid as HTMLElement).style.setProperty('--year-view-row-gap', `${rowGap}px`);
-			(grid as HTMLElement).style.setProperty('--year-view-column-gap', `${columnGap}px`);
-		});
-
-		// 同时应用到 calendar-weekdays 确保星期标签与日期竖向对齐
-		const weekdaysGrids = content.querySelectorAll('.calendar-weekdays');
-		weekdaysGrids.forEach((grid: Element) => {
-			(grid as HTMLElement).style.setProperty('--year-view-column-gap', `${columnGap}px`);
-		});
-
-		// 应用农历字体大小到整个容器
-		content.style.setProperty('--year-lunar-font-size', `${lunarFontSize}px`);
 	}
 
 	private setupResizeObserver(): void {
@@ -123,18 +95,23 @@ export class CalendarView extends ItemView {
 
 		const dateDisplay = navContainer.createEl('span');
 		dateDisplay.addClass('calendar-date-display');
-		dateDisplay.createEl('div', { text: this.getDateRangeText() });
 		
 		// Add lunar info if in day view
 		if (this.viewType === 'day') {
 			const lunar = this.getLunarInfo(this.currentDate);
-			const lunarDiv = dateDisplay.createEl('div', { cls: 'lunar-info-display' });
+			let displayText = this.getDateRangeText();
+			
+			// Append lunar info to the same line
 			if (lunar.lunarText) {
-				lunarDiv.createEl('span', { text: lunar.lunarText, cls: 'lunar-date-text' });
+				displayText += ` • ${lunar.lunarText}`;
 			}
 			if (lunar.festival) {
-				lunarDiv.createEl('span', { text: lunar.festival, cls: 'lunar-festival-text' });
+				displayText += ` • ${lunar.festival}`;
 			}
+			
+			dateDisplay.setText(displayText);
+		} else {
+			dateDisplay.setText(this.getDateRangeText());
 		}
 
 		const nextBtn = navContainer.createEl('button', { text: '下一个 ▶' });
