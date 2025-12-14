@@ -1145,8 +1145,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	max-height: 300px;
-	overflow-y: auto;
+	overflow: visible;
 }
 
 .calendar-day-tasks-list .gantt-task-item {
