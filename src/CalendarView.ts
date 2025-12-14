@@ -643,17 +643,17 @@ export class CalendarView extends ItemView {
 	private getPriorityIcon(priority?: string): string {
 		switch (priority) {
 			case 'highest':
-				return '🔴';
+				return '🔺';
 			case 'high':
-				return '🟠';
+				return '⏫';
 			case 'medium':
-				return '🟡';
+				return '🔼';
 			case 'low':
-				return '🟢';
+				return '🔽';
 			case 'lowest':
-				return '🔵';
+				return '⏬';
 			default:
-				return '⚪';
+				return '';
 		}
 	}
 
@@ -664,12 +664,12 @@ export class CalendarView extends ItemView {
 	// Remove Tasks/Dataview attribute markers from task text
 	private cleanTaskDescription(raw: string): string {
 		let text = raw;
-		// Remove Tasks emoji-based attributes with dates/values
-		text = text
-			.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\b/g, '')
-			.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\b/g, '');
+		// Remove Tasks emoji-based priority (must be before date markers)
+		text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+		// Remove Tasks emoji-based date attributes
+		text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
 		// Remove Dataview [field:: value] blocks
-		text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]/g, '');
+		text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
 		// Collapse multiple spaces
 		text = text.replace(/\s{2,}/g, ' ').trim();
 		return text;
