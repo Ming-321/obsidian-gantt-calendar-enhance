@@ -1139,13 +1139,16 @@ Gantt Calendar Plugin Styles - 甘特日历
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	flex-shrink: 0;
 }
 
 .calendar-day-tasks-list {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	overflow: visible;
+	overflow-y: auto;
+	flex: 1;
+	min-height: 0;
 }
 
 .calendar-day-tasks-list .gantt-task-item {
@@ -1171,23 +1174,35 @@ Gantt Calendar Plugin Styles - 甘特日历
 	width: 100%;
 	height: 100%;
 	flex: 1;
+	min-height: 0;
 }
 
 .calendar-day-split-container .calendar-day-tasks-section {
 	flex: 1 1 50%;
 	display: flex;
 	flex-direction: column;
-	overflow-y: auto;
+	overflow: hidden;
 	padding-right: 8px;
 	border-right: 1px solid var(--divider-color);
+	min-height: 0;
+}
+
+.calendar-day-tasks-section-full {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
 }
 
 .calendar-day-split-container .calendar-day-notes-section {
 	flex: 1 1 50%;
 	display: flex;
 	flex-direction: column;
-	overflow-y: auto;
+	overflow: hidden;
 	padding-left: 8px;
+	min-height: 0;
 }
 
 .calendar-day-divider {
@@ -1207,6 +1222,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--text-normal);
+	flex-shrink: 0;
 }
 
 .calendar-day-notes-content {
@@ -1215,12 +1231,11 @@ Gantt Calendar Plugin Styles - 甘特日历
 	padding: 8px;
 	background-color: var(--background-primary);
 	border-radius: 4px;
+	min-height: 0;
 }
 
 .calendar-day-notes-markdown {
 	font-size: 12px;
 	line-height: 1.6;
 	color: var(--text-normal);
-	white-space: pre-wrap;
-	word-wrap: break-word;
 }

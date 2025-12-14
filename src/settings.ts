@@ -22,6 +22,7 @@ export interface GanttCalendarSettings {
 	enabledTaskFormats: string[];
 	showGlobalFilterInTaskText: boolean; // 是否在任务列表文本中显示 global filter 前缀
 	dateFilterField: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate'; // 日期筛选使用的字段
+	enableDailyNote: boolean; // 是否在日视图中显示 Daily Note
 	dailyNotePath: string; // Daily note 文件夹路径
 	dailyNoteNameFormat: string; // Daily note 文件名格式 (如 yyyy-MM-dd)
 }
@@ -37,6 +38,7 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	enabledTaskFormats: ['tasks', 'dataview'], // 启用的任务格式
 	showGlobalFilterInTaskText: true, // 默认显示 global filter
 	dateFilterField: 'dueDate', // 默认使用截止日期作为筛选字段
+	enableDailyNote: true, // 默认在日视图中显示 Daily Note
 	dailyNotePath: 'DailyNotes', // 默认 daily note 文件夹路径
 	dailyNoteNameFormat: 'yyyy-MM-dd', // 默认文件名格式
 };
@@ -109,6 +111,51 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			'solarTermColor'
 		);
 
+		// ===== 日视图设置 =====
+		containerEl.createEl('h2', { text: '日视图设置' });
+
+		// 显示 Daily Note 开关
+		new Setting(containerEl)
+			.setName('显示 Daily Note')
+			.setDesc('在日视图中显示当天的 Daily Note 内容')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableDailyNote)
+				.onChange(async (value) => {
+					this.plugin.settings.enableDailyNote = value;
+					await this.plugin.saveSettings();
+					// 重新渲染设置面板以显示/隐藏关联的设置
+					this.display();
+					this.plugin.refreshTaskViews();
+				}));
+
+		// Daily Note 文件夹路径（仅在启用时显示）
+		if (this.plugin.settings.enableDailyNote) {
+			new Setting(containerEl)
+				.setName('Daily Note 文件夹路径')
+				.setDesc('指定存放 Daily Note 文件的文件夹路径（相对于库根目录）')
+				.addText(text => text
+					.setPlaceholder('DailyNotes')
+					.setValue(this.plugin.settings.dailyNotePath)
+					.onChange(async (value) => {
+						this.plugin.settings.dailyNotePath = value;
+						await this.plugin.saveSettings();
+						this.plugin.refreshTaskViews();
+					}));
+
+			// Daily Note 文件名格式（仅在启用时显示）
+			new Setting(containerEl)
+				.setName('Daily Note 文件名格式')
+				.setDesc('指定 Daily Note 文件名格式（如 yyyy-MM-dd，会在日视图中用当前日期自动替换）')
+				.addText(text => text
+					.setPlaceholder('yyyy-MM-dd')
+					.setValue(this.plugin.settings.dailyNoteNameFormat)
+					.onChange(async (value) => {
+						this.plugin.settings.dailyNoteNameFormat = value;
+						await this.plugin.saveSettings();
+						this.plugin.refreshTaskViews();
+					}));
+		}
+
 		// ===== 任务视图设置 =====
 		containerEl.createEl('h2', { text: '任务视图设置' });
 
@@ -180,34 +227,6 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					this.plugin.refreshTaskViews();
 				}));
 
-		// ===== Daily Note 设置 =====
-		containerEl.createEl('h2', { text: 'Daily Note 设置' });
-
-		// Daily Note 文件夹路径
-		new Setting(containerEl)
-			.setName('Daily Note 文件夹路径')
-			.setDesc('指定存放 Daily Note 文件的文件夹路径（相对于库根目录）')
-			.addText(text => text
-				.setPlaceholder('DailyNotes')
-				.setValue(this.plugin.settings.dailyNotePath)
-				.onChange(async (value) => {
-					this.plugin.settings.dailyNotePath = value;
-					await this.plugin.saveSettings();
-					this.plugin.refreshTaskViews();
-				}));
-
-		// Daily Note 文件名格式
-		new Setting(containerEl)
-			.setName('Daily Note 文件名格式')
-			.setDesc('指定 Daily Note 文件名格式（如 yyyy-MM-dd，会在日视图中用当前日期自动替换）')
-			.addText(text => text
-				.setPlaceholder('yyyy-MM-dd')
-				.setValue(this.plugin.settings.dailyNoteNameFormat)
-				.onChange(async (value) => {
-					this.plugin.settings.dailyNoteNameFormat = value;
-					await this.plugin.saveSettings();
-					this.plugin.refreshTaskViews();
-				}));
 	}
 
 	private createColorSetting(

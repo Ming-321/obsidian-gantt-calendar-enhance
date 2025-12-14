@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Plugin, setIcon, TFile } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Plugin, setIcon, TFile, MarkdownRenderer } from 'obsidian';
 import { CalendarViewType } from './types';
 import { generateMonthCalendar, getWeekOfDate, formatDate, formatMonth, isToday, isThisWeek, isThisMonth } from './utils';
 import { searchTasks, GanttTask } from './taskManager';
@@ -508,32 +508,46 @@ export class CalendarView extends ItemView {
 	private renderDayView(container: HTMLElement): void {
 		const dayContainer = container.createDiv('calendar-day-view');
 
-		// Split-screen layout container
-		const splitContainer = dayContainer.createDiv('calendar-day-split-container');
+		// Check if Daily Note should be displayed
+		const enableDailyNote = this.plugin.settings.enableDailyNote !== false;
 
-		// Tasks section (left)
-		const tasksSection = splitContainer.createDiv('calendar-day-tasks-section');
-		const tasksTitle = tasksSection.createEl('h3', { text: '当日任务' });
-		tasksTitle.addClass('calendar-day-tasks-title');
-		const tasksList = tasksSection.createDiv('calendar-day-tasks-list');
+		if (enableDailyNote) {
+			// Split-screen layout container
+			const splitContainer = dayContainer.createDiv('calendar-day-split-container');
 
-		// Divider (middle)
-		const divider = splitContainer.createDiv('calendar-day-divider');
+			// Tasks section (left)
+			const tasksSection = splitContainer.createDiv('calendar-day-tasks-section');
+			const tasksTitle = tasksSection.createEl('h3', { text: '当日任务' });
+			tasksTitle.addClass('calendar-day-tasks-title');
+			const tasksList = tasksSection.createDiv('calendar-day-tasks-list');
 
-		// Notes section (right)
-		const notesSection = splitContainer.createDiv('calendar-day-notes-section');
-		const notesTitle = notesSection.createEl('h3', { text: 'Daily Note' });
-		notesTitle.addClass('calendar-day-notes-title');
-		const notesContent = notesSection.createDiv('calendar-day-notes-content');
+			// Divider (middle)
+			const divider = splitContainer.createDiv('calendar-day-divider');
 
-		// Setup resizable divider
-		this.setupDayViewDivider(divider, tasksSection, notesSection);
+			// Notes section (right)
+			const notesSection = splitContainer.createDiv('calendar-day-notes-section');
+			const notesTitle = notesSection.createEl('h3', { text: 'Daily Note' });
+			notesTitle.addClass('calendar-day-notes-title');
+			const notesContent = notesSection.createDiv('calendar-day-notes-content');
 
-		// Load and display tasks for current view date
-		this.loadDayViewTasks(tasksList, new Date(this.currentDate));
+			// Setup resizable divider
+			this.setupDayViewDivider(divider, tasksSection, notesSection);
 
-		// Load and display daily note for current view date
-		this.loadDayViewNotes(notesContent, new Date(this.currentDate));
+			// Load and display tasks for current view date
+			this.loadDayViewTasks(tasksList, new Date(this.currentDate));
+
+			// Load and display daily note for current view date
+			this.loadDayViewNotes(notesContent, new Date(this.currentDate));
+		} else {
+			// Display tasks only (full width)
+			const tasksSection = dayContainer.createDiv('calendar-day-tasks-section-full');
+			const tasksTitle = tasksSection.createEl('h3', { text: '当日任务' });
+			tasksTitle.addClass('calendar-day-tasks-title');
+			const tasksList = tasksSection.createDiv('calendar-day-tasks-list');
+
+			// Load and display tasks for current view date
+			this.loadDayViewTasks(tasksList, new Date(this.currentDate));
+		}
 	}
 
 	private async loadDayViewTasks(listContainer: HTMLElement, targetDate: Date): Promise<void> {
@@ -649,9 +663,9 @@ export class CalendarView extends ItemView {
 				return;
 			}
 
-			// 显示 markdown 内容（可选：使用 marked 库进行渲染，这里简单显示）
+			// 使用 MarkdownRenderer 渲染 Markdown 内容为阅读视图
 			const noteContent = contentContainer.createDiv('calendar-day-notes-markdown');
-			noteContent.setText(content);
+			await MarkdownRenderer.render(this.app, content, noteContent, file.path, this);
 		} catch (error) {
 			console.error('Error loading daily note', error);
 			contentContainer.empty();
