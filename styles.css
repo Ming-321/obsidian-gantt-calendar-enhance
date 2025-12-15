@@ -346,7 +346,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 }
 
 .calendar-day.today .calendar-day-number {
-	color: white;
+	color: red;
 	font-weight: 600;
 }
 
