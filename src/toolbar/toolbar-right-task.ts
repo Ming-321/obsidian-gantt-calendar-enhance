@@ -7,6 +7,9 @@ import type { TaskViewRenderer } from '../views/TaskView';
  * 负责渲染全局筛选状态、状态筛选、时间筛选和刷新按钮
  */
 export class ToolbarRightTask {
+	// 记录前一个按钮状态，用于清除日期输入后恢复
+	private previousMode: 'all' | 'day' | 'week' | 'month' = 'week';
+
 	/**
 	 * 渲染任务视图功能区
 	 * @param container 右侧容器元素
@@ -82,12 +85,19 @@ export class ToolbarRightTask {
 				const d = new Date(val);
 				taskRenderer.setSpecificDate(d);
 				taskRenderer.setDateRangeMode('custom');
-				// 清除按钮选中态
+				// 清除所有按钮的高亮
 				Array.from(dateFilterGroup.getElementsByClassName('toolbar-right-task-date-mode-btn')).forEach(el => el.classList.remove('active'));
 			} else {
-				// 无输入时，恢复为全部并清空特定日期
+				// 无输入时，恢复为前一个模式并清空特定日期
 				taskRenderer.setSpecificDate(null);
-				taskRenderer.setDateRangeMode('all');
+				taskRenderer.setDateRangeMode(this.previousMode);
+				// 恢复前一个按钮的高亮
+				const buttons = Array.from(dateFilterGroup.getElementsByClassName('toolbar-right-task-date-mode-btn')) as HTMLElement[];
+				buttons.forEach(btn => {
+					if ((btn.getAttribute('data-mode') as any) === this.previousMode) {
+						btn.classList.add('active');
+					}
+				});
 			}
 			onFilterChange();
 		});
@@ -98,15 +108,24 @@ export class ToolbarRightTask {
 			{ key: 'week', label: '周' },
 			{ key: 'month', label: '月' },
 		];
+		// 获取当前的日期范围模式
+		const currentMode = taskRenderer.getDateRangeMode();
 		for (const m of modes) {
 			const btn = dateFilterGroup.createEl('button', {
 				cls: 'toolbar-right-task-date-mode-btn',
 				text: m.label,
 				attr: { 'data-mode': m.key }
 			});
+			// 根据当前的 dateRangeMode 设置高亮，仅当模式为 all/day/week/month 时高亮
+			// 如果是 'custom'（使用日期输入），则不高亮任何按钮
+			if (currentMode !== 'custom' && m.key === currentMode) {
+				btn.classList.add('active');
+			}
 			btn.addEventListener('click', () => {
 				// 清空输入框
 				dateInput.value = '';
+				// 保存当前模式为前一个状态
+				this.previousMode = m.key;
 				// 更新模式
 				taskRenderer.setDateRangeMode(m.key);
 				if (m.key !== 'all') {
@@ -115,7 +134,7 @@ export class ToolbarRightTask {
 				} else {
 					taskRenderer.setSpecificDate(null);
 				}
-				// active 切换
+				// 高亮切换
 				Array.from(dateFilterGroup.getElementsByClassName('toolbar-right-task-date-mode-btn')).forEach(el => el.classList.remove('active'));
 				btn.classList.add('active');
 				onFilterChange();

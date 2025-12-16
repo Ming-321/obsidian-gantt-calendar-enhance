@@ -16,7 +16,7 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	private timeValueFilter: Date | null = null;
     
 	// 日期范围模式：全部/当天/当周/当月/自定义日期
-	private dateRangeMode: 'all' | 'day' | 'week' | 'month' | 'custom' = 'all';
+	private dateRangeMode: 'all' | 'day' | 'week' | 'month' | 'custom' = 'week';
 
 	// ===== Getter/Setter 方法 =====
 

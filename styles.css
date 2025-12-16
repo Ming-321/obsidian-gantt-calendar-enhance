@@ -296,8 +296,8 @@ Gantt Calendar Plugin Styles - 甘特日历
 }
 
 .toolbar-right-task-date-mode-btn.active {
-	background-color: var(--interactive-accent);
-	border-color: var(--interactive-accent);
+	background-color: #ff6b4a;
+	border-color: #ff6b4a;
 	color: white;
 }
 
