@@ -14,6 +14,9 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	
 	// 时间值筛选
 	private timeValueFilter: Date | null = null;
+    
+	// 日期范围模式：全部/当天/当周/当月/自定义日期
+	private dateRangeMode: 'all' | 'day' | 'week' | 'month' | 'custom' = 'all';
 
 	// ===== Getter/Setter 方法 =====
 
@@ -39,6 +42,14 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 
 	public setSpecificDate(date: Date): void {
 		this.timeValueFilter = date;
+	}
+    
+	public getDateRangeMode(): 'all' | 'day' | 'week' | 'month' | 'custom' {
+		return this.dateRangeMode;
+	}
+    
+	public setDateRangeMode(mode: 'all' | 'day' | 'week' | 'month' | 'custom'): void {
+		this.dateRangeMode = mode;
 	}
 
 	/**
@@ -106,6 +117,39 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 					return taskDate.getTime() === filterDate.getTime();
 				});
 			}
+        
+		// 日期范围筛选
+		const mode = this.getDateRangeMode();
+		if (mode !== 'all') {
+			const ref = this.timeValueFilter ?? new Date();
+			const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+			const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
+			const startOfWeek = (d: Date) => { const x = startOfDay(d); const day = x.getDay(); const diff = (day + 6) % 7; x.setDate(x.getDate() - diff); return x; };
+			const endOfWeek = (d: Date) => { const s = startOfWeek(d); const e = new Date(s); e.setDate(s.getDate() + 6); e.setHours(23,59,59,999); return e; };
+			const startOfMonth = (d: Date) => { const x = startOfDay(d); x.setDate(1); return x; };
+			const endOfMonth = (d: Date) => { const x = startOfDay(d); x.setMonth(x.getMonth()+1, 0); x.setHours(23,59,59,999); return x; };
+            
+			let rangeStart: Date;
+			let rangeEnd: Date;
+			if (mode === 'day' || mode === 'custom') {
+				rangeStart = startOfDay(ref);
+				rangeEnd = endOfDay(ref);
+			} else if (mode === 'week') {
+				rangeStart = startOfWeek(ref);
+				rangeEnd = endOfWeek(ref);
+			} else { // month
+				rangeStart = startOfMonth(ref);
+				rangeEnd = endOfMonth(ref);
+			}
+            
+			tasks = tasks.filter(task => {
+				const dateValue = (task as any)[this.timeFieldFilter];
+				if (!dateValue) return false;
+				const taskDate = new Date(dateValue);
+				if (isNaN(taskDate.getTime())) return false;
+				return taskDate >= rangeStart && taskDate <= rangeEnd;
+			});
+		}
 
 			listContainer.empty();
 

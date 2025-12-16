@@ -59,6 +59,66 @@ export class ToolbarRightTask {
 			onFilterChange();
 		});
 
+		// 日期筛选组（标签+输入+模式按钮：全/日/周/月）
+		const dateFilterGroup = container.createDiv('toolbar-right-task-date-filter-group');
+		const dateLabel = dateFilterGroup.createEl('span', {
+			text: '日期',
+			cls: 'toolbar-right-task-date-filter-label'
+		});
+		const dateInput = dateFilterGroup.createEl('input', {
+			cls: 'toolbar-right-task-date-input',
+			attr: { type: 'date' }
+		}) as HTMLInputElement;
+		// 默认当天
+		try {
+			dateInput.value = formatDate(new Date(), 'YYYY-MM-DD');
+		} catch {
+			dateInput.value = new Date().toISOString().slice(0, 10);
+		}
+		// 输入变化：设置特定日期，清除按钮选中状态
+		dateInput.addEventListener('change', () => {
+			const val = dateInput.value;
+			if (val) {
+				const d = new Date(val);
+				taskRenderer.setSpecificDate(d);
+				taskRenderer.setDateRangeMode('custom');
+				// 清除按钮选中态
+				Array.from(dateFilterGroup.getElementsByClassName('toolbar-right-task-date-mode-btn')).forEach(el => el.classList.remove('active'));
+			} else {
+				// 无输入时，恢复为全部（不设置具体日期）
+				taskRenderer.setDateRangeMode('all');
+			}
+			onFilterChange();
+		});
+
+		const modes: Array<{ key: 'all' | 'day' | 'week' | 'month'; label: string }> = [
+			{ key: 'all', label: '全' },
+			{ key: 'day', label: '日' },
+			{ key: 'week', label: '周' },
+			{ key: 'month', label: '月' },
+		];
+		for (const m of modes) {
+			const btn = dateFilterGroup.createEl('button', {
+				cls: 'toolbar-right-task-date-mode-btn',
+				text: m.label,
+				attr: { 'data-mode': m.key }
+			});
+			btn.addEventListener('click', () => {
+				// 清空输入框
+				dateInput.value = '';
+				// 更新模式
+				taskRenderer.setDateRangeMode(m.key);
+				if (m.key !== 'all') {
+					// 以当天为参考
+					taskRenderer.setSpecificDate(new Date());
+				}
+				// active 切换
+				Array.from(dateFilterGroup.getElementsByClassName('toolbar-right-task-date-mode-btn')).forEach(el => el.classList.remove('active'));
+				btn.classList.add('active');
+				onFilterChange();
+			});
+		}
+
 		// 刷新按钮
 		const refreshBtn = container.createEl('button', { 
 			cls: 'toolbar-right-task-refresh-btn', 

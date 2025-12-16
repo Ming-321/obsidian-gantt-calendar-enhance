@@ -205,6 +205,51 @@ Gantt Calendar Plugin Styles - 甘特日历
 	box-shadow: 0 0 0 2px var(--interactive-accent-rgb, rgba(138, 109, 255, 0.1));
 }
 
+/* 日期筛选组 */
+.toolbar-right-task-date-filter-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.toolbar-right-task-date-filter-label {
+	font-size: 14px;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.toolbar-right-task-date-input {
+	padding: 4px 8px;
+	border: 1px solid var(--input-border-color);
+	border-radius: 4px;
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: 12px;
+}
+
+.toolbar-right-task-date-mode-btn {
+	padding: 2px 6px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 12px;
+	color: var(--text-muted);
+	transition: all 0.15s ease;
+}
+
+.toolbar-right-task-date-mode-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.toolbar-right-task-date-mode-btn.active {
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: white;
+}
+
 .calendar-nav-buttons {
 	display: flex;
 	align-items: center;
