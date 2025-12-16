@@ -202,9 +202,21 @@ export class TaskCacheManager {
 		
 		// 批量处理文件，避免阻塞UI
 		const batchSize = 50;
+		let scannedFiles = 0;
+		let filesWithTasks = 0;
+		let totalTasks = 0;
 		for (let i = 0; i < markdownFiles.length; i += batchSize) {
 			const batch = markdownFiles.slice(i, i + batchSize);
-			await Promise.all(batch.map(file => this.updateFileCache(file)));
+			const batchResults = await Promise.all(batch.map(async (file) => {
+				const info = await this.updateFileCache(file, true);
+				return info;
+			}));
+			batchResults.forEach(info => {
+				if (!info) return;
+				scannedFiles += 1;
+				if (info.taskCount > 0) filesWithTasks += 1;
+				totalTasks += info.taskCount;
+			});
 			
 			// 让出主线程，避免卡顿
 			if (i % 200 === 0) {
@@ -215,15 +227,21 @@ export class TaskCacheManager {
 		this.isInitialized = true;
 		this.isInitializing = false;
 		
-		const totalTasks = Array.from(this.cache.values()).reduce((sum, tasks) => sum + tasks.length, 0);
+		const cachedTasks = Array.from(this.cache.values()).reduce((sum, tasks) => sum + tasks.length, 0);
 		console.timeEnd(timerLabel);
-		console.log(`[TaskCache] Initialized with ${totalTasks} tasks from ${markdownFiles.length} files`);
+		console.log('[TaskCache] Init summary', {
+			totalFiles: markdownFiles.length,
+			scannedFiles,
+			filesWithTasks,
+			tasksFound: totalTasks,
+			cachedTasks,
+		});
 	}
 
 	/**
 	 * 更新单个文件的缓存
 	 */
-	async updateFileCache(file: TFile): Promise<void> {
+	async updateFileCache(file: TFile, silent?: boolean): Promise<{ taskCount: number } | null> {
 		try {
 			const fileCache = this.app.metadataCache.getFileCache(file);
 			const listItems = fileCache?.listItems;
@@ -234,7 +252,7 @@ export class TaskCacheManager {
 					this.cache.delete(file.path);
 					this.notifyListeners();
 				}
-				return;
+				return { taskCount: 0 };
 			}
 
 			const content = await this.app.vault.read(file);
@@ -244,7 +262,7 @@ export class TaskCacheManager {
 			const prev = this.cache.get(file.path) || [];
 			if (this.areTasksEqual(prev, tasks)) {
 				// 无变化不通知
-				return;
+				return { taskCount: tasks.length };
 			}
 
 			if (tasks.length > 0) {
@@ -253,10 +271,15 @@ export class TaskCacheManager {
 				this.cache.delete(file.path);
 			}
 
+			if (!silent) {
+				console.log('[TaskCache] Updated file', file.path, { taskCount: tasks.length });
+			}
 			this.notifyListeners();
+			return { taskCount: tasks.length };
 		} catch (error) {
 			console.error(`[TaskCache] Error updating cache for ${file.path}:`, error);
 			this.cache.delete(file.path);
+			return { taskCount: 0 };
 		}
 	}
 
