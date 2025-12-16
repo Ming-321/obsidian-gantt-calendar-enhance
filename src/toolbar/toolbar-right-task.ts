@@ -32,16 +32,16 @@ export class ToolbarRightTask {
 		// 状态筛选 - 由 TaskViewRenderer 创建
 		taskRenderer.createStatusFilterGroup(container, onFilterChange);
 
-		// 时间筛选组
-		const timeFilterGroup = container.createDiv('toolbar-right-task-time-filter-group');
-		const timeLabel = timeFilterGroup.createEl('span', { 
-			text: '时间筛选', 
-			cls: 'toolbar-right-task-time-filter-label' 
+		// 字段筛选组
+		const fieldFilterGroup = container.createDiv('toolbar-right-task-field-filter-group');
+		const fieldLabel = fieldFilterGroup.createEl('span', { 
+			text: '字段筛选', 
+			cls: 'toolbar-right-task-field-filter-label' 
 		});
 		
-		// 时间字段选择
-		const fieldSelect = timeFilterGroup.createEl('select', { 
-			cls: 'toolbar-right-task-time-field-select' 
+		// 字段选择
+		const fieldSelect = fieldFilterGroup.createEl('select', { 
+			cls: 'toolbar-right-task-field-select' 
 		});
 		fieldSelect.innerHTML = `
 			<option value="createdDate">创建时间</option>
