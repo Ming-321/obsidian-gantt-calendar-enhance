@@ -58,6 +58,15 @@ export default class GanttCalendarPlugin extends Plugin {
             })
         );
 
+        // Listen to metadata changes (faster signal than full file reads)
+        this.registerEvent(
+            this.app.metadataCache.on('changed', (file) => {
+                if (file instanceof TFile && file.extension === 'md') {
+                    this.taskCache.updateFileCache(file);
+                }
+            })
+        );
+
         // Register the calendar view
         this.registerView(CALENDAR_VIEW_ID, (leaf) => new CalendarView(leaf, this));
         // Register the task management view

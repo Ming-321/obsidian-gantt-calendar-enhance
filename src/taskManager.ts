@@ -1,4 +1,4 @@
-import { App, TFile } from 'obsidian';
+import { App, TFile, ListItemCache } from 'obsidian';
 import { GanttTask } from './types';
 
 /**
@@ -10,62 +10,17 @@ export async function searchTasks(app: App, globalTaskFilter: string, enabledFor
 	const formats = enabledFormats || ['tasks', 'dataview'];
 
 	for (const file of markdownFiles) {
+		const fileCache = app.metadataCache.getFileCache(file);
+		const listItems = fileCache?.listItems;
+		// 没有列表项就不读取文件，跳过
+		if (!listItems || listItems.length === 0) {
+			continue;
+		}
+
 		const content = await app.vault.read(file);
 		const lines = content.split('\n');
-
-		lines.forEach((line, index) => {
-			// 检查是否是任务行（以 [ ] 或 [x] 开头）
-			const taskMatch = line.match(/^\s*[-*]\s*\[([ xX])\]\s*(.*)/);
-			if (!taskMatch) return;
-
-			const [, checkedStatus, taskContent] = taskMatch;
-			const isCompleted = checkedStatus.toLowerCase() === 'x';
-
-			// 检查任务头部是否包含全局筛选标记（仅检查头部）
-			if (globalTaskFilter) {
-				const trimmedContent = taskContent.trim();
-				if (!trimmedContent.startsWith(globalTaskFilter)) {
-					return;
-				}
-			}
-
-			// 移除头部筛选标记
-			const contentWithoutFilter = globalTaskFilter
-				? taskContent.replace(new RegExp(`^\\s*${escapeRegExp(globalTaskFilter)}\\s*`), '')
-				: taskContent;
-
-			// 提取日期和其他属性
-			const task: GanttTask = {
-				filePath: file.path,
-				fileName: file.basename,
-				lineNumber: index + 1,
-				content: contentWithoutFilter,
-				completed: isCompleted,
-			};
-
-			// 根据启用的格式解析日期
-			let hasTasksFormat = false;
-			let hasDataviewFormat = false;
-			
-			if (formats.includes('tasks')) {
-				hasTasksFormat = parseTasksFormat(contentWithoutFilter, task);
-			}
-			if (formats.includes('dataview')) {
-				hasDataviewFormat = parseDataviewFormat(contentWithoutFilter, task);
-			}
-
-			// 检测混用格式
-			if (hasTasksFormat && hasDataviewFormat) {
-				task.warning = '混用任务格式，请修改';
-			}
-			// 检测是否缺少任何属性（除了content和基本信息）
-			else if (!task.priority && !task.createdDate && !task.startDate && 
-			         !task.scheduledDate && !task.dueDate && !task.cancelledDate && !task.completionDate) {
-				task.warning = '未规划任务时间，请设置';
-			}
-
-			tasks.push(task);
-		});
+		const parsed = parseTasksFromListItems(file, lines, listItems, formats, globalTaskFilter);
+		tasks.push(...parsed);
 	}
 
 	return tasks.sort((a, b) => {
@@ -270,16 +225,34 @@ export class TaskCacheManager {
 	 */
 	async updateFileCache(file: TFile): Promise<void> {
 		try {
+			const fileCache = this.app.metadataCache.getFileCache(file);
+			const listItems = fileCache?.listItems;
+
+			// 如果没有列表项，移除缓存并仅在有变动时通知
+			if (!listItems || listItems.length === 0) {
+				if (this.cache.has(file.path)) {
+					this.cache.delete(file.path);
+					this.notifyListeners();
+				}
+				return;
+			}
+
 			const content = await this.app.vault.read(file);
-			const tasks = this.parseFileTasks(file, content);
-			
+			const lines = content.split('\n');
+			const tasks = parseTasksFromListItems(file, lines, listItems, this.enabledFormats, this.globalTaskFilter);
+
+			const prev = this.cache.get(file.path) || [];
+			if (this.areTasksEqual(prev, tasks)) {
+				// 无变化不通知
+				return;
+			}
+
 			if (tasks.length > 0) {
 				this.cache.set(file.path, tasks);
 			} else {
 				this.cache.delete(file.path);
 			}
 
-			// 通知所有监听器，缓存已更新
 			this.notifyListeners();
 		} catch (error) {
 			console.error(`[TaskCache] Error updating cache for ${file.path}:`, error);
@@ -290,52 +263,26 @@ export class TaskCacheManager {
 	/**
 	 * 解析单个文件的所有任务
 	 */
-	private parseFileTasks(file: TFile, content: string): GanttTask[] {
-		const tasks: GanttTask[] = [];
-		const lines = content.split('\n');
-
-		lines.forEach((line, index) => {
-			const taskMatch = line.match(/^\s*[-*]\s*\[([ xX])\]\s*(.*)/);
-			if (!taskMatch) return;
-
-			const [, checkedStatus, taskContent] = taskMatch;
-			const isCompleted = checkedStatus.toLowerCase() === 'x';
-
-			// 检查全局筛选标记
-			if (this.globalTaskFilter) {
-				const trimmedContent = taskContent.trim();
-				if (!trimmedContent.startsWith(this.globalTaskFilter)) {
-					return;
-				}
-			}
-
-			// 移除头部筛选标记
-			const contentWithoutFilter = this.globalTaskFilter
-				? taskContent.replace(new RegExp(`^\\s*${escapeRegExp(this.globalTaskFilter)}\\s*`), '')
-				: taskContent;
-
-			const task: GanttTask = {
-				filePath: file.path,
-				fileName: file.basename,
-				lineNumber: index + 1,
-				content: contentWithoutFilter,
-				completed: isCompleted,
-			};
-
-			// 根据启用的格式解析日期
-			if (this.enabledFormats.includes('tasks')) {
-				parseTasksFormat(contentWithoutFilter, task);
-			}
-			if (this.enabledFormats.includes('dataview')) {
-				parseDataviewFormat(contentWithoutFilter, task);
-			}
-
-			tasks.push(task);
-		});
-
-		return tasks;
+	private areTasksEqual(a: GanttTask[], b: GanttTask[]): boolean {
+		if (a.length !== b.length) return false;
+		for (let i = 0; i < a.length; i++) {
+			const ta = a[i];
+			const tb = b[i];
+			if (ta.filePath !== tb.filePath) return false;
+			if (ta.lineNumber !== tb.lineNumber) return false;
+			if (ta.content !== tb.content) return false;
+			if (ta.completed !== tb.completed) return false;
+			if ((ta.priority || '') !== (tb.priority || '')) return false;
+			if ((ta.format || '') !== (tb.format || '')) return false;
+			if (dateValue(ta.createdDate) !== dateValue(tb.createdDate)) return false;
+			if (dateValue(ta.startDate) !== dateValue(tb.startDate)) return false;
+			if (dateValue(ta.scheduledDate) !== dateValue(tb.scheduledDate)) return false;
+			if (dateValue(ta.dueDate) !== dateValue(tb.dueDate)) return false;
+			if (dateValue(ta.cancelledDate) !== dateValue(tb.cancelledDate)) return false;
+			if (dateValue(ta.completionDate) !== dateValue(tb.completionDate)) return false;
+		}
+		return true;
 	}
-
 	/**
 	 * 移除文件的缓存
 	 */
@@ -424,6 +371,67 @@ export class TaskCacheManager {
 		});
 	}
 }
+
+	function dateValue(d?: Date): number | undefined {
+		return d ? d.getTime() : undefined;
+	}
+
+	function parseTasksFromListItems(
+		file: TFile,
+		lines: string[],
+		listItems: ListItemCache[],
+		enabledFormats: string[],
+		globalTaskFilter: string
+	): GanttTask[] {
+		const tasks: GanttTask[] = [];
+
+		for (const item of listItems) {
+			const lineNumber = item.position.start.line;
+			const line = lines[lineNumber];
+			if (!line) continue;
+
+			const taskMatch = line.match(/^\s*[-*]\s*\[([ xX])\]\s*(.*)/);
+			if (!taskMatch) continue;
+
+			const [, checkedStatus, taskContent] = taskMatch;
+			const isCompleted = checkedStatus.toLowerCase() === 'x';
+
+			if (globalTaskFilter) {
+				const trimmedContent = taskContent.trim();
+				if (!trimmedContent.startsWith(globalTaskFilter)) {
+					continue;
+				}
+			}
+
+			const contentWithoutFilter = globalTaskFilter
+				? taskContent.replace(new RegExp(`^\s*${escapeRegExp(globalTaskFilter)}\s*`), '')
+				: taskContent;
+
+			const task: GanttTask = {
+				filePath: file.path,
+				fileName: file.basename,
+				lineNumber: lineNumber + 1, // convert to 1-based
+				content: contentWithoutFilter,
+				completed: isCompleted,
+			};
+
+			const hasTasksFormat = enabledFormats.includes('tasks') ? parseTasksFormat(contentWithoutFilter, task) : false;
+			const hasDataviewFormat = enabledFormats.includes('dataview') ? parseDataviewFormat(contentWithoutFilter, task) : false;
+
+			// 检测混用格式或缺少属性
+			if (hasTasksFormat && hasDataviewFormat) {
+				task.warning = '混用任务格式，请修改';
+			} else if (!task.priority && !task.createdDate && !task.startDate &&
+			           !task.scheduledDate && !task.dueDate && !task.cancelledDate && !task.completionDate) {
+				task.warning = '未规划任务时间，请设置';
+			}
+
+			tasks.push(task);
+		}
+
+		// 保持排序：按文件内行号
+		return tasks.sort((a, b) => a.lineNumber - b.lineNumber);
+	}
 
 /**
  * 更新任务的完成状态
