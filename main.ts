@@ -3,7 +3,7 @@ import { CalendarView, CALENDAR_VIEW_ID } from './src/CalendarView';
 import { GanttCalendarSettings, DEFAULT_SETTINGS, GanttCalendarSettingTab } from './src/settings';
 import { searchTasks, TaskCacheManager } from './src/taskManager';
 import { TaskListModal } from './src/taskModal';
-import './src/styles/task-view-filters.css';
+import './src/toolbar/styles/toolbar.css';
 
 export default class GanttCalendarPlugin extends Plugin {
     settings: GanttCalendarSettings;
