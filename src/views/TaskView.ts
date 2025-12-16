@@ -45,10 +45,10 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	 * 创建状态筛选组（在工具栏右侧功能区调用）
 	 */
 	public createStatusFilterGroup(container: HTMLElement, onFilterChange: () => void): void {
-		const statusFilterGroup = container.createDiv('gantt-filter-group');
-		const statusLabel = statusFilterGroup.createEl('span', { text: '状态', cls: 'gantt-filter-group-label' });
+		const statusFilterGroup = container.createDiv('toolbar-right-task-status-group');
+		const statusLabel = statusFilterGroup.createEl('span', { text: '状态', cls: 'toolbar-right-task-status-label' });
 		
-		const statusSelect = statusFilterGroup.createEl('select', { cls: 'gantt-filter-select' });
+		const statusSelect = statusFilterGroup.createEl('select', { cls: 'toolbar-right-task-status-select' });
 		statusSelect.innerHTML = `
 			<option value="all">全部</option>
 			<option value="uncompleted">未完成</option>

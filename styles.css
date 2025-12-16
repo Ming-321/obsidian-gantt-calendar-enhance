@@ -178,7 +178,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 .toolbar-right-task {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 6px;
 	flex: 0 1 auto;
 	justify-content: flex-end;
 	flex-wrap: wrap;
@@ -1325,13 +1325,13 @@ Gantt Calendar Plugin Styles - 甘特日历
 	white-space: nowrap;
 }
 
-.gantt-filter-group {
+.toolbar-right-task-status-group {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
-.toolbar-right-task-time-filter-label {
+.toolbar-right-task-status-label {
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--text-muted);
@@ -1339,10 +1339,32 @@ Gantt Calendar Plugin Styles - 甘特日历
 	margin: 0 8px;
 }
 
-.toolbar-right-task-divider {
-	width: 1px;
-	height: 24px;
-	background-color: var(--divider-color);
+.toolbar-right-task-status-select {
+	padding: 4px 8px;
+	border: 1px solid var(--input-border-color);
+	border-radius: 4px;
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.toolbar-right-task-status-select:hover {
+	border-color: var(--interactive-accent);
+}
+
+.toolbar-right-task-status-select:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px var(--interactive-accent-rgb, rgba(138, 109, 255, 0.1));
+}
+
+.toolbar-right-task-time-filter-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-muted);
+	white-space: nowrap;
 	margin: 0 8px;
 }
 

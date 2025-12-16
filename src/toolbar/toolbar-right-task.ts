@@ -32,9 +32,6 @@ export class ToolbarRightTask {
 		// 状态筛选 - 由 TaskViewRenderer 创建
 		taskRenderer.createStatusFilterGroup(container, onFilterChange);
 
-		// 分割线
-		const divider = container.createDiv('toolbar-right-task-divider');
-
 		// 时间筛选组
 		const timeFilterGroup = container.createDiv('toolbar-right-task-time-filter-group');
 		const timeLabel = timeFilterGroup.createEl('span', { 
