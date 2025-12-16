@@ -577,8 +577,37 @@ export class CalendarView extends ItemView {
 		// Checkbox
 		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
 		checkbox.checked = task.completed;
-		checkbox.disabled = true;
+		checkbox.disabled = false;
 		checkbox.addClass('calendar-week-task-checkbox');
+		checkbox.addClass('gantt-task-checkbox');
+
+		// 复选框变更事件（与日视图一致）
+		checkbox.addEventListener('change', async (e) => {
+			console.log('[CalendarView][Week] Checkbox change event triggered', e);
+			e.stopPropagation();
+			const isNowCompleted = checkbox.checked;
+			try {
+				await updateTaskCompletion(
+					this.app,
+					task,
+					isNowCompleted,
+					this.plugin.settings.enabledTaskFormats
+				);
+				// 本地状态/样式快速反馈（缓存更新后会触发整体刷新）
+				taskItem.toggleClass('completed', isNowCompleted);
+				taskItem.toggleClass('pending', !isNowCompleted);
+			} catch (error) {
+				console.error('Error updating task (week view):', error);
+				new Notice('更新任务失败');
+				checkbox.checked = task.completed;
+			}
+		});
+
+		// 避免点击复选框触发打开文件
+		checkbox.addEventListener('click', (e) => {
+			console.log('[CalendarView][Week] Checkbox click event triggered', e);
+			e.stopPropagation();
+		});
 
 		// Task content: only clean description, no global filter, priority, or time properties
 		const cleaned = this.cleanTaskDescription(task.content);
