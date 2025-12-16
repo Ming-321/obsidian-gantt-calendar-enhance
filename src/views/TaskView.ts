@@ -10,7 +10,7 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	private taskFilter: 'all' | 'completed' | 'uncompleted' = 'all';
 	
 	// 时间字段筛选
-	private timeFieldFilter: 'all' | 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'all';
+	private timeFieldFilter: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'dueDate';
 	
 	// 时间值筛选
 	private timeValueFilter: Date | null = null;
@@ -25,7 +25,7 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 		this.taskFilter = value;
 	}
 
-	public getTimeFilterField(): 'all' | 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' {
+	public getTimeFilterField(): 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' {
 		return this.timeFieldFilter;
 	}
 
@@ -68,8 +68,8 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 				tasks = tasks.filter(t => !t.completed);
 			}
 
-			// 应用时间字段筛选（如果选择了特定字段和日期）
-			if (this.timeFieldFilter !== 'all' && this.timeValueFilter) {
+		// 应用时间字段筛选（如果选择了日期）
+		if (this.timeValueFilter) {
 				tasks = tasks.filter(task => {
 					const dateValue = (task as any)[this.timeFieldFilter];
 					if (!dateValue) return false;

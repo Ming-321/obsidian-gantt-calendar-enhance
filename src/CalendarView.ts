@@ -214,7 +214,6 @@ export class CalendarView extends ItemView {
 		// 时间字段选择
 		const fieldSelect = timeFilterGroup.createEl('select', { cls: 'gantt-filter-select gantt-time-field-select' });
 		fieldSelect.innerHTML = `
-			<option value="all">全部时间</option>
 			<option value="createdDate">创建时间</option>
 			<option value="startDate">开始时间</option>
 			<option value="scheduledDate">规划时间</option>
@@ -224,39 +223,9 @@ export class CalendarView extends ItemView {
 		`;
 		fieldSelect.value = this.taskRenderer.getTimeFilterField();
 		fieldSelect.addEventListener('change', (e) => {
-			const value = (e.target as HTMLSelectElement).value as any;
+			const value = (e.target as HTMLSelectElement).value as 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate';
 			this.taskRenderer.setTimeFilterField(value);
 			this.render();
-		});
-
-		// 时间输入框 + 日期选择器
-		const dateInputGroup = timeFilterGroup.createDiv('gantt-date-input-group');
-		
-		const dateInput = dateInputGroup.createEl('input', { 
-			type: 'text',
-			cls: 'gantt-date-input',
-			attr: { 
-				placeholder: 'YYYY-MM-DD',
-				readonly: 'readonly'
-			}
-		});
-		const currentDate = this.taskRenderer.getSpecificDate();
-		if (currentDate) {
-			dateInput.value = formatDate(currentDate, 'YYYY-MM-DD');
-		}
-
-		// 日历 Emoji 图标 - 点击弹出日期选择器
-		const calendarIcon = dateInputGroup.createEl('button', { 
-			text: '📅',
-			cls: 'gantt-calendar-icon'
-		});
-
-		calendarIcon.addEventListener('click', () => {
-			this.showDatePickerPopover(calendarIcon, dateInput);
-		});
-
-		dateInput.addEventListener('click', () => {
-			this.showDatePickerPopover(calendarIcon, dateInput);
 		});
 
 		// 刷新按钮
@@ -320,7 +289,7 @@ export class CalendarView extends ItemView {
 	/**
 	 * 显示日期选择器弹窗
 	 */
-	private showDatePickerPopover(triggerElement: HTMLElement, dateInput: HTMLInputElement): void {
+	private showDatePickerPopover(triggerElement: HTMLElement): void {
 		// 创建弹出菜单容器
 		const popover = document.body.createDiv('gantt-date-picker-popover');
 		
@@ -406,7 +375,6 @@ export class CalendarView extends ItemView {
 
 				dayEl.addEventListener('click', () => {
 					this.taskRenderer.setSpecificDate(dateObj);
-					dateInput.value = formatDate(dateObj, 'YYYY-MM-DD');
 					selectedDate = dateObj;
 					popover.remove();
 					this.render();
