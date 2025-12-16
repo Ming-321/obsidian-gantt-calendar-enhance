@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf, Plugin, setIcon, TFile, MarkdownRenderer, Notice } from 'obsidian';
 import { CalendarViewType } from './types';
 import { generateMonthCalendar, getWeekOfDate, formatDate, formatMonth, isToday, isThisWeek, isThisMonth, openFileInExistingLeaf } from './utils';
-import { searchTasks } from './taskManager';
+import { searchTasks, updateTaskCompletion } from './taskManager';
 import type { GanttTask } from './types';
 
 export const CALENDAR_VIEW_ID = 'gantt-calendar-view';
@@ -1231,7 +1231,6 @@ export class CalendarView extends ItemView {
 			e.stopPropagation(); // 防止事件冒泡
 			const isNowCompleted = checkbox.checked;
 			try {
-				const { updateTaskCompletion } = await import('./taskManager');
 				await updateTaskCompletion(
 					this.app,
 					task,
