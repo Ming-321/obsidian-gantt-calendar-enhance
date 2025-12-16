@@ -1,0 +1,276 @@
+import { App, Notice } from 'obsidian';
+import type { GanttTask } from '../types';
+import { formatDate, openFileInExistingLeaf } from '../utils';
+import { updateTaskCompletion } from '../taskManager';
+
+/**
+ * 日历渲染器基类
+ * 提供子视图共享的工具方法和状态管理
+ */
+export abstract class BaseCalendarRenderer {
+	protected app: App;
+	protected plugin: any;
+	protected domCleanups: Array<() => void> = [];
+
+	constructor(app: App, plugin: any) {
+		this.app = app;
+		this.plugin = plugin;
+	}
+
+	/**
+	 * 渲染视图内容 - 子类必须实现
+	 */
+	abstract render(container: HTMLElement, currentDate: Date): void;
+
+	/**
+	 * 清理任务描述中的元数据标记
+	 */
+	protected cleanTaskDescription(raw: string): string {
+		let text = raw;
+		// 移除 Tasks emoji 优先级标记
+		text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+		// 移除 Tasks emoji 日期属性
+		text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
+		// 移除 Dataview [field:: value] 块
+		text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
+		// 折叠多余空格
+		text = text.replace(/\s{2,}/g, ' ').trim();
+		return text;
+	}
+
+	/**
+	 * 获取优先级图标
+	 */
+	protected getPriorityIcon(priority?: string): string {
+		switch (priority) {
+			case 'highest': return '🔺';
+			case 'high': return '⏫';
+			case 'medium': return '🔼';
+			case 'low': return '🔽';
+			case 'lowest': return '⏬';
+			default: return '';
+		}
+	}
+
+	/**
+	 * 格式化日期显示
+	 */
+	protected formatDateForDisplay(date: Date): string {
+		return formatDate(date, 'YYYY-MM-DD');
+	}
+
+	/**
+	 * 注册 DOM 清理回调
+	 */
+	protected registerDomCleanup(fn: () => void): void {
+		this.domCleanups.push(fn);
+	}
+
+	/**
+	 * 执行所有 DOM 清理回调
+	 */
+	public runDomCleanups(): void {
+		if (this.domCleanups.length === 0) return;
+		for (const fn of this.domCleanups) {
+			try {
+				fn();
+			} catch (err) {
+				console.error('[BaseCalendarRenderer] Error during DOM cleanup', err);
+			}
+		}
+		this.domCleanups = [];
+	}
+
+	/**
+	 * 清理悬浮提示
+	 */
+	protected clearTaskTooltips(): void {
+		const tooltips = document.querySelectorAll('.calendar-week-task-tooltip');
+		tooltips.forEach(t => t.remove());
+	}
+
+	/**
+	 * 渲染任务复选框（复用逻辑）
+	 */
+	protected createTaskCheckbox(task: GanttTask, taskItem: HTMLElement): HTMLInputElement {
+		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+		checkbox.checked = task.completed;
+		checkbox.disabled = false;
+		checkbox.addClass('gantt-task-checkbox');
+
+		checkbox.addEventListener('change', async (e) => {
+			e.stopPropagation();
+			this.clearTaskTooltips();
+			const isNowCompleted = checkbox.checked;
+			try {
+				await updateTaskCompletion(
+					this.app,
+					task,
+					isNowCompleted,
+					this.plugin.settings.enabledTaskFormats
+				);
+				taskItem.toggleClass('completed', isNowCompleted);
+				taskItem.toggleClass('pending', !isNowCompleted);
+			} catch (error) {
+				console.error('Error updating task:', error);
+				new Notice('更新任务失败');
+				checkbox.checked = task.completed;
+			}
+		});
+
+		checkbox.addEventListener('click', (e) => {
+			e.stopPropagation();
+		});
+
+		return checkbox;
+	}
+
+	/**
+	 * 创建任务悬浮提示
+	 */
+	protected createTaskTooltip(
+		task: GanttTask,
+		taskItem: HTMLElement,
+		cleaned: string
+	): void {
+		let tooltip: HTMLElement | null = null;
+		let hideTimeout: number | null = null;
+
+		const showTooltip = (e: MouseEvent) => {
+			if (hideTimeout) {
+				window.clearTimeout(hideTimeout);
+				hideTimeout = null;
+			}
+
+			if (tooltip) {
+				tooltip.remove();
+			}
+
+			tooltip = document.body.createDiv('calendar-week-task-tooltip');
+			tooltip.style.opacity = '0';
+
+			// 任务描述
+			const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
+			const displayText = this.plugin?.settings?.showGlobalFilterInTaskText && gf ? `${gf} ${cleaned}` : cleaned;
+			const descDiv = tooltip.createDiv('tooltip-description');
+			descDiv.createEl('strong', { text: displayText });
+
+			// 优先级
+			if (task.priority) {
+				const priorityDiv = tooltip.createDiv('tooltip-priority');
+				const priorityIcon = this.getPriorityIcon(task.priority);
+				priorityDiv.createEl('span', { text: `${priorityIcon} 优先级: ${task.priority}`, cls: `priority-${task.priority}` });
+			}
+
+			// 时间属性
+			const hasTimeProperties = task.createdDate || task.startDate || task.scheduledDate ||
+				task.dueDate || task.cancelledDate || task.completionDate;
+
+			if (hasTimeProperties) {
+				const timeDiv = tooltip.createDiv('tooltip-time-properties');
+
+				if (task.createdDate) {
+					timeDiv.createEl('div', { text: `➕ 创建: ${this.formatDateForDisplay(task.createdDate)}`, cls: 'tooltip-time-item' });
+				}
+
+				if (task.startDate) {
+					timeDiv.createEl('div', { text: `🛫 开始: ${this.formatDateForDisplay(task.startDate)}`, cls: 'tooltip-time-item' });
+				}
+
+				if (task.scheduledDate) {
+					timeDiv.createEl('div', { text: `⏳ 计划: ${this.formatDateForDisplay(task.scheduledDate)}`, cls: 'tooltip-time-item' });
+				}
+
+				if (task.dueDate) {
+					const dueText = `📅 截止: ${this.formatDateForDisplay(task.dueDate)}`;
+					const dueEl = timeDiv.createEl('div', { text: dueText, cls: 'tooltip-time-item' });
+					if (task.dueDate < new Date() && !task.completed) {
+						dueEl.addClass('tooltip-overdue');
+					}
+				}
+
+				if (task.cancelledDate) {
+					timeDiv.createEl('div', { text: `❌ 取消: ${this.formatDateForDisplay(task.cancelledDate)}`, cls: 'tooltip-time-item' });
+				}
+
+				if (task.completionDate) {
+					timeDiv.createEl('div', { text: `✅ 完成: ${this.formatDateForDisplay(task.completionDate)}`, cls: 'tooltip-time-item' });
+				}
+			}
+
+			// 文件位置
+			const fileDiv = tooltip.createDiv('tooltip-file');
+			fileDiv.createEl('span', { text: `📄 ${task.fileName}:${task.lineNumber}`, cls: 'tooltip-file-location' });
+
+			// 定位悬浮提示
+			const rect = taskItem.getBoundingClientRect();
+			const tooltipWidth = 300;
+			const tooltipHeight = tooltip.offsetHeight;
+
+			let left = rect.right + 10;
+			let top = rect.top;
+
+			if (left + tooltipWidth > window.innerWidth) {
+				left = rect.left - tooltipWidth - 10;
+			}
+
+			if (left < 0) {
+				left = (window.innerWidth - tooltipWidth) / 2;
+			}
+
+			if (top + tooltipHeight > window.innerHeight) {
+				top = window.innerHeight - tooltipHeight - 10;
+			}
+			if (top < 0) {
+				top = 10;
+			}
+
+			tooltip.style.left = `${left}px`;
+			tooltip.style.top = `${top}px`;
+
+			setTimeout(() => {
+				if (tooltip) {
+					tooltip.style.opacity = '1';
+					tooltip.addClass('tooltip-show');
+				}
+			}, 10);
+		};
+
+		const hideTooltip = () => {
+			hideTimeout = window.setTimeout(() => {
+				if (tooltip) {
+					tooltip.removeClass('tooltip-show');
+					tooltip.style.opacity = '0';
+
+					setTimeout(() => {
+						if (tooltip) {
+							tooltip.remove();
+							tooltip = null;
+						}
+					}, 200);
+				}
+			}, 100);
+		};
+
+		this.registerDomCleanup(() => {
+			if (tooltip) {
+				tooltip.remove();
+				tooltip = null;
+			}
+			if (hideTimeout) {
+				window.clearTimeout(hideTimeout);
+				hideTimeout = null;
+			}
+		});
+
+		taskItem.addEventListener('mouseenter', showTooltip);
+		taskItem.addEventListener('mouseleave', hideTooltip);
+	}
+
+	/**
+	 * 打开任务所在文件
+	 */
+	protected async openTaskFile(task: GanttTask): Promise<void> {
+		await openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
+	}
+}
