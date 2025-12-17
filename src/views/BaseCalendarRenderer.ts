@@ -355,6 +355,9 @@ export abstract class BaseCalendarRenderer {
 				link.setAttr('target', '_blank');
 				link.setAttr('rel', 'noopener noreferrer');
 				link.setAttr('title', url);
+				link.addEventListener('click', (e) => {
+					e.stopPropagation();
+				});
 			} else if (m.type === 'url') {
 				const url = m.groups[1]; // 完整URL
 				const link = container.createEl('a', { text: url, cls: 'gantt-task-link url-link' });
@@ -362,6 +365,9 @@ export abstract class BaseCalendarRenderer {
 				link.setAttr('target', '_blank');
 				link.setAttr('rel', 'noopener noreferrer');
 				link.setAttr('title', url);
+				link.addEventListener('click', (e) => {
+					e.stopPropagation();
+				});
 			}
 
 			lastIndex = m.end;
