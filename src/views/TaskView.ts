@@ -74,10 +74,10 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	}
 
 	render(container: HTMLElement, currentDate: Date): void {
-		container.addClass('gantt-task-view');
+		container.addClass('task-view-container');
 
-		const statsContainer = container.createDiv('gantt-task-stats');
-		const listContainer = container.createDiv('gantt-task-list');
+		const statsContainer = container.createDiv('task-view-stats');
+		const listContainer = container.createDiv('task-view-list');
 
 		this.loadTaskList(statsContainer, listContainer);
 	}

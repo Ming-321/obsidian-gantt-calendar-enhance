@@ -21,7 +21,7 @@ export interface GanttCalendarSettings {
 	globalTaskFilter: string;
 	enabledTaskFormats: string[];
 	showGlobalFilterInTaskText: boolean; // 是否在任务列表文本中显示 global filter 前缀
-	dateFilterField: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate'; // 日期筛选使用的字段
+	dateFilterField: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate'; // 日历视图的筛选字段，任务视图的初始字段
 	enableDailyNote: boolean; // 是否在日视图中显示 Daily Note
 	dayViewLayout: 'horizontal' | 'vertical'; // 日视图布局：水平（左右分屏）或垂直（上下分屏）
 	dailyNotePath: string; // Daily note 文件夹路径
@@ -117,18 +117,23 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					this.plugin.refreshCalendarViews();
 				}));
 
+
+
+		// ===== 日历视图设置 =====
+		containerEl.createEl('h1', { text: '日历视图设置' });
+
 		// 日期筛选字段
 		new Setting(containerEl)
 			.setName('日期筛选字段')
-			.setDesc('选择在日历视图中用于日期范围筛选的日期字段')
+			.setDesc('日历视图始终使用此字段筛选任务；任务视图可在工具栏灵活切换')
 			.addDropdown(drop => drop
 				.addOptions({
-					'createdDate': '创建日期',
-					'startDate': '开始日期',
-					'scheduledDate': '计划日期',
-					'dueDate': '截止日期',
-					'completionDate': '完成日期',
-					'cancelledDate': '取消日期',
+					'createdDate': '➕ 创建日期',
+					'startDate': '🛫 开始日期',
+					'scheduledDate': '⏳ 计划日期',
+					'dueDate': '📅 截止日期',
+					'completionDate': '✅ 完成日期',
+					'cancelledDate': '❌ 取消日期',
 				})
 				.setValue(this.plugin.settings.dateFilterField)
 				.onChange(async (value) => {
@@ -136,10 +141,6 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					this.plugin.refreshCalendarViews();
 				}));
-
-
-		// ===== 日历视图设置 =====
-		containerEl.createEl('h1', { text: '日历视图设置' });
 
 		// 年视图农历字号
 		new Setting(containerEl)

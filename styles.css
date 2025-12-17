@@ -1319,7 +1319,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 	text-align: center;
 }
 
-.gantt-task-stats {
+.task-view-stats {
 	display: flex;
 	gap: 16px;
 	padding: 12px;
@@ -1329,13 +1329,13 @@ Gantt Calendar Plugin Styles - 甘特日历
 	font-size: 12px;
 }
 
-.gantt-task-stats span {
+.task-view-stats span {
 	flex: 1;
 	text-align: center;
 	color: var(--text-normal);
 }
 
-.gantt-task-list {
+.task-view-list {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -1360,7 +1360,7 @@ Gantt Calendar Plugin Styles - 甘特日历
 }
 
 /* Task View (pane) */
-.gantt-task-view {
+.task-view-container {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
@@ -1437,11 +1437,16 @@ Gantt Calendar Plugin Styles - 甘特日历
 	color: white;
 }
 
-.gantt-task-view .gantt-task-list {
+.task-view-container .task-view-list {
 	max-height: none;
 	height: 100%;
 	overflow: auto;
 }
+
+/* ========================================
+   Legacy/Shared Task Item Styles
+   These are used by both task view and calendar day views
+   ======================================== */
 .gantt-task-item:hover,
 .calendar-day-task-item:hover {
 	background-color: var(--background-modifier-hover);

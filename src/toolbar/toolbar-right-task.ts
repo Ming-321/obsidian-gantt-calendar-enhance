@@ -47,12 +47,12 @@ export class ToolbarRightTask {
 			cls: 'toolbar-right-task-field-select' 
 		});
 		fieldSelect.innerHTML = `
-			<option value="createdDate">创建时间</option>
-			<option value="startDate">开始时间</option>
-			<option value="scheduledDate">规划时间</option>
-			<option value="dueDate">截止时间</option>
-			<option value="completionDate">完成时间</option>
-			<option value="cancelledDate">取消时间</option>
+			<option value="createdDate">➕ 创建时间</option>
+			<option value="startDate">🛫 开始时间</option>
+			<option value="scheduledDate">⏳ 规划时间</option>
+			<option value="dueDate">📅 截止时间</option>
+			<option value="completionDate">✅ 完成时间</option>
+			<option value="cancelledDate">❌ 取消时间</option>
 		`;
 		fieldSelect.value = taskRenderer.getTimeFilterField();
 		fieldSelect.addEventListener('change', (e) => {
