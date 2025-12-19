@@ -630,6 +630,143 @@ export async function updateTaskDateField(
 }
 
 /**
+ * 批量更新任务属性（优先级、完成状态、各日期字段）
+ * 未提供的字段不做更改；传入 null 的日期字段表示清除该字段。
+ */
+export async function updateTaskProperties(
+	app: App,
+	task: GanttTask,
+	updates: {
+		completed?: boolean;
+		priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal' | undefined;
+		createdDate?: Date | null;
+		startDate?: Date | null;
+		scheduledDate?: Date | null;
+		dueDate?: Date | null;
+		cancelledDate?: Date | null;
+		completionDate?: Date | null;
+	},
+	enabledFormats: string[]
+): Promise<void> {
+	const file = app.vault.getAbstractFileByPath(task.filePath);
+	if (!(file instanceof TFile)) {
+		throw new Error(`File not found: ${task.filePath}`);
+	}
+
+	const content = await app.vault.read(file);
+	const lines = content.split('\n');
+
+	const taskLineIndex = task.lineNumber - 1;
+	if (taskLineIndex < 0 || taskLineIndex >= lines.length) {
+		throw new Error(`Invalid line number: ${task.lineNumber}`);
+	}
+
+	let taskLine = lines[taskLineIndex];
+
+	// 更新复选框状态（如果提供）
+	if (typeof updates.completed === 'boolean') {
+		taskLine = taskLine.replace(/\[([ xX])\]/, updates.completed ? '[x]' : '[ ]');
+	}
+
+	// 决定写回格式
+	let formatToUse: 'dataview' | 'tasks' | undefined = task.format;
+	if (!formatToUse) {
+		if (/\[(priority|created|start|scheduled|due|cancelled|completion)::\s*[^\]]+\]/.test(taskLine)) {
+			formatToUse = 'dataview';
+		} else if (/(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}/.test(taskLine)) {
+			formatToUse = 'tasks';
+		} else if (enabledFormats.includes('dataview') && enabledFormats.includes('tasks')) {
+			formatToUse = taskLine.includes('[') ? 'dataview' : 'tasks';
+		} else if (enabledFormats.includes('dataview')) {
+			formatToUse = 'dataview';
+		} else {
+			formatToUse = 'tasks';
+		}
+	}
+
+	// 更新优先级（如果提供）
+	if (updates.priority !== undefined) {
+		if (formatToUse === 'dataview') {
+			// 移除旧的 priority 字段
+			taskLine = taskLine.replace(/\[priority::\s*[^\]]+\]\s*/g, '');
+			// 添加新的（normal 表示不写入字段）
+			if (updates.priority && updates.priority !== 'normal') {
+				taskLine = taskLine.trimEnd() + ` [priority:: ${updates.priority}]`;
+			}
+		} else {
+			// Tasks 格式：移除旧的 emoji，再追加
+			taskLine = taskLine.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+			const emojiMap: Record<string, string> = {
+				highest: '🔺',
+				high: '⏫',
+				medium: '🔼',
+				low: '🔽',
+				lowest: '⏬',
+			};
+			if (updates.priority && updates.priority !== 'normal') {
+				const emoji = emojiMap[updates.priority];
+				if (emoji) {
+					taskLine = taskLine.trimEnd() + ` ${emoji}`;
+				}
+			}
+		}
+	}
+
+	// 日期字段映射
+	const fieldMap: Record<string, string> = {
+		dueDate: 'due',
+		startDate: 'start',
+		scheduledDate: 'scheduled',
+		createdDate: 'created',
+		cancelledDate: 'cancelled',
+		completionDate: 'completion',
+	};
+	const emojiMap: Record<string, string> = {
+		dueDate: '📅',
+		startDate: '🛫',
+		scheduledDate: '⏳',
+		createdDate: '➕',
+		cancelledDate: '❌',
+		completionDate: '✅',
+	};
+
+	// 针对每一个可能的日期字段进行处理
+	for (const key of Object.keys(fieldMap)) {
+		const updateValue = (updates as any)[key];
+		if (updateValue === undefined) continue; // 未提供则跳过
+
+		if (formatToUse === 'dataview') {
+			const fieldKey = fieldMap[key];
+			// 移除旧值
+			const re = new RegExp(`\\[${fieldKey}::\\s*[^\\]]+\\]`, 'g');
+			taskLine = taskLine.replace(re, '');
+			// 添加新值（非 null）
+			if (updateValue !== null) {
+				const dateStr = formatDate(updateValue as Date, 'YYYY-MM-DD');
+				taskLine = taskLine.trimEnd() + ` [${fieldKey}:: ${dateStr}]`;
+			}
+		} else {
+			const emoji = emojiMap[key];
+			if (emoji) {
+				// 移除旧值
+				const re = new RegExp(`${emoji}\\s*\\d{4}-\\d{2}-\\d{2}`, 'g');
+				taskLine = taskLine.replace(re, '');
+				// 添加新值（非 null）
+				if (updateValue !== null) {
+					const dateStr = formatDate(updateValue as Date, 'YYYY-MM-DD');
+					taskLine = taskLine.trimEnd() + ` ${emoji} ${dateStr}`;
+				}
+			}
+		}
+	}
+
+	// 写回
+	lines[taskLineIndex] = taskLine;
+	const newContent = lines.join('\n');
+	await app.vault.modify(file, newContent);
+}
+
+/**
  * 格式化日期为 YYYY-MM-DD
  */
 function formatDate(date: Date, format: string): string {

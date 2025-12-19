@@ -1,11 +1,7 @@
 import { App, Menu } from 'obsidian';
 import type { GanttTask } from '../types';
-import { setTaskStartDate } from './commands/setStartDate';
-import { setTaskDueDate } from './commands/setDueDate';
-import { setTaskScheduledDate } from './commands/setScheduledDate';
-import { setTaskCompletionDate } from './commands/setCompletionDate';
-import { cancelTask } from './commands/cancelTask';
 import { createNoteFromTask } from './commands/createNoteFromTask';
+import { openEditTaskModal } from './commands/editTask';
 
 /**
  * 注册任务右键菜单
@@ -30,59 +26,17 @@ export function registerTaskContextMenu(
 
 		const menu = new Menu();
 
-		// 设置开始日期
+		// 编辑任务（统一模态框）
 		menu.addItem((item) => {
 			item
-				.setTitle('设置开始日期')
-				.setIcon('calendar-plus')
+				.setTitle('编辑任务')
+				.setIcon('pencil')
 				.onClick(() => {
-					setTaskStartDate(app, task, enabledFormats, onRefresh);
+					openEditTaskModal(app, task, enabledFormats, () => {
+						onRefresh();
+					});
 				});
 		});
-
-		// 设置截止日期
-		menu.addItem((item) => {
-			item
-				.setTitle('设置截止日期')
-				.setIcon('calendar-check')
-				.onClick(() => {
-					setTaskDueDate(app, task, enabledFormats, onRefresh);
-				});
-		});
-
-		// 设置计划日期
-		menu.addItem((item) => {
-			item
-				.setTitle('设置计划日期')
-				.setIcon('calendar-clock')
-				.onClick(() => {
-					setTaskScheduledDate(app, task, enabledFormats, onRefresh);
-				});
-		});
-
-		// 设置完成日期
-		menu.addItem((item) => {
-			item
-				.setTitle('设置完成日期')
-				.setIcon('check-circle')
-				.onClick(() => {
-					setTaskCompletionDate(app, task, enabledFormats, onRefresh);
-				});
-		});
-
-		menu.addSeparator();
-
-		// 取消任务
-		menu.addItem((item) => {
-			item
-				.setTitle('取消任务')
-				.setIcon('x-circle')
-				.onClick(() => {
-					cancelTask(app, task, enabledFormats, onRefresh);
-				});
-		});
-
-		menu.addSeparator();
 
 		// 创建任务同名文件
 		menu.addItem((item) => {
