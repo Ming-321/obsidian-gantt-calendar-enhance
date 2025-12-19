@@ -219,7 +219,8 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 			() => {
 				// 刷新任务列表
 				this.loadDayViewTasks(listContainer, targetDate);
-			}
+			},
+			this.plugin?.settings?.globalTaskFilter || ''
 		);
 	}
 

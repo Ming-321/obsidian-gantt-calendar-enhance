@@ -159,7 +159,8 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 				if (container) {
 					this.render(container as HTMLElement, new Date());
 				}
-			}
+			},
+			this.plugin?.settings?.globalTaskFilter || ''
 		);
 	}
 }

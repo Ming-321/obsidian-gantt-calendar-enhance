@@ -18,7 +18,8 @@ export function registerTaskContextMenu(
 	app: App,
 	enabledFormats: string[],
 	defaultNotePath: string,
-	onRefresh: () => void
+	onRefresh: () => void,
+	globalFilter?: string
 ): void {
 	taskElement.addEventListener('contextmenu', (e: MouseEvent) => {
 		e.preventDefault();
@@ -44,7 +45,7 @@ export function registerTaskContextMenu(
 				.setTitle('创建任务同名笔记')
 				.setIcon('file-plus')
 				.onClick(() => {
-					createNoteFromTask(app, task, defaultNotePath);
+					createNoteFromTask(app, task, defaultNotePath, globalFilter || '');
 				});
 		});
 

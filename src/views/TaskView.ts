@@ -238,7 +238,8 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 			() => {
 				// 刷新任务列表
 				this.loadTaskList(listContainer);
-			}
+			},
+			this.plugin?.settings?.globalTaskFilter || ''
 		);
 	}
 }
