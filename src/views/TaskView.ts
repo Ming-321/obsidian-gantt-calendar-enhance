@@ -1,6 +1,7 @@
 import { BaseCalendarRenderer } from './BaseCalendarRenderer';
 import { isToday, isThisWeek, isThisMonth } from '../utils';
 import type { GanttTask } from '../types';
+import { registerTaskContextMenu } from '../contextMenu';
 
 /**
  * 任务视图渲染器
@@ -224,5 +225,20 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 		taskItem.addEventListener('click', async () => {
 			await this.openTaskFile(task);
 		});
+
+		// 注册右键菜单
+		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
+		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
+		registerTaskContextMenu(
+			taskItem,
+			task,
+			this.app,
+			enabledFormats,
+			taskNotePath,
+			() => {
+				// 刷新任务列表
+				this.loadTaskList(listContainer);
+			}
+		);
 	}
 }

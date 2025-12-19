@@ -30,6 +30,7 @@ export interface GanttCalendarSettings {
 	yearShowTaskCount: boolean; // 年视图是否显示每日任务数量
 	yearHeatmapEnabled: boolean; // 年视图是否启用任务热力图
 	yearHeatmapPalette: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'cyan' | 'pink' | 'yellow'; // 热力图色卡选择
+	taskNotePath: string; // 任务笔记默认文件夹路径
 }
 
 export const DEFAULT_SETTINGS: GanttCalendarSettings = {
@@ -51,6 +52,7 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	yearShowTaskCount: true,
 	yearHeatmapEnabled: true,
 	yearHeatmapPalette: 'blue',
+	taskNotePath: 'Tasks', // 默认任务笔记文件夹路径
 };
 
 export class GanttCalendarSettingTab extends PluginSettingTab {
@@ -115,6 +117,18 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 					this.plugin.settings.showGlobalFilterInTaskText = value;
 					await this.plugin.saveSettings();
 					this.plugin.refreshCalendarViews();
+				}));
+
+		// 任务笔记文件夹路径
+		new Setting(containerEl)
+			.setName('任务笔记文件夹路径')
+			.setDesc('从任务创建笔记时的默认存放路径（相对于库根目录）')
+			.addText(text => text
+				.setPlaceholder('Tasks')
+				.setValue(this.plugin.settings.taskNotePath)
+				.onChange(async (value) => {
+					this.plugin.settings.taskNotePath = value;
+					await this.plugin.saveSettings();
 				}));
 
 

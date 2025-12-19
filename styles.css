@@ -1919,3 +1919,79 @@ Gantt Calendar Plugin Styles - 甘特日历
 	font-size: 12px;
 	color: var(--text-muted);
 }
+/* ========================================
+   右键菜单日期选择器模态框
+   ======================================== */
+
+.gantt-date-picker-modal {
+	padding: 20px;
+}
+
+.gantt-date-picker-modal h2 {
+	margin: 0 0 20px 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.gantt-date-picker-modal .setting-item {
+	border: none;
+	padding: 10px 0;
+}
+
+.gantt-date-picker-modal .setting-item-name {
+	font-weight: 500;
+	margin-bottom: 8px;
+}
+
+.gantt-date-picker-modal input[type="date"] {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+.gantt-date-picker-modal input[type="date"]:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.gantt-date-picker-modal .setting-item-control {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	margin-top: 20px;
+}
+
+.gantt-date-picker-modal button {
+	padding: 8px 20px;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.gantt-date-picker-modal button.mod-cta {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+}
+
+.gantt-date-picker-modal button.mod-cta:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.gantt-date-picker-modal button:not(.mod-cta) {
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.gantt-date-picker-modal button:not(.mod-cta):hover {
+	background: var(--background-modifier-hover);
+}

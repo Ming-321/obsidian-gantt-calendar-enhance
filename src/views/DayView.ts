@@ -121,7 +121,7 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 				return;
 			}
 
-			currentDayTasks.forEach(task => this.renderDayTaskItem(task, listContainer));
+			currentDayTasks.forEach(task => this.renderDayTaskItem(task, listContainer, normalizedTarget));
 		} catch (error) {
 			console.error('Error loading day view tasks', error);
 			listContainer.empty();
@@ -132,7 +132,7 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 	/**
 	 * 渲染日视图任务项
 	 */
-	private renderDayTaskItem(task: GanttTask, listContainer: HTMLElement): void {
+	private renderDayTaskItem(task: GanttTask, listContainer: HTMLElement, targetDate: Date): void {
 		const taskItem = listContainer.createDiv('calendar-day-task-item');
 		taskItem.addClass(task.completed ? 'completed' : 'pending');
 
@@ -205,6 +205,22 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 		taskItem.addEventListener('click', async () => {
 			await this.openTaskFile(task);
 		});
+
+		// 注册右键菜单
+		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
+		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
+		const { registerTaskContextMenu } = require('../contextMenu');
+		registerTaskContextMenu(
+			taskItem,
+			task,
+			this.app,
+			enabledFormats,
+			taskNotePath,
+			() => {
+				// 刷新任务列表
+				this.loadDayViewTasks(listContainer, targetDate);
+			}
+		);
 	}
 
 	/**

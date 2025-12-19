@@ -142,5 +142,24 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 			e.stopPropagation();
 			await this.openTaskFile(task);
 		};
+
+		// 注册右键菜单
+		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
+		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
+		const { registerTaskContextMenu } = require('../contextMenu');
+		registerTaskContextMenu(
+			taskItem,
+			task,
+			this.app,
+			enabledFormats,
+			taskNotePath,
+			() => {
+				// 刷新当前月视图
+				const container = document.querySelector('.calendar-month-view-container');
+				if (container) {
+					this.render(container as HTMLElement, new Date());
+				}
+			}
+		);
 	}
 }
