@@ -7,6 +7,7 @@ import { MonthViewRenderer } from './views/MonthView';
 import { WeekViewRenderer } from './views/WeekView';
 import { DayViewRenderer } from './views/DayView';
 import { TaskViewRenderer } from './views/TaskView';
+import { GanttViewRenderer } from './views/GanttView';
 import { Toolbar } from './toolbar/toolbar';
 
 export const CALENDAR_VIEW_ID = 'gantt-calendar-view';
@@ -25,6 +26,7 @@ export class CalendarView extends ItemView {
 	private weekRenderer: WeekViewRenderer;
 	private dayRenderer: DayViewRenderer;
 	private taskRenderer: TaskViewRenderer;
+    private ganttRenderer: GanttViewRenderer;
 
 	// 工具栏控制器
 	private toolbar: Toolbar;
@@ -41,6 +43,7 @@ export class CalendarView extends ItemView {
 		this.weekRenderer = new WeekViewRenderer(this.app, plugin);
 		this.dayRenderer = new DayViewRenderer(this.app, plugin);
 		this.taskRenderer = new TaskViewRenderer(this.app, plugin);
+        this.ganttRenderer = new GanttViewRenderer(this.app, plugin);
 
 		// 初始化工具栏控制器
 		this.toolbar = new Toolbar();
@@ -138,6 +141,7 @@ export class CalendarView extends ItemView {
 			dateRangeText: this.getDateRangeText(),
 			globalFilterText: this.plugin?.settings?.globalTaskFilter,
 			taskRenderer: this.taskRenderer,
+            ganttRenderer: this.ganttRenderer,
 			onViewSwitch: (type) => this.switchView(type),
 			onPrevious: () => this.previousPeriod(),
 			onToday: () => this.goToToday(),
@@ -179,6 +183,9 @@ export class CalendarView extends ItemView {
 			case 'task':
 				this.taskRenderer.render(content, this.currentDate);
 				break;
+            case 'gantt':
+                this.ganttRenderer.render(content, this.currentDate);
+                break;
 		}
 	}
 
@@ -219,6 +226,8 @@ export class CalendarView extends ItemView {
 				break;
 			case 'task':
 				return;
+            case 'gantt':
+                return;
 		}
 		this.currentDate = date;
 		this.render();
@@ -241,13 +250,15 @@ export class CalendarView extends ItemView {
 				break;
 			case 'task':
 				return;
+            case 'gantt':
+                return;
 		}
 		this.currentDate = date;
 		this.render();
 	}
 
 	private goToToday(): void {
-		if (this.viewType === 'task') return;
+		if (this.viewType === 'task' || this.viewType === 'gantt') return;
 		this.currentDate = new Date();
 		this.render();
 	}
@@ -271,6 +282,8 @@ export class CalendarView extends ItemView {
 				return formatDate(this.currentDate, 'YYYY-MM-DD ddd');
 			case 'task':
 				return '任务视图';
+            case 'gantt':
+                return '甘特图视图';
 		}
 	}
 }

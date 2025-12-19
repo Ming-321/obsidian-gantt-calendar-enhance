@@ -1,4 +1,5 @@
 import { setIcon } from 'obsidian';
+import { renderRefreshButton } from './refresh-button';
 import type { CalendarViewType } from '../types';
 
 /**
@@ -59,12 +60,7 @@ export class ToolbarRightCalendar {
 			btn.onclick = () => onViewSwitch(type as CalendarViewType);
 		});
 
-		// 刷新按钮（图标模式 + 悬浮提示）
-		const refreshBtn = container.createEl('button', { 
-			cls: 'calendar-view-compact-btn icon-btn', 
-			attr: { title: '刷新任务' } 
-		});
-		setIcon(refreshBtn, 'rotate-ccw');
-		refreshBtn.addEventListener('click', onRefresh);
+		// 刷新按钮（共享）
+		renderRefreshButton(container, onRefresh, '刷新任务');
 	}
 }

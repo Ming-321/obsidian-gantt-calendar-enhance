@@ -1,9 +1,11 @@
 import type { CalendarViewType } from '../types';
 import type { TaskViewRenderer } from '../views/TaskView';
+import type { GanttViewRenderer } from '../views/GanttView';
 import { ToolbarLeft } from './toolbar-left';
 import { ToolbarCenter } from './toolbar-center';
 import { ToolbarRightCalendar } from './toolbar-right-calendar';
 import { ToolbarRightTask } from './toolbar-right-task';
+import { ToolbarRightGantt } from './toolbar-right-gantt';
 
 /**
  * 工具栏主控制器
@@ -14,12 +16,14 @@ export class Toolbar {
 	private centerSection: ToolbarCenter;
 	private rightCalendarSection: ToolbarRightCalendar;
 	private rightTaskSection: ToolbarRightTask;
+    private rightGanttSection: ToolbarRightGantt;
 
 	constructor() {
 		this.leftSection = new ToolbarLeft();
 		this.centerSection = new ToolbarCenter();
 		this.rightCalendarSection = new ToolbarRightCalendar();
 		this.rightTaskSection = new ToolbarRightTask();
+        this.rightGanttSection = new ToolbarRightGantt();
 	}
 
 	/**
@@ -61,6 +65,12 @@ export class Toolbar {
 				config.onFilterChange,
 				config.onRefresh
 			);
+		} else if (config.currentViewType === 'gantt') {
+            this.rightGanttSection.render(
+                rightContainer,
+                config.ganttRenderer,
+                config.onRefresh
+            );
 		} else {
 			this.rightCalendarSection.render(
 				rightContainer,
@@ -88,6 +98,7 @@ export interface ToolbarConfig {
 	// 任务视图相关
 	globalFilterText?: string;
 	taskRenderer: TaskViewRenderer;
+    ganttRenderer: GanttViewRenderer;
 	
 	// 回调函数
 	onViewSwitch: (type: CalendarViewType) => void;

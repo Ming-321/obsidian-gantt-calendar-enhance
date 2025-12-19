@@ -1485,8 +1485,118 @@ Gantt Calendar Plugin Styles - 甘特日历
 	color: white;
 }
 
-.calendar-task-view .task-view-list {
-	/* 离开 calendar-content 的滚动，整体滚动平台处理 */
+.calendar-task-view .task-view-list { margin: 0; }
+
+/* ========================================
+	 Gantt View
+	 ======================================== */
+.calendar-gantt-view {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+
+.calendar-gantt-header {
+	display: grid;
+	grid-template-columns: 300px 1fr;
+	gap: 8px;
+	align-items: center;
+}
+
+.gantt-task-header {
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	padding: 8px;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.gantt-timeline-header {
+	display: grid;
+	grid-template-columns: repeat(var(--gantt-days, 30), minmax(40px, 1fr));
+	gap: 2px;
+}
+
+.gantt-date-cell {
+	text-align: center;
+	font-size: 11px;
+	color: var(--text-muted);
+	padding: 6px 4px;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+.calendar-gantt-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.calendar-gantt-row {
+	display: grid;
+	grid-template-columns: 300px 1fr;
+	gap: 8px;
+	align-items: center;
+}
+
+.gantt-task-cell {
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	padding: 8px;
+	cursor: pointer;
+}
+
+.gantt-timeline-cell {
+	position: relative;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	min-height: 28px;
+}
+
+.gantt-bar {
+	position: absolute;
+	top: 4px;
+	height: 20px;
+	border-radius: 10px;
+	background-color: var(--interactive-accent);
+	opacity: 0.9;
+}
+
+.gantt-bar.completed {
+	background-color: #52c41a;
+}
+
+/* Toolbar Right - Gantt */
+.toolbar-right-gantt {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.toolbar-gantt-field-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.toolbar-gantt-field-label {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.toolbar-gantt-field-select {
+	padding: 4px 8px;
+	border: 1px solid var(--input-border-color);
+	border-radius: 4px;
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	font-size: 12px;
 }
 
 /* ========================================

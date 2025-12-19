@@ -1,6 +1,8 @@
 import { setIcon } from 'obsidian';
 import { formatDate } from '../utils';
 import type { TaskViewRenderer } from '../views/TaskView';
+import { renderStatusFilter } from './status-filter';
+import { renderRefreshButton } from './refresh-button';
 
 /**
  * 工具栏右侧区域 - 任务视图功能区
@@ -32,8 +34,11 @@ export class ToolbarRightTask {
 		const gfText = container.createEl('span', { cls: 'toolbar-right-task-global-filter' });
 		gfText.setText(`Global Filter: ${globalFilterText || '（未设置）'}`);
 
-		// 状态筛选 - 由 TaskViewRenderer 创建
-		taskRenderer.createStatusFilterGroup(container, onFilterChange);
+		// 状态筛选 - 使用共享模块
+		renderStatusFilter(container, taskRenderer.getTaskFilter(), (value) => {
+			taskRenderer.setTaskFilter(value);
+			onFilterChange();
+		});
 
 		// 字段筛选组
 		const fieldFilterGroup = container.createDiv('toolbar-right-task-field-filter-group');
@@ -141,12 +146,7 @@ export class ToolbarRightTask {
 			});
 		}
 
-		// 刷新按钮
-		const refreshBtn = container.createEl('button', { 
-			cls: 'toolbar-right-task-refresh-btn', 
-			attr: { title: '刷新任务' } 
-		});
-		setIcon(refreshBtn, 'rotate-ccw');
-		refreshBtn.addEventListener('click', onRefresh);
+		// 刷新按钮（共享）
+		renderRefreshButton(container, onRefresh, '刷新任务');
 	}
 }
