@@ -1564,10 +1564,14 @@ Gantt Calendar Plugin Styles - 甘特日历
 	padding: 8px 12px;
 	cursor: pointer;
 	transition: transform 0.15s ease, box-shadow 0.15s ease;
-	flex: 0 0 auto;
-	min-height: 40px;
+	flex: 0 0 40px;
+	height: 40px;
 	display: flex;
 	align-items: center;
+	/* 单行显示，超出省略 */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .gantt-task-card:hover {
@@ -1628,13 +1632,28 @@ Gantt Calendar Plugin Styles - 甘特日历
 	padding-right: 4px;
 }
 
+.gantt-bars-scroll {
+	overflow-x: auto;
+	overflow-y: hidden;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-height: fit-content;
+}
+
 .gantt-bar-row {
 	position: relative;
 	background-color: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 4px;
 	min-height: 40px;
-	flex: 0 0 auto;
+	flex: 0 0 40px;
+	/* 使用与时间刻度相同的grid布局 */
+	display: grid;
+	grid-template-columns: repeat(var(--gantt-total-units, 30), minmax(100px, 1fr));
+	gap: 2px;
+	min-width: fit-content;
+	align-items: center;
 }
 
 /* 兼容旧样式（保留以防其他地方引用） */
@@ -1696,12 +1715,12 @@ Gantt Calendar Plugin Styles - 甘特日历
 }
 
 .gantt-bar {
-	position: absolute;
-	top: 4px;
+	/* 不再使用absolute定位，使用grid定位 */
 	height: 20px;
 	border-radius: 10px;
 	background-color: var(--interactive-accent);
 	opacity: 0.9;
+	margin: 0 1px;
 }
 
 .gantt-bar.completed {

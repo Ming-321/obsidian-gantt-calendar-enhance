@@ -236,9 +236,14 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
       currentDate = this.getNextTimeUnit(currentDate);
     }
 
-    // 甘特条容器
-    const ganttBars = timeSection.createDiv('gantt-view-bars');
-    this.bodyScrollEl = timelineScroll; // 复用滚动容器
+    // 甘特条容器（横向滚动）
+    const ganttBarsWrapper = timeSection.createDiv('gantt-view-bars');
+    const ganttBarsScroll = ganttBarsWrapper.createDiv('gantt-bars-scroll');
+    this.bodyScrollEl = ganttBarsScroll; // 用于横向滚动同步
+    
+    // 设置与时间刻度相同的CSS变量
+    ganttBarsScroll.style.setProperty('--gantt-total-units', String(totalUnits));
+    ganttBarsScroll.style.setProperty('--gantt-visible-units', String(this.VISIBLE_UNITS));
 
     for (const item of withRange) {
       // 左侧：任务卡片
@@ -254,8 +259,8 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
         await this.openTaskFile(item.task);
       });
 
-      // 右侧：甘特条行
-      const barRow = ganttBars.createDiv('gantt-bar-row');
+      // 右侧：甘特条行（使用与时间刻度相同的grid布局）
+      const barRow = ganttBarsScroll.createDiv('gantt-bar-row');
 
       const { startOffset, duration } = this.calculateTaskPosition(
         item.start,
@@ -264,25 +269,27 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
         totalUnits
       );
 
-      const leftPct = (startOffset / totalUnits) * 100;
-      const widthPct = (duration / totalUnits) * 100;
-
+      // 使用grid单位而不是百分比
       const bar = barRow.createDiv('gantt-bar');
-      bar.style.left = leftPct + '%';
-      bar.style.width = widthPct + '%';
+      bar.style.gridColumnStart = String(Math.floor(startOffset) + 1);
+      bar.style.gridColumnEnd = String(Math.floor(startOffset + duration) + 1);
       bar.setAttr('title', `${formatDate(item.start, 'YYYY-MM-DD')} → ${formatDate(item.end, 'YYYY-MM-DD')}`);
       if (item.task.completed) bar.addClass('completed');
     }
 
+    // 同步时间刻度和甘特条的横向滚动
+    this.syncHorizontalScroll(timelineScroll, ganttBarsScroll);
+    this.syncHorizontalScroll(ganttBarsScroll, timelineScroll);
+
     // 同步任务列表和甘特条的垂直滚动
     taskList.addEventListener('scroll', () => {
-      if (ganttBars.scrollTop !== taskList.scrollTop) {
-        ganttBars.scrollTop = taskList.scrollTop;
+      if (ganttBarsWrapper.scrollTop !== taskList.scrollTop) {
+        ganttBarsWrapper.scrollTop = taskList.scrollTop;
       }
     });
-    ganttBars.addEventListener('scroll', () => {
-      if (taskList.scrollTop !== ganttBars.scrollTop) {
-        taskList.scrollTop = ganttBars.scrollTop;
+    ganttBarsWrapper.addEventListener('scroll', () => {
+      if (taskList.scrollTop !== ganttBarsWrapper.scrollTop) {
+        taskList.scrollTop = ganttBarsWrapper.scrollTop;
       }
     });
 
