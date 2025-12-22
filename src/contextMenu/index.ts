@@ -1,6 +1,7 @@
 import { App, Menu } from 'obsidian';
 import type { GanttTask } from '../types';
 import { createNoteFromTask } from './commands/createNoteFromTask';
+import { createNoteFromTaskAlias } from './commands/createNoteFromTaskAlias';
 import { openEditTaskModal } from './commands/editTask';
 
 /**
@@ -32,20 +33,30 @@ export function registerTaskContextMenu(
 			item
 				.setTitle('编辑任务')
 				.setIcon('pencil')
-				.onClick(() => {
-					openEditTaskModal(app, task, enabledFormats, () => {
-						onRefresh();
-					});
-				});
+				   .onClick(() => {
+					   openEditTaskModal(app, task, enabledFormats, () => {
+						   onRefresh();
+					   }, true, globalFilter); // 传递true和globalFilter以支持描述编辑
+				   });
 		});
 
-		// 创建任务同名文件
+		// 创建任务笔记:同名
 		menu.addItem((item) => {
 			item
-				.setTitle('创建任务同名笔记')
+				.setTitle('创建任务笔记:同名')
 				.setIcon('file-plus')
 				.onClick(() => {
 					createNoteFromTask(app, task, defaultNotePath, globalFilter || '');
+				});
+		});
+
+		// 创建任务笔记:别名
+		menu.addItem((item) => {
+			item
+				.setTitle('创建任务笔记:别名')
+				.setIcon('file-plus')
+				.onClick(() => {
+					createNoteFromTaskAlias(app, task, defaultNotePath, globalFilter || '');
 				});
 		});
 

@@ -2,13 +2,16 @@ import { App, Modal, Setting, Notice } from 'obsidian';
 import type { GanttTask } from '../../types';
 import { updateTaskProperties } from '../../taskManager';
 
+
 export function openEditTaskModal(
   app: App,
   task: GanttTask,
   enabledFormats: string[],
-  onSuccess: () => void
+  onSuccess: () => void,
+  allowEditContent?: boolean,
+  globalFilter?: string
 ): void {
-  const modal = new EditTaskModal(app, task, enabledFormats, onSuccess);
+  const modal = new EditTaskModal(app, task, enabledFormats, onSuccess, allowEditContent, globalFilter);
   modal.open();
 }
 
@@ -16,6 +19,8 @@ class EditTaskModal extends Modal {
   private task: GanttTask;
   private enabledFormats: string[];
   private onSuccess: () => void;
+  private allowEditContent: boolean;
+  private globalFilter?: string;
 
   // 状态缓存
   private completed: boolean | undefined;
@@ -26,12 +31,15 @@ class EditTaskModal extends Modal {
   private dueDate: Date | null | undefined;
   private cancelledDate: Date | null | undefined;
   private completionDate: Date | null | undefined;
+  private content: string | undefined;
 
-  constructor(app: App, task: GanttTask, enabledFormats: string[], onSuccess: () => void) {
+  constructor(app: App, task: GanttTask, enabledFormats: string[], onSuccess: () => void, allowEditContent?: boolean, globalFilter?: string) {
     super(app);
     this.task = task;
     this.enabledFormats = enabledFormats;
     this.onSuccess = onSuccess;
+    this.allowEditContent = !!allowEditContent;
+    this.globalFilter = globalFilter;
 
     // 初始化为“未更改”状态（undefined），用户修改才记录
     this.completed = undefined;
@@ -42,6 +50,7 @@ class EditTaskModal extends Modal {
     this.dueDate = undefined;
     this.cancelledDate = undefined;
     this.completionDate = undefined;
+    this.content = undefined;
   }
 
   onOpen(): void {
@@ -49,6 +58,47 @@ class EditTaskModal extends Modal {
     contentEl.empty();
     contentEl.addClass('gantt-date-picker-modal');
     contentEl.createEl('h2', { text: '编辑任务' });
+
+
+    // 任务描述（可选）
+    if (this.allowEditContent) {
+      // 只显示纯描述，不带字段/emoji/全局过滤
+      const pureContent = extractPureTaskDescription(this.task, this.globalFilter);
+      new Setting(contentEl)
+        .setName('任务描述')
+        .setDesc('修改任务的描述内容')
+        .addTextArea(text => {
+          text.setValue(pureContent);
+          text.inputEl.rows = 2;
+          text.inputEl.style.width = '100%';
+          text.onChange((v) => {
+            this.content = v;
+          });
+        });
+    }
+
+// 提取纯任务描述（不带全局过滤/emoji/字段/链接）
+function extractPureTaskDescription(task: GanttTask, globalFilter?: string): string {
+  let text = task.content;
+  // 移除 Tasks emoji 优先级标记
+  text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+  // 移除 Tasks emoji 日期属性
+  text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
+  // 移除 Dataview [field:: value] 块
+  text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
+  // 移除 wiki 链接
+  text = text.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' ');
+  // 移除全局过滤标志（如🎯）
+  if (globalFilter) {
+    const gf = (globalFilter + '').trim();
+    if (gf && text.trim().startsWith(gf)) {
+      text = text.trim().slice(gf.length).trim();
+    }
+  }
+  // 清理多余空格
+  text = text.replace(/\s{2,}/g, ' ').trim();
+  return text;
+}
 
     // 完成状态
     new Setting(contentEl)
@@ -121,16 +171,20 @@ class EditTaskModal extends Modal {
         .setCta()
         .onClick(async () => {
           try {
-            await updateTaskProperties(this.app, this.task, {
-              completed: this.completed,
-              priority: this.priority,
-              createdDate: this.createdDate,
-              startDate: this.startDate,
-              scheduledDate: this.scheduledDate,
-              dueDate: this.dueDate,
-              completionDate: this.completionDate,
-              cancelledDate: this.cancelledDate,
-            }, this.enabledFormats);
+            // 只将实际更改的字段写入，未更改的字段保留原值
+            const updates: any = {
+              globalFilter: this.globalFilter
+            };
+            if (this.completed !== undefined) updates.completed = this.completed;
+            if (this.priority !== undefined) updates.priority = this.priority;
+            if (this.createdDate !== undefined) updates.createdDate = this.createdDate;
+            if (this.startDate !== undefined) updates.startDate = this.startDate;
+            if (this.scheduledDate !== undefined) updates.scheduledDate = this.scheduledDate;
+            if (this.dueDate !== undefined) updates.dueDate = this.dueDate;
+            if (this.completionDate !== undefined) updates.completionDate = this.completionDate;
+            if (this.cancelledDate !== undefined) updates.cancelledDate = this.cancelledDate;
+            if (this.content !== undefined) updates.content = this.content;
+            await updateTaskProperties(this.app, this.task, updates, this.enabledFormats);
             this.onSuccess();
             this.close();
             new Notice('任务已更新');

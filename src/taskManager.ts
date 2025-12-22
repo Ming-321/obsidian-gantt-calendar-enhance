@@ -645,6 +645,8 @@ export async function updateTaskProperties(
 		dueDate?: Date | null;
 		cancelledDate?: Date | null;
 		completionDate?: Date | null;
+		content?: string;
+		globalFilter?: string;
 	},
 	enabledFormats: string[]
 ): Promise<void> {
@@ -662,6 +664,41 @@ export async function updateTaskProperties(
 	}
 
 	let taskLine = lines[taskLineIndex];
+
+	// 支持修改任务描述（content 字段）
+	if (typeof updates.content === 'string' && updates.content.trim() !== '' && updates.content !== task.content) {
+		// 匹配任务行前缀（- [ ]/x + 可能的全局筛选 + 其他元数据）
+		const m = taskLine.match(/^(\s*[-*]\s*\[[ xX]\]\s*)(.*)$/);
+		if (m) {
+			const prefix = m[1];
+			let rest = m[2];
+			// 检查原有全局过滤标志
+			let gfPrefix = '';
+			const globalFilter = updates.globalFilter || '';
+			if (globalFilter) {
+				const gf = (globalFilter + '').trim();
+				if (gf && rest.trim().startsWith(gf)) {
+					gfPrefix = gf + ' ';
+					rest = rest.trim().slice(gf.length).trim();
+				}
+			}
+			// 移除 Tasks emoji 优先级标记
+			rest = rest.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+			// 移除 Tasks emoji 日期属性
+			rest = rest.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
+			// 移除 Dataview [field:: value] 块
+			rest = rest.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
+			// 移除 wiki 链接
+			rest = rest.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' ');
+			// 清理多余空格
+			rest = rest.replace(/\s{2,}/g, ' ').trim();
+
+			// 提取原有元数据
+			const metaMatches = m[2].match(/(🔺|⏫|🔼|🔽|⏬|➕|🛫|⏳|📅|❌|✅|\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\])/g) || [];
+			// 重新拼接，保留全局过滤标志
+			taskLine = prefix + gfPrefix + updates.content.trim() + (metaMatches.length ? ' ' + metaMatches.join(' ') : '');
+		}
+	}
 
 	// 更新复选框状态（如果提供）
 	if (typeof updates.completed === 'boolean') {
@@ -732,16 +769,19 @@ export async function updateTaskProperties(
 
 	// 针对每一个可能的日期字段进行处理
 	for (const key of Object.keys(fieldMap)) {
-		const updateValue = (updates as any)[key];
-		if (updateValue === undefined) continue; // 未提供则跳过
+		let updateValue = (updates as any)[key];
+		// 如果未传入该字段，则保留原有值
+		if (updateValue === undefined) {
+			updateValue = (task as any)[key];
+		}
 
 		if (formatToUse === 'dataview') {
 			const fieldKey = fieldMap[key];
 			// 移除旧值
-			const re = new RegExp(`\\[${fieldKey}::\\s*[^\\]]+\\]`, 'g');
+			const re = new RegExp(`\[${fieldKey}::\s*[^\]]+\]`, 'g');
 			taskLine = taskLine.replace(re, '');
 			// 添加新值（非 null）
-			if (updateValue !== null) {
+			if (updateValue !== null && updateValue !== undefined) {
 				const dateStr = formatDate(updateValue as Date, 'YYYY-MM-DD');
 				taskLine = taskLine.trimEnd() + ` [${fieldKey}:: ${dateStr}]`;
 			}
@@ -749,10 +789,10 @@ export async function updateTaskProperties(
 			const emoji = emojiMap[key];
 			if (emoji) {
 				// 移除旧值
-				const re = new RegExp(`${emoji}\\s*\\d{4}-\\d{2}-\\d{2}`, 'g');
+				const re = new RegExp(`${emoji}\s*\d{4}-\d{2}-\d{2}`, 'g');
 				taskLine = taskLine.replace(re, '');
 				// 添加新值（非 null）
-				if (updateValue !== null) {
+				if (updateValue !== null && updateValue !== undefined) {
 					const dateStr = formatDate(updateValue as Date, 'YYYY-MM-DD');
 					taskLine = taskLine.trimEnd() + ` ${emoji} ${dateStr}`;
 				}
