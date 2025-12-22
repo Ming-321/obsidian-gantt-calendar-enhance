@@ -20,6 +20,8 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
   private totalUnits = 0;
   private todayLineEl: HTMLElement | null = null;
   private todayOffsetUnits: number | null = null;
+  private cachedUnitWidth: number | null = null;
+  private isScrolling = false; // 防止重复触发滚动事件
 
   public getStartField() { return this.startField; }
   public setStartField(v: any) { this.startField = v; }
@@ -40,9 +42,17 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
     const targetLeft = offsetUnits * unitWidth - this.timelineScrollEl.clientWidth / 2;
     const scrollLeft = Math.max(0, targetLeft);
 
+    // 设置滚动锁，防止重复触发
+    this.isScrolling = true;
+    
     this.timelineScrollEl.scrollLeft = scrollLeft;
     this.bodyScrollEl.scrollLeft = scrollLeft;
     this.setTodayLinePosition(offsetUnits, scrollLeft);
+    
+    // 延迟解除锁
+    setTimeout(() => {
+      this.isScrolling = false;
+    }, 50);
   }
 
   render(container: HTMLElement, currentDate: Date): void {
@@ -145,11 +155,21 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
   }
 
   private getUnitWidth(): number {
+    // 使用缓存值，避免重复计算
+    if (this.cachedUnitWidth !== null) {
+      return this.cachedUnitWidth;
+    }
+    
     if (this.timelineScrollEl) {
       const cell = this.timelineScrollEl.querySelector('.gantt-date-cell') as HTMLElement;
-      if (cell) return cell.getBoundingClientRect().width || 100;
+      if (cell) {
+        const width = cell.getBoundingClientRect().width;
+        // 加上gap的宽度（grid gap为2px）
+        this.cachedUnitWidth = width + 2;
+        return this.cachedUnitWidth;
+      }
     }
-    return 100;
+    return 102; // 100 + 2 (gap)
   }
 
   private setTodayLinePosition(offsetUnits: number | null, scrollLeft?: number): void {
@@ -159,6 +179,7 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
       return;
     }
     const unitWidth = this.getUnitWidth();
+    // 减去gap的偏移，因为第一个单元格前面没有gap
     const leftPx = offsetUnits * unitWidth - (scrollLeft ?? this.timelineScrollEl?.scrollLeft ?? 0);
     this.todayLineEl.style.display = 'block';
     this.todayLineEl.style.left = `${leftPx}px`;
@@ -305,11 +326,21 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
     const today = getTodayDate();
     const offsetUnits = (today.getTime() - minStart.getTime()) / this.getMillisecondsPerUnit();
     this.todayOffsetUnits = offsetUnits;
-    this.setTodayLinePosition(offsetUnits);
+    
+    // 初始化今天线位置（等待DOM完全渲染）
+    setTimeout(() => {
+      this.cachedUnitWidth = null; // 清除缓存，重新计算
+      this.setTodayLinePosition(offsetUnits, this.timelineScrollEl?.scrollLeft ?? 0);
+    }, 100);
 
-    // 滚动时更新今天线位置
+    // 滚动时更新今天线位置（监听两个横向滚动容器）
     this.timelineScrollEl?.addEventListener('scroll', () => {
+      if (this.isScrolling) return; // 如果正在跳转，忽略滚动事件
       this.setTodayLinePosition(this.todayOffsetUnits, this.timelineScrollEl?.scrollLeft);
+    });
+    ganttBarsScroll?.addEventListener('scroll', () => {
+      if (this.isScrolling) return; // 如果正在跳转，忽略滚动事件
+      this.setTodayLinePosition(this.todayOffsetUnits, ganttBarsScroll?.scrollLeft);
     });
   }
 }
