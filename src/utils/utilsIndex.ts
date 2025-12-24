@@ -1,6 +1,6 @@
 /**
  * @fileoverview 工具函数统一导出
- * @module utils
+ * @module utils/utilsIndex
  */
 
 export * from './fileOpener';
