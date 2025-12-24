@@ -62,8 +62,8 @@ class EditTaskModal extends Modal {
 
     // 任务描述（可选）
     if (this.allowEditContent) {
-      // 只显示纯描述，不带字段/emoji/全局过滤
-      const pureContent = extractPureTaskDescription(this.task, this.globalFilter);
+      // 使用已解析的 description，移除 wiki 链接
+      const pureContent = extractPureTaskDescription(this.task);
       new Setting(contentEl)
         .setName('任务描述')
         .setDesc('修改任务的描述内容')
@@ -77,24 +77,13 @@ class EditTaskModal extends Modal {
         });
     }
 
-// 提取纯任务描述（不带全局过滤/emoji/字段/链接）
-function extractPureTaskDescription(task: GanttTask, globalFilter?: string): string {
-  let text = task.content;
-  // 移除 Tasks emoji 优先级标记
-  text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
-  // 移除 Tasks emoji 日期属性
-  text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
-  // 移除 Dataview [field:: value] 块
-  text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
-  // 移除 wiki 链接
+// 提取纯任务描述（不带 wiki 链接）
+// 注意：task.description 已经包含了移除元数据标记后的文本
+function extractPureTaskDescription(task: GanttTask): string {
+  // 使用已解析的 description，只需额外处理 wiki 链接
+  let text = task.description || '';
+  // 移除 wiki 链接 [[note]] 或 [[note|alias]]
   text = text.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' ');
-  // 移除全局过滤标志（如🎯）
-  if (globalFilter) {
-    const gf = (globalFilter + '').trim();
-    if (gf && text.trim().startsWith(gf)) {
-      text = text.trim().slice(gf.length).trim();
-    }
-  }
   // 清理多余空格
   text = text.replace(/\s{2,}/g, ' ').trim();
   return text;

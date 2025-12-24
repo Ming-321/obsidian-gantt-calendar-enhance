@@ -14,8 +14,7 @@ export async function createNoteFromTaskAlias(
 	const alias = await promptForAlias(app, task);
 	if (!alias) return;
 	try {
-		const raw = task.content;
-		const baseDesc = cleanTaskDescription(removeLinks(raw));
+		const baseDesc = cleanTaskDescriptionFromTask(task);
 		const fileName = sanitizeFileName(alias);
 		if (!fileName) {
 			new Notice('笔记名称为空，无法创建文件');
@@ -90,11 +89,16 @@ class AliasInputModal extends Modal {
 }
 
 // 以下工具函数可复用自 createNoteFromTask.ts
-function cleanTaskDescription(raw: string): string {
-	return raw.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' $1 ').replace(/\s{2,}/g, ' ').trim();
-}
-function removeLinks(raw: string): string {
-	return raw.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, ' $1 ').replace(/(https?:\/\/[^\s)]+)/g, ' ');
+/**
+ * 使用已解析的 task.description 清理任务描述（用于文件名生成）
+ */
+function cleanTaskDescriptionFromTask(task: GanttTask): string {
+	let text = task.description || '';
+	// 移除 wiki 链接语法，仅保留显示文本
+	text = text.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' $1 ');
+	// 折叠多余空格
+	text = text.replace(/\s{2,}/g, ' ').trim();
+	return text;
 }
 function sanitizeFileName(name: string): string {
 	return name.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim().substring(0, 200);

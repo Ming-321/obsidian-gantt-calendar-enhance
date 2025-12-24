@@ -42,7 +42,8 @@ export interface GanttTask {
 	filePath: string;
 	fileName: string;
 	lineNumber: number;
-	content: string;
+	content: string;          // 原始任务内容（保留完整信息用于写回）
+	description: string;      // 清理后的任务描述（移除元数据标记）
 	completed: boolean;
 	// 源格式：'tasks' | 'dataview'（用于写回时选择字段样式）
 	format?: 'tasks' | 'dataview';

@@ -321,7 +321,7 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
     for (const item of withRange) {
       // 左侧：任务卡片
       const taskCard = taskList.createDiv('gantt-task-card');
-      const cleaned = this.cleanTaskDescription(item.task.content);
+      const cleaned = item.task.description;
       const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
       
       // 构建完整的任务描述用于tooltip

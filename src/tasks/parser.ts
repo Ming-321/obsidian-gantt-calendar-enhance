@@ -92,6 +92,32 @@ export function escapeRegExp(string: string): string {
 }
 
 /**
+ * 提取任务描述（移除所有元数据标记）
+ * 从任务内容中提取纯文本描述，移除：
+ * - Tasks 格式的优先级 emoji (🔺⏫🔼🔽⏬)
+ * - Tasks 格式的日期 emoji + 日期值 (➕🛫⏳📅❌✅ + 日期)
+ * - Dataview 格式的字段 ([field:: value])
+ * @returns 清理后的任务描述
+ */
+export function extractTaskDescription(content: string): string {
+	let text = content;
+
+	// 移除 Tasks emoji 优先级标记
+	text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+
+	// 移除 Tasks emoji 日期属性 (emoji + 空格 + 日期)
+	text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
+
+	// 移除 Dataview [field:: value] 块
+	text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
+
+	// 折叠多余空格并修剪首尾空格
+	text = text.replace(/\s{2,}/g, ' ').trim();
+
+	return text;
+}
+
+/**
  * 解析列表项中的任务
  */
 export function parseTasksFromListItems(
@@ -124,6 +150,7 @@ export function parseTasksFromListItems(
 			fileName: file.basename,
 			lineNumber: lineNumber + 1,
 			content: contentWithoutFilter,
+			description: extractTaskDescription(contentWithoutFilter),
 			completed: isCompleted,
 		};
 		const hasTasksFormat = enabledFormats.includes('tasks') ? parseTasksFormat(contentWithoutFilter, task) : false;

@@ -42,7 +42,8 @@ export async function createNoteFromTask(
 		}
 
 		// 清理任务描述，移除字段与 emoji 与链接
-		const baseDesc = cleanTaskDescription(removeLinks(raw));
+		// task.description 已经移除了元数据标记，只需额外处理 wiki 链接和 markdown 链接
+		const baseDesc = removeLinksFromDescription(cleanTaskDescriptionFromTask(task));
 		const fileName = sanitizeFileName(baseDesc);
 		
 		if (!fileName) {
@@ -88,22 +89,27 @@ export async function createNoteFromTask(
 }
 
 /**
- * 清理任务描述
+ * 使用已解析的 task.description 清理任务描述（用于文件名生成）
  */
-function cleanTaskDescription(raw: string): string {
-	let text = raw;
-	// 移除 Tasks emoji 优先级标记
-	text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
-	// 移除 Tasks emoji 日期属性
-	text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
-	// 移除 Dataview [field:: value] 块
-	text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
-	// 移除 wiki 链接语法，仅保留显示文本（但这里用于文件名，后续会用文件名生成双链）
+function cleanTaskDescriptionFromTask(task: GanttTask): string {
+	let text = task.description || '';
+	// 移除 wiki 链接语法，仅保留显示文本
 	text = text.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' $1 ');
 	// 折叠多余空格
 	text = text.replace(/\s{2,}/g, ' ').trim();
 	return text;
 }
+
+/**
+ * 从描述中移除 markdown 链接和裸 URL
+ */
+function removeLinksFromDescription(text: string): string {
+	return text
+		.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, ' $1 ') // 去掉 markdown 链接，仅保留文本
+		.replace(/(https?:\/\/[^\s)]+)/g, ' ') // 去掉裸 URL
+		.replace(/\s{2,}/g, ' ').trim();
+}
+
 function removeLinks(raw: string): string {
 	return raw
 		.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, ' $1 ') // 去掉 markdown 链接，仅保留文本
@@ -140,8 +146,8 @@ async function ensureFolderExists(app: App, folderPath: string): Promise<void> {
  */
 function generateNoteContent(task: GanttTask, mdLinks: Array<{text: string, url: string}>, rawUrls: string[]): string {
 	const lines: string[] = [];
-	
-	lines.push(`# ${cleanTaskDescription(task.content)}`);
+
+	lines.push(`# ${cleanTaskDescriptionFromTask(task)}`);
 	lines.push('');
 	lines.push('## 任务信息');
 	lines.push('');

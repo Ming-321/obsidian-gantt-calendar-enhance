@@ -161,7 +161,7 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 		this.createTaskCheckbox(task, taskItem);
 
 		// 任务内容
-		const cleaned = this.cleanTaskDescription(task.content);
+		const cleaned = task.description;
 		const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
 		const displayText = this.plugin?.settings?.showGlobalFilterInTaskText && gf ? `${gf} ${cleaned}` : cleaned;
 		

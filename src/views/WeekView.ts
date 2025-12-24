@@ -170,8 +170,8 @@ export class WeekViewRenderer extends BaseCalendarRenderer {
 		});
 
 		// 任务内容
-		const cleaned = this.cleanTaskDescription(task.content);
-		
+		const cleaned = task.description;
+
 		// 使用富文本渲染支持链接
 		const taskTextEl = taskItem.createDiv('calendar-week-task-text');
 		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);

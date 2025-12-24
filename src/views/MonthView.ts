@@ -128,8 +128,8 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 		const taskItem = container.createDiv('calendar-month-task-item');
 		taskItem.addClass(task.completed ? 'completed' : 'pending');
 
-		const cleaned = this.cleanTaskDescription(task.content);
-		
+		const cleaned = task.description;
+
 		// 使用富文本渲染支持链接
 		const taskTextEl = taskItem.createDiv('calendar-month-task-text');
 		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
