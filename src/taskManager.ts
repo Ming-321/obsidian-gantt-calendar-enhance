@@ -449,13 +449,15 @@ export async function updateTaskProperties(
 	let taskLine = lines[taskLineIndex];
 
 	// 支持修改任务描述（content 字段）
+	// 注意：修改描述时，所有元数据（优先级、日期等）会在后续循环中重新添加，
+	// 因此这里只需更新描述文本，移除所有元数据标记即可
 	if (typeof updates.content === 'string' && updates.content.trim() !== '' && updates.content !== task.content) {
-		// 匹配任务行前缀（- [ ]/x + 可能的全局筛选 + 其他元数据）
+		// 匹配任务行前缀（- [ ]/x + 可能的全局筛选）
 		const m = taskLine.match(/^(\s*[-*]\s*\[[ xX]\]\s*)(.*)$/);
 		if (m) {
 			const prefix = m[1];
 			let rest = m[2];
-			// 检查原有全局过滤标志
+			// 检查并保留原有全局过滤标志
 			let gfPrefix = '';
 			const globalFilter = updates.globalFilter || '';
 			if (globalFilter) {
@@ -465,21 +467,17 @@ export async function updateTaskProperties(
 					rest = rest.trim().slice(gf.length).trim();
 				}
 			}
-			// 移除 Tasks emoji 优先级标记
+			// 移除所有元数据标记（优先级、日期emoji+日期值、dataview字段、wiki链接）
+			// 这些元数据会在后续的日期/优先级处理循环中重新添加
 			rest = rest.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
-			// 移除 Tasks emoji 日期属性
 			rest = rest.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
-			// 移除 Dataview [field:: value] 块
 			rest = rest.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
-			// 移除 wiki 链接
 			rest = rest.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' ');
-			// 清理多余空格
 			rest = rest.replace(/\s{2,}/g, ' ').trim();
 
-			// 提取原有元数据
-			const metaMatches = m[2].match(/(🔺|⏫|🔼|🔽|⏬|➕|🛫|⏳|📅|❌|✅|\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\])/g) || [];
-			// 重新拼接，保留全局过滤标志
-			taskLine = prefix + gfPrefix + updates.content.trim() + (metaMatches.length ? ' ' + metaMatches.join(' ') : '');
+			// 重新拼接任务行，使用新的描述内容
+			// 元数据（优先级、日期等）会在后续处理循环中重新添加
+			taskLine = prefix + gfPrefix + updates.content.trim();
 		}
 	}
 
