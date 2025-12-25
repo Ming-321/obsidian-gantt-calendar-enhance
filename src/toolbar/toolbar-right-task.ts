@@ -79,7 +79,7 @@ export class ToolbarRightTask {
 		}) as HTMLInputElement;
 		// 默认当天
 		try {
-			dateInput.value = formatDate(new Date(), 'YYYY-MM-DD');
+			dateInput.value = formatDate(new Date(), 'yyyy-MM-dd');
 		} catch {
 			dateInput.value = new Date().toISOString().slice(0, 10);
 		}

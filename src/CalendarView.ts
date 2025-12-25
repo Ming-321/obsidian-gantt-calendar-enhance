@@ -288,7 +288,7 @@ export class CalendarView extends ItemView {
 				return `Week ${week.weekNumber} (${start} - ${end})`;
 			}
 			case 'day':
-				return formatDate(this.currentDate, 'YYYY-MM-DD ddd');
+				return formatDate(this.currentDate, 'yyyy-MM-dd ddd');
 			case 'task':
 				return '任务视图';
             case 'gantt':

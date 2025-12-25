@@ -1,6 +1,7 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type { GanttTask } from '../../types';
 import { updateTaskProperties } from '../../tasks/taskUpdater';
+import { formatDate } from '../../dateUtils/dateUtilsIndex';
 
 
 export function openEditTaskModal(
@@ -125,8 +126,8 @@ class EditTaskModal extends Modal {
     ) => {
       const s = new Setting(contentEl).setName(name);
       const input = s.addText(t => {
-        const initStr = current ? this.formatDate(current) : '';
-        t.setPlaceholder('YYYY-MM-DD').setValue(initStr);
+        const initStr = current ? formatDate(current, 'yyyy-MM-dd') : '';
+        t.setPlaceholder('yyyy-MM-dd').setValue(initStr);
         t.inputEl.type = 'date';
         if (initStr) t.inputEl.value = initStr;
         t.onChange(v => {
@@ -185,13 +186,6 @@ class EditTaskModal extends Modal {
 
   onClose(): void {
     this.contentEl.empty();
-  }
-
-  private formatDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
   }
 
   private parseDate(dateStr: string): Date | null {

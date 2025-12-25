@@ -2,87 +2,6 @@ import { App, TFile } from 'obsidian';
 import { GanttTask } from '../types';
 import { serializeTask, TaskUpdates } from './taskSerializer';
 
-/**
- * 格式化日期为 YYYY-MM-DD
- */
-function formatDate(date: Date, format: string): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-
-	return format.replace('YYYY', String(year))
-		.replace('MM', month)
-		.replace('DD', day);
-}
-
-/**
- * 在任务行中修改单个日期字段（辅助函数）
- * @param taskLine 原始任务行
- * @param dateFieldName 日期字段名 (dueDate, startDate 等)
- * @param newDate 新日期值 (null 表示移除该字段)
- * @param format 格式 ('dataview' | 'tasks')
- * @returns 修改后的任务行
- */
-function modifyDateInLine(
-	taskLine: string,
-	dateFieldName: string,
-	newDate: Date | null,
-	format: 'dataview' | 'tasks'
-): string {
-	const fieldMap: Record<string, string> = {
-		dueDate: 'due',
-		startDate: 'start',
-		scheduledDate: 'scheduled',
-		createdDate: 'created',
-		cancelledDate: 'cancelled',
-		completionDate: 'completion',
-	};
-	const emojiMap: Record<string, string> = {
-		dueDate: '📅',
-		startDate: '🛫',
-		scheduledDate: '⏳',
-		createdDate: '➕',
-		cancelledDate: '❌',
-		completionDate: '✅',
-	};
-
-	if (format === 'dataview') {
-		const fieldKey = fieldMap[dateFieldName];
-		if (!fieldKey) return taskLine;
-
-		if (newDate !== null) {
-			// 原地替换日期值，保持字段位置
-			const dateStr = formatDate(newDate, 'YYYY-MM-DD');
-			const re = new RegExp(`(\\[${fieldKey}::\\s*)\\d{4}-\\d{2}-\\d{2}(\\s*\\])`, 'g');
-			taskLine = taskLine.replace(re, `$1${dateStr}$2`);
-		} else {
-			// 移除字段时清理前面的空格
-			const re = new RegExp(`\\s*\\[${fieldKey}::\\s*[^\\]]+\\]`, 'g');
-			taskLine = taskLine.replace(re, '');
-			// 清理多余空格
-			taskLine = taskLine.replace(/\s{2,}/g, ' ').trim();
-		}
-	} else {
-		// Tasks 格式
-		const emoji = emojiMap[dateFieldName];
-		if (!emoji) return taskLine;
-
-		if (newDate !== null) {
-			// 原地替换日期值，保持字段位置
-			const dateStr = formatDate(newDate, 'YYYY-MM-DD');
-			const re = new RegExp(`(${emoji}\\s*)\\d{4}-\\d{2}-\\d{2}`, 'g');
-			taskLine = taskLine.replace(re, `$1${dateStr}`);
-		} else {
-			// 移除字段时清理前面的空格
-			const re = new RegExp(`\\s*${emoji}\\s*\\d{4}-\\d{2}-\\d{2}`, 'g');
-			taskLine = taskLine.replace(re, '');
-			// 清理多余空格
-			taskLine = taskLine.replace(/\s{2,}/g, ' ').trim();
-		}
-	}
-
-	return taskLine;
-}
 
 /**
  * 确定任务使用的格式
@@ -134,6 +53,13 @@ async function readTaskLine(app: App, task: GanttTask): Promise<{ file: TFile; c
 
 /**
  * 更新任务的完成状态
+ *
+ * **使用场景**：
+ * 1. **BaseCalendarRenderer.ts:107** - 任务复选框点击事件
+ *    - 用户点击任务前的复选框时，调用此函数切换任务完成状态
+ *    - 完成时自动添加完成日期（completionDate）
+ *    - 取消完成时自动移除完成日期
+ *
  * @param app Obsidian App 实例
  * @param task 要更新的任务
  * @param completed 是否完成
@@ -159,6 +85,11 @@ export async function updateTaskCompletion(
 
 /**
  * 更新任务的日期字段（由日期筛选字段指定）
+ *
+ * **使用场景**：
+ * 1. **WeekView.ts:89** - 拖拽任务到不同日期时，更新任务的日期字段
+ * 2. **contextMenu/commands/cancelTask.ts:16** - 右键菜单取消任务时，设置取消日期
+ *
  * @param app Obsidian App
  * @param task 任务对象
  * @param dateFieldName 日期字段名（dueDate, startDate, scheduledDate, createdDate, cancelledDate, completionDate）

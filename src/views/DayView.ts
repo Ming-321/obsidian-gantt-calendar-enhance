@@ -308,7 +308,7 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 		try {
 			const folderPath = this.plugin.settings.dailyNotePath || 'DailyNotes';
 			const nameFormat = this.plugin.settings.dailyNoteNameFormat || 'yyyy-MM-dd';
-			const fileName = this.formatDateByPattern(targetDate, nameFormat) + '.md';
+			const fileName = formatDate(targetDate, nameFormat) + '.md';
 			const filePath = `${folderPath}/${fileName}`;
 
 			const file = this.app.vault.getAbstractFileByPath(filePath);
@@ -335,19 +335,5 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 			contentContainer.empty();
 			contentContainer.createEl('div', { text: '加载 Daily Note 时出错', cls: 'gantt-task-empty' });
 		}
-	}
-
-	/**
-	 * 根据模式格式化日期
-	 */
-	private formatDateByPattern(date: Date, pattern: string): string {
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const day = String(date.getDate()).padStart(2, '0');
-
-		return pattern
-			.replace('yyyy', String(year))
-			.replace('MM', month)
-			.replace('dd', day);
 	}
 }

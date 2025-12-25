@@ -87,13 +87,13 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
   private formatTimeUnitLabel(date: Date, index: number): string {
     switch (this.timeGranularity) {
       case 'day':
-        return formatDate(date, 'YYYY-MM-DD');
+        return formatDate(date, 'yyyy-MM-dd');
       case 'week':
         const weekEnd = new Date(date);
         weekEnd.setDate(weekEnd.getDate() + 6);
-        return `${formatDate(date, 'MM-DD')} ~ ${formatDate(weekEnd, 'MM-DD')}`;
+        return `${formatDate(date, 'MM-dd')} ~ ${formatDate(weekEnd, 'MM-dd')}`;
       case 'month':
-        return formatDate(date, 'YYYY-MM');
+        return formatDate(date, 'yyyy-MM');
       default:
         return '';
     }
@@ -354,7 +354,7 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
       const bar = barRow.createDiv('gantt-bar');
       bar.style.gridColumnStart = String(Math.floor(startOffset) + 1);
       bar.style.gridColumnEnd = String(Math.floor(startOffset + duration) + 1);
-      bar.setAttr('title', `${formatDate(item.start, 'YYYY-MM-DD')} → ${formatDate(item.end, 'YYYY-MM-DD')}`);
+      bar.setAttr('title', `${formatDate(item.start, 'yyyy-MM-dd')} → ${formatDate(item.end, 'yyyy-MM-dd')}`);
       if (item.task.completed) bar.addClass('completed');
     }
 

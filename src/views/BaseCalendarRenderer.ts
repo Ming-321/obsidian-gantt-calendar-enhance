@@ -57,7 +57,7 @@ export abstract class BaseCalendarRenderer {
 	 * 格式化日期显示
 	 */
 	protected formatDateForDisplay(date: Date): string {
-		return formatDate(date, 'YYYY-MM-DD');
+		return formatDate(date, 'yyyy-MM-dd');
 	}
 
 	/**

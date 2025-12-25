@@ -14,17 +14,18 @@ export function getFirstDayOfMonth(year: number, month: number): number {
 
 /**
  * Format date to string
+ * 占位符: yyyy(年) MM(月) dd(日) ddd(星期缩写)
  */
-export function formatDate(date: Date, format: string = 'YYYY-MM-DD'): string {
+export function formatDate(date: Date, format: string = 'yyyy-MM-dd'): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, '0');
 	const day = String(date.getDate()).padStart(2, '0');
 	const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
 
 	return format
-		.replace('YYYY', String(year))
+		.replace('yyyy', String(year))
 		.replace('MM', month)
-		.replace('DD', day)
+		.replace('dd', day)
 		.replace('ddd', dayName);
 }
 

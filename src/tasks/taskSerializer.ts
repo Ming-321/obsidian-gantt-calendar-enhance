@@ -1,5 +1,6 @@
 import { App } from 'obsidian';
 import { GanttTask } from '../types';
+import { formatDate } from '../dateUtils/dateUtilsIndex';
 
 /**
  * 任务更新参数
@@ -29,16 +30,6 @@ interface MergedTask {
 	dueDate?: Date;
 	cancelledDate?: Date;
 	completionDate?: Date;
-}
-
-/**
- * 格式化日期为 YYYY-MM-DD
- */
-function formatDate(date: Date): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-	return `${year}-${month}-${day}`;
 }
 
 /**
@@ -168,10 +159,11 @@ export function serializeTask(
 
 		// 只有当 date 是 Date 对象时才输出（null 和 undefined 都不输出）
 		if (date instanceof Date) {
+			const dateStr = formatDate(date, 'yyyy-MM-dd');
 			if (format === 'tasks') {
-				parts.push(`${getDateEmoji(field)} ${formatDate(date)}`);
+				parts.push(`${getDateEmoji(field)} ${dateStr}`);
 			} else {
-				parts.push(`[${getDataviewField(field)}:: ${formatDate(date)}]`);
+				parts.push(`[${getDataviewField(field)}:: ${dateStr}]`);
 			}
 		}
 	}
