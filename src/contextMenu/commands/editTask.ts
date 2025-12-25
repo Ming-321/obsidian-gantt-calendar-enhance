@@ -60,13 +60,13 @@ class EditTaskModal extends Modal {
 
     // 任务描述（可选）
     if (this.allowEditContent) {
-      // 使用已解析的 description，移除 wiki 链接
-      const pureContent = extractPureTaskDescription(this.task);
+      // 保留原始描述，包括 wiki 链接和超链接等
+      const originalContent = this.task.description || '';
       new Setting(contentEl)
         .setName('任务描述')
         .setDesc('修改任务的描述内容')
         .addTextArea(text => {
-          text.setValue(pureContent);
+          text.setValue(originalContent);
           text.inputEl.rows = 2;
           text.inputEl.style.width = '100%';
           text.onChange((v) => {
@@ -75,28 +75,6 @@ class EditTaskModal extends Modal {
         });
     }
 
-    // 提取纯任务描述（不带 wiki 链接）
-    // 注意：task.description 已经包含了移除元数据标记后的文本
-    function extractPureTaskDescription(task: GanttTask): string {
-    // 使用已解析的 description，只需额外处理 wiki 链接
-    let text = task.description || '';
-    // 移除 wiki 链接 [[note]] 或 [[note|alias]]
-    text = text.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' ');
-    // 清理多余空格
-    text = text.replace(/\s{2,}/g, ' ').trim();
-    return text;
-    }
-
-    // 完成状态
-    new Setting(contentEl)
-      .setName('完成状态')
-      .setDesc('勾选表示任务已完成')
-      .addToggle(toggle => {
-        toggle.setValue(this.task.completed);
-        toggle.onChange(value => {
-          this.completed = value;
-        });
-      });
 
     // 优先级
     new Setting(contentEl)
