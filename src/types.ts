@@ -98,6 +98,7 @@ export interface GanttTask {
 	content: string;               // 原始任务内容（保留完整格式用于写回）
 	description: string;           // 清理后的任务描述（移除元数据标记，用于显示）
 	completed: boolean;            // 任务是否已完成
+	cancelled?: boolean;           // 任务是否已取消（使用 [/] 复选框）
 	format?: 'tasks' | 'dataview'; // 源格式：用于写回时选择正确的字段样式
 	priority?: string;             // 优先级：highest, high, medium, low, lowest
 	createdDate?: Date;            // 创建日期

@@ -7,6 +7,7 @@ import { formatDate } from '../dateUtils/dateUtilsIndex';
  */
 export interface TaskUpdates {
 	completed?: boolean;
+	cancelled?: boolean;  // 取消状态，使用 [/] 复选框
 	priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal';
 	createdDate?: Date | null;
 	startDate?: Date | null;
@@ -22,6 +23,7 @@ export interface TaskUpdates {
  */
 interface MergedTask {
 	completed: boolean;
+	cancelled?: boolean;  // 取消状态
 	priority?: string;
 	description: string;
 	createdDate?: Date;
@@ -100,6 +102,7 @@ export function serializeTask(
 	// 注意：updates 中的日期字段可能是 null（表示清除），task 中的日期字段是 undefined（表示不存在）
 	const merged: MergedTask = {
 		completed: updates.completed !== undefined ? updates.completed : task.completed,
+		cancelled: updates.cancelled !== undefined ? updates.cancelled : task.cancelled,
 		// 修复：统一将 priority 转换为 emoji，避免"不更改"时输出文本值
 		priority: updates.priority !== undefined
 			? getPriorityEmoji(updates.priority)
@@ -121,8 +124,14 @@ export function serializeTask(
 	// 3. 构建任务行的各个部分
 	const parts: string[] = [];
 
-	// 复选框
-	parts.push(merged.completed ? '[x]' : '[ ]');
+	// 复选框：支持 [x] 完成、[/] 取消、[ ] 未完成
+	if (merged.cancelled) {
+		parts.push('[/]');
+	} else if (merged.completed) {
+		parts.push('[x]');
+	} else {
+		parts.push('[ ]');
+	}
 
 	// 全局过滤器（从插件设置中获取）
 	if (globalFilter) {

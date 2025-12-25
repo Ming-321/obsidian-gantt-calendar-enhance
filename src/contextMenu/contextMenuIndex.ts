@@ -3,11 +3,14 @@
  * @module contextMenu/contextMenuIndex
  */
 
-import { App, Menu } from 'obsidian';
+import { App, Menu, setIcon } from 'obsidian';
 import type { GanttTask } from '../types';
 import { createNoteFromTask } from './commands/createNoteFromTask';
 import { createNoteFromTaskAlias } from './commands/createNoteFromTaskAlias';
 import { openEditTaskModal } from './commands/editTask';
+import { deleteTask } from './commands/deleteTask';
+import { cancelTask } from './commands/cancelTask';
+import { restoreTask } from './commands/restoreTask';
 
 /**
  * 注册任务右键菜单
@@ -61,6 +64,34 @@ export function registerTaskContextMenu(
 				.setIcon('file-plus')
 				.onClick(() => {
 					createNoteFromTaskAlias(app, task, defaultNotePath);
+				});
+		});
+
+		// 分隔线
+		menu.addSeparator();
+
+		// 取消任务/恢复任务 - 根据任务状态动态显示
+		const isCancelled = task.cancelled === true;
+		menu.addItem((item) => {
+			item
+				.setTitle(isCancelled ? '恢复任务' : '取消任务')
+				.setIcon(isCancelled ? 'rotate-ccw' : 'x')
+				.onClick(() => {
+					if (isCancelled) {
+						restoreTask(app, task, enabledFormats, onRefresh);
+					} else {
+						cancelTask(app, task, enabledFormats, onRefresh);
+					}
+				});
+		});
+
+		// 删除任务
+		menu.addItem((item) => {
+			item
+				.setTitle('删除任务')
+				.setIcon('trash')
+				.onClick(() => {
+					deleteTask(app, task, onRefresh);
 				});
 		});
 

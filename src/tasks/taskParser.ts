@@ -21,6 +21,7 @@ export function parseTasksFormat(content: string, task: GanttTask): boolean {
 	}
 	const dateRegex = /(➕|🛫|⏳|📅|❌|✅)\s*(\d{4}-\d{2}-\d{2})/g;
 	let match;
+	let hasCancelledDate = false;
 	while ((match = dateRegex.exec(content)) !== null) {
 		const [, emoji, dateStr] = match;
 		const date = new Date(dateStr);
@@ -29,9 +30,16 @@ export function parseTasksFormat(content: string, task: GanttTask): boolean {
 			case '🛫': task.startDate = date; break;
 			case '⏳': task.scheduledDate = date; break;
 			case '📅': task.dueDate = date; break;
-			case '❌': task.cancelledDate = date; break;
+			case '❌':
+				task.cancelledDate = date;
+				hasCancelledDate = true;
+				break;
 			case '✅': task.completionDate = date; break;
 		}
+	}
+	// 如果存在取消日期，确保取消状态也被设置（修复手动修改复选框后状态不一致的问题）
+	if (hasCancelledDate && !task.completed) {
+		task.cancelled = true;
 	}
 	const hasTasksFormat = /([➕🛫⏳📅❌✅])\s*\d{4}-\d{2}-\d{2}/.test(content) || /[🔺⏫🔼🔽⏬]/.test(content);
 	if (hasTasksFormat) {
@@ -48,6 +56,7 @@ export function parseTasksFormat(content: string, task: GanttTask): boolean {
 export function parseDataviewFormat(content: string, task: GanttTask): boolean {
 	const fieldRegex = /\[(priority|created|start|scheduled|due|cancelled|completion)::\s*([^\]]+)\]/g;
 	let match;
+	let hasCancelledDate = false;
 	while ((match = fieldRegex.exec(content)) !== null) {
 		const [, field, value] = match;
 		const trimmedValue = value.trim();
@@ -72,10 +81,17 @@ export function parseDataviewFormat(content: string, task: GanttTask): boolean {
 				else if (field === 'start') task.startDate = date;
 				else if (field === 'scheduled') task.scheduledDate = date;
 				else if (field === 'due') task.dueDate = date;
-				else if (field === 'cancelled') task.cancelledDate = date;
+				else if (field === 'cancelled') {
+					task.cancelledDate = date;
+					hasCancelledDate = true;
+				}
 				else if (field === 'completion') task.completionDate = date;
 				break;
 		}
+	}
+	// 如果存在取消日期，确保取消状态也被设置（修复手动修改复选框后状态不一致的问题）
+	if (hasCancelledDate && !task.completed) {
+		task.cancelled = true;
 	}
 	const hasDataviewFormat = /\[(priority|created|start|scheduled|due|cancelled|completion)::\s*[^\]]+\]/.test(content);
 	if (hasDataviewFormat) {
@@ -132,10 +148,11 @@ export function parseTasksFromListItems(
 		const lineNumber = item.position.start.line;
 		const line = lines[lineNumber];
 		if (!line) continue;
-		const taskMatch = line.match(/^\s*[-*]\s*\[([ xX])\]\s*(.*)/);
+		const taskMatch = line.match(/^\s*[-*]\s*\[([ xX/])\]\s*(.*)/);
 		if (!taskMatch) continue;
 		const [, checkedStatus, taskContent] = taskMatch;
 		const isCompleted = checkedStatus.toLowerCase() === 'x';
+		const isCancelled = checkedStatus === '/';
 		if (globalTaskFilter) {
 			const trimmedContent = taskContent.trim();
 			if (!trimmedContent.startsWith(globalTaskFilter)) {
@@ -152,6 +169,7 @@ export function parseTasksFromListItems(
 			content: contentWithoutFilter,
 			description: extractTaskDescription(contentWithoutFilter),
 			completed: isCompleted,
+			cancelled: isCancelled,
 		};
 		const hasTasksFormat = enabledFormats.includes('tasks') ? parseTasksFormat(contentWithoutFilter, task) : false;
 		const hasDataviewFormat = enabledFormats.includes('dataview') ? parseDataviewFormat(contentWithoutFilter, task) : false;
