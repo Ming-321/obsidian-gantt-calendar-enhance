@@ -1,185 +1,296 @@
-import { App, TFile, ListItemCache } from 'obsidian';
+/**
+ * 任务解析模块 - 向后兼容层
+ *
+ * 此文件保留原有的函数接口，内部使用新的 taskParser 模块实现。
+ * 原有函数已标记为 @deprecated，建议使用 taskParser/index.ts 中的新接口。
+ *
+ * @fileoverview 任务解析向后兼容层
+ * @deprecated 请使用 './taskParser' 模块中的新接口
+ */
+
+import { TFile, ListItemCache } from 'obsidian';
 import { GanttTask } from '../types';
+import { RegularExpressions } from '../utils/RegularExpressions';
+
+// 导入新模块的实现
+import {
+    parseTasksFromListItems as newParseTasksFromListItems,
+} from './taskParser/index';
+
+// 为了兼容性，从 taskSerializerSymbols 导入配置
+import { TASKS_FORMAT_CONFIG, DATAVIEW_FORMAT_CONFIG } from './taskSerializerSymbols';
+import { parsePriorityFromEmoji, parsePriorityFromDataview } from './taskSerializerSymbols';
+
+// ==================== 主解析函数（保留） ====================
+
+/**
+ * 从列表项缓存中解析任务
+ *
+ * 这是插件的主要任务解析入口，由 TaskCacheManager 调用。
+ * 此函数已更新为使用新的 taskParser 模块实现。
+ *
+ * @param file - Obsidian 文件对象
+ * @param lines - 文件的所有文本行
+ * @param listItems - Obsidian 解析的列表项缓存
+ * @param enabledFormats - 启用的任务格式列表
+ * @param globalTaskFilter - 全局任务过滤器前缀
+ * @returns 解析出的任务数组
+ */
+export function parseTasksFromListItems(
+    file: TFile,
+    lines: string[],
+    listItems: ListItemCache[],
+    enabledFormats: string[],
+    globalTaskFilter: string
+): GanttTask[] {
+    return newParseTasksFromListItems(
+        file,
+        lines,
+        listItems,
+        enabledFormats as Array<'tasks' | 'dataview'>,
+        globalTaskFilter || undefined
+    );
+}
+
+// ==================== 向后兼容函数（已弃用） ====================
 
 /**
  * 解析 Tasks 插件格式日期和优先级（使用emoji表示）
+ *
  * 优先级: 🔺 highest, ⏫ high, 🔼 medium, 🔽 low, ⏬ lowest
  * 日期: ➕ 创建日期, 🛫 开始日期, ⏳ 计划日期, 📅 due日期, ❌ 取消日期, ✅ 完成日期
- * @returns 返回true表示匹配到Tasks格式
+ *
+ * @param content - 任务内容
+ * @param task - 任务对象（会被直接修改）
+ * @returns 返回 true 表示匹配到 Tasks 格式
+ *
+ * @deprecated 请使用 taskParser 模块中的 parseTasksPriority 和 parseTasksDates 函数
+ * @see {@link ./taskParser/step4.ts} 中的新实现
  */
 export function parseTasksFormat(content: string, task: GanttTask): boolean {
-	if (content.includes('🔺')) {
-		task.priority = 'highest';
-	} else if (content.includes('⏫')) {
-		task.priority = 'high';
-	} else if (content.includes('🔼')) {
-		task.priority = 'medium';
-	} else if (content.includes('🔽')) {
-		task.priority = 'low';
-	} else if (content.includes('⏬')) {
-		task.priority = 'lowest';
-	}
-	const dateRegex = /(➕|🛫|⏳|📅|❌|✅)\s*(\d{4}-\d{2}-\d{2})/g;
-	let match;
-	let hasCancelledDate = false;
-	while ((match = dateRegex.exec(content)) !== null) {
-		const [, emoji, dateStr] = match;
-		const date = new Date(dateStr);
-		switch (emoji) {
-			case '➕': task.createdDate = date; break;
-			case '🛫': task.startDate = date; break;
-			case '⏳': task.scheduledDate = date; break;
-			case '📅': task.dueDate = date; break;
-			case '❌':
-				task.cancelledDate = date;
-				hasCancelledDate = true;
-				break;
-			case '✅': task.completionDate = date; break;
-		}
-	}
-	// 如果存在取消日期，确保取消状态也被设置（修复手动修改复选框后状态不一致的问题）
-	if (hasCancelledDate && !task.completed) {
-		task.cancelled = true;
-	}
-	const hasTasksFormat = /([➕🛫⏳📅❌✅])\s*\d{4}-\d{2}-\d{2}/.test(content) || /[🔺⏫🔼🔽⏬]/.test(content);
-	if (hasTasksFormat) {
-		task.format = 'tasks';
-	}
-	return hasTasksFormat;
+    // 解析优先级
+    const priorityRegex = RegularExpressions.Tasks.priorityRegex;
+    priorityRegex.lastIndex = 0;
+    const priorityMatch = priorityRegex.exec(content);
+    if (priorityMatch) {
+        const priority = parsePriorityFromEmoji(priorityMatch[1]);
+        if (priority) {
+            task.priority = priority;
+        }
+    }
+
+    // 解析日期
+    const dates = {
+        createdDate: parseTasksDateField(content, 'createdDate'),
+        startDate: parseTasksDateField(content, 'startDate'),
+        scheduledDate: parseTasksDateField(content, 'scheduledDate'),
+        dueDate: parseTasksDateField(content, 'dueDate'),
+        cancelledDate: parseTasksDateField(content, 'cancelledDate'),
+        completionDate: parseTasksDateField(content, 'completionDate'),
+    };
+    Object.assign(task, dates);
+
+    if (task.cancelledDate && !task.completed) {
+        task.cancelled = true;
+    }
+
+    const hasTasksFormat = RegularExpressions.Tasks.formatDetectionRegex.test(content);
+    if (hasTasksFormat) {
+        task.format = 'tasks';
+    }
+
+    return hasTasksFormat;
+}
+
+/**
+ * 解析 Tasks 格式的单个日期字段
+ */
+function parseTasksDateField(content: string, field: string): Date | undefined {
+    const fieldToRegex: Record<string, RegExp> = {
+        createdDate: RegularExpressions.Tasks.createdDateRegex,
+        startDate: RegularExpressions.Tasks.startDateRegex,
+        scheduledDate: RegularExpressions.Tasks.scheduledDateRegex,
+        dueDate: RegularExpressions.Tasks.dueDateRegex,
+        cancelledDate: RegularExpressions.Tasks.cancelledDateRegex,
+        completionDate: RegularExpressions.Tasks.completionDateRegex,
+    };
+
+    const regex = fieldToRegex[field];
+    if (!regex) return undefined;
+
+    regex.lastIndex = 0;
+    const match = regex.exec(content);
+    if (match && match[1]) {
+        return new Date(match[1]);
+    }
+    return undefined;
 }
 
 /**
  * 解析 Dataview 插件格式日期和优先级（使用字段表示）
- * [priority:: ...], [created:: ...], [start:: ...], [scheduled:: ...], [due:: ...], [cancelled:: ...], [completion:: ...]
- * @returns 返回true表示匹配到Dataview格式
+ *
+ * 字段格式: [priority:: ...], [created:: ...], [start:: ...], [scheduled:: ...], [due:: ...], [cancelled:: ...], [completion:: ...]
+ *
+ * @param content - 任务内容
+ * @param task - 任务对象（会被直接修改）
+ * @returns 返回 true 表示匹配到 Dataview 格式
+ *
+ * @deprecated 请使用 taskParser 模块中的 parseDataviewPriority 和 parseDataviewDates 函数
+ * @see {@link ./taskParser/step4.ts} 中的新实现
  */
 export function parseDataviewFormat(content: string, task: GanttTask): boolean {
-	const fieldRegex = /\[(priority|created|start|scheduled|due|cancelled|completion)::\s*([^\]]+)\]/g;
-	let match;
-	let hasCancelledDate = false;
-	while ((match = fieldRegex.exec(content)) !== null) {
-		const [, field, value] = match;
-		const trimmedValue = value.trim();
-		switch (field) {
-			case 'priority':
-				const priorityValue = trimmedValue.toLowerCase();
-				if ([
-					'highest', 'high', 'medium', 'low', 'lowest'
-				].includes(priorityValue)) {
-					task.priority = priorityValue;
-				}
-				break;
-			case 'created':
-			case 'start':
-			case 'scheduled':
-			case 'due':
-			case 'cancelled':
-			case 'completion':
-				const date = new Date(trimmedValue);
-				if (isNaN(date.getTime())) continue;
-				if (field === 'created') task.createdDate = date;
-				else if (field === 'start') task.startDate = date;
-				else if (field === 'scheduled') task.scheduledDate = date;
-				else if (field === 'due') task.dueDate = date;
-				else if (field === 'cancelled') {
-					task.cancelledDate = date;
-					hasCancelledDate = true;
-				}
-				else if (field === 'completion') task.completionDate = date;
-				break;
-		}
-	}
-	// 如果存在取消日期，确保取消状态也被设置（修复手动修改复选框后状态不一致的问题）
-	if (hasCancelledDate && !task.completed) {
-		task.cancelled = true;
-	}
-	const hasDataviewFormat = /\[(priority|created|start|scheduled|due|cancelled|completion)::\s*[^\]]+\]/.test(content);
-	if (hasDataviewFormat) {
-		task.format = 'dataview';
-	}
-	return hasDataviewFormat;
+    // 解析优先级
+    const priorityRegex = RegularExpressions.Dataview.priorityRegex;
+    priorityRegex.lastIndex = 0;
+    const priorityMatch = priorityRegex.exec(content);
+    if (priorityMatch) {
+        const priority = parsePriorityFromDataview(priorityMatch[1]);
+        if (priority) {
+            task.priority = priority;
+        }
+    }
+
+    // 解析日期
+    const dates = {
+        createdDate: parseDataviewDateField(content, 'createdDate'),
+        startDate: parseDataviewDateField(content, 'startDate'),
+        scheduledDate: parseDataviewDateField(content, 'scheduledDate'),
+        dueDate: parseDataviewDateField(content, 'dueDate'),
+        cancelledDate: parseDataviewDateField(content, 'cancelledDate'),
+        completionDate: parseDataviewDateField(content, 'completionDate'),
+    };
+    Object.assign(task, dates);
+
+    if (task.cancelledDate && !task.completed) {
+        task.cancelled = true;
+    }
+
+    const hasDataviewFormat = RegularExpressions.Dataview.formatDetectionRegex.test(content);
+    if (hasDataviewFormat) {
+        task.format = 'dataview';
+    }
+
+    return hasDataviewFormat;
+}
+
+/**
+ * 解析 Dataview 格式的单个日期字段
+ */
+function parseDataviewDateField(content: string, field: string): Date | undefined {
+    const fieldToRegex: Record<string, RegExp> = {
+        createdDate: RegularExpressions.Dataview.createdDateRegex,
+        startDate: RegularExpressions.Dataview.startDateRegex,
+        scheduledDate: RegularExpressions.Dataview.scheduledDateRegex,
+        dueDate: RegularExpressions.Dataview.dueDateRegex,
+        cancelledDate: RegularExpressions.Dataview.cancelledDateRegex,
+        completionDate: RegularExpressions.Dataview.completionDateRegex,
+    };
+
+    const regex = fieldToRegex[field];
+    if (!regex) return undefined;
+
+    regex.lastIndex = 0;
+    const match = regex.exec(content);
+    if (match && match[1]) {
+        const date = new Date(match[1]);
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+    }
+    return undefined;
 }
 
 /**
  * 转义正则表达式中的特殊字符
+ *
+ * @param string - 需要转义的字符串
+ * @returns 转义后的字符串
+ *
+ * @deprecated 请使用 taskParser/utils 模块中的 escapeRegExp 函数
+ * @see {@link ./taskParser/utils.ts}
  */
 export function escapeRegExp(string: string): string {
-	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
  * 提取任务描述（移除所有元数据标记）
+ *
  * 从任务内容中提取纯文本描述，移除：
  * - Tasks 格式的优先级 emoji (🔺⏫🔼🔽⏬)
  * - Tasks 格式的日期 emoji + 日期值 (➕🛫⏳📅❌✅ + 日期)
  * - Dataview 格式的字段 ([field:: value])
+ *
+ * @param content - 原始任务内容
  * @returns 清理后的任务描述
+ *
+ * @deprecated 请使用 taskParser/utils 模块中的 extractTaskDescription 函数
+ * @see {@link ./taskParser/utils.ts}
  */
 export function extractTaskDescription(content: string): string {
-	let text = content;
+    let text = content;
 
-	// 移除 Tasks emoji 优先级标记
-	text = text.replace(/\s*(🔺|⏫|🔼|🔽|⏬)\s*/g, ' ');
+    // 移除 Tasks emoji 优先级标记
+    text = text.replace(RegularExpressions.DescriptionExtraction.removePriorityEmoji, ' ');
 
-	// 移除 Tasks emoji 日期属性 (emoji + 空格 + 日期)
-	text = text.replace(/\s*(➕|🛫|⏳|📅|❌|✅)\s*\d{4}-\d{2}-\d{2}\s*/g, ' ');
+    // 移除 Tasks emoji 日期属性
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeTasksDate, ' ');
 
-	// 移除 Dataview [field:: value] 块
-	text = text.replace(/\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/g, ' ');
+    // 移除 Dataview [field:: value] 块
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeDataviewField, ' ');
 
-	// 折叠多余空格并修剪首尾空格
-	text = text.replace(/\s{2,}/g, ' ').trim();
+    // 折叠多余空格并修剪首尾空格
+    text = text.replace(RegularExpressions.DescriptionExtraction.collapseWhitespace, ' ').trim();
 
-	return text;
+    return text;
 }
+
+// ==================== 新模块导入说明 ====================
 
 /**
- * 解析列表项中的任务
+ * 新的 taskParser 模块位于 ./taskParser/index.ts
+ *
+ * 建议使用此模块中的新接口，提供更清晰的四步解析流程：
+ * - step1: 识别任务行
+ * - step2: 筛选任务行
+ * - step3: 判断格式
+ * - step4: 解析属性
+ *
+ * @example
+ * ```ts
+ * import {
+ *   parseTasksFromListItems,
+ *   parseTaskLine,
+ *   detectFormat
+ * } from './taskParser';
+ * ```
  */
-export function parseTasksFromListItems(
-	file: TFile,
-	lines: string[],
-	listItems: ListItemCache[],
-	enabledFormats: string[],
-	globalTaskFilter: string
-): GanttTask[] {
-	const tasks: GanttTask[] = [];
-	for (const item of listItems) {
-		const lineNumber = item.position.start.line;
-		const line = lines[lineNumber];
-		if (!line) continue;
-		const taskMatch = line.match(/^\s*[-*]\s*\[([ xX/])\]\s*(.*)/);
-		if (!taskMatch) continue;
-		const [, checkedStatus, taskContent] = taskMatch;
-		const isCompleted = checkedStatus.toLowerCase() === 'x';
-		const isCancelled = checkedStatus === '/';
-		if (globalTaskFilter) {
-			const trimmedContent = taskContent.trim();
-			if (!trimmedContent.startsWith(globalTaskFilter)) {
-				continue;
-			}
-		}
-		const contentWithoutFilter = globalTaskFilter
-			? taskContent.replace(new RegExp(`^\s*${escapeRegExp(globalTaskFilter)}\s*`), '')
-			: taskContent;
-		const task: GanttTask = {
-			filePath: file.path,
-			fileName: file.basename,
-			lineNumber: lineNumber + 1,
-			content: contentWithoutFilter,
-			description: extractTaskDescription(contentWithoutFilter),
-			completed: isCompleted,
-			cancelled: isCancelled,
-		};
-		const hasTasksFormat = enabledFormats.includes('tasks') ? parseTasksFormat(contentWithoutFilter, task) : false;
-		const hasDataviewFormat = enabledFormats.includes('dataview') ? parseDataviewFormat(contentWithoutFilter, task) : false;
-		if (hasTasksFormat && hasDataviewFormat) {
-			task.warning = '混用任务格式，请修改';
-		} else if (!task.priority && !task.createdDate && !task.startDate &&
-			!task.scheduledDate && !task.dueDate && !task.cancelledDate && !task.completionDate) {
-			task.warning = '未规划任务时间，请设置';
-		}
-		tasks.push(task);
-	}
-	return tasks.sort((a, b) => a.lineNumber - b.lineNumber);
-}
+
+// ==================== 迁移指南 ====================
+
+/**
+ * 迁移指南：
+ *
+ * 旧代码：
+ * ```ts
+ * import { parseTasksFormat, parseDataviewFormat } from './taskParser';
+ *
+ * const task = { ... };
+ * parseTasksFormat(content, task);
+ * parseDataviewFormat(content, task);
+ * ```
+ *
+ * 新代码：
+ * ```ts
+ * import {
+ *   parseTasksPriority,
+ *   parseDataviewPriority,
+ *   parseTasksFromListItems
+ * } from './taskParser';
+ *
+ * // 或使用完整流程
+ * import { parseTasksFromListItems } from './taskParser';
+ *
+ * const tasks = parseTasksFromListItems(file, lines, listItems, ['tasks', 'dataview'], '🎯 ');
+ * ```
+ */
