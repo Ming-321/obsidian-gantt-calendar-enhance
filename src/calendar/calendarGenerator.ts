@@ -1,3 +1,29 @@
+/**
+ * Calendar Generator Module
+ *
+ * 月历数据生成器，负责生成完整的月度日历数据结构。
+ *
+ * 主要功能：
+ * - 生成指定年月的日历数据（6周 × 7天 = 42天）
+ * - 集成中国农历转换和节日信息
+ * - 支持周一或周日作为每周的起始日
+ * - 自动填充上个月和下个月的日期以补全日历网格
+ * - 标记今天和当前月份的日期
+ * - 按周组织日期数据并计算周数
+ *
+ * 数据结构：
+ * - CalendarMonth: 包含年月、所有天数、按周分组的数据
+ * - CalendarWeek: 包含周数、起始/结束日期、该周的所有天数
+ * - CalendarDay: 包含日期、星期、农历信息、节日等
+ *
+ * 使用场景：
+ * - 月视图渲染
+ * - 周视图数据准备
+ * - 日历导航和日期选择
+ *
+ * @module calendar/calendarGenerator
+ */
+
 import { CalendarDay, CalendarMonth, CalendarWeek } from '../types';
 import { solarToLunar, getShortLunarText } from '../lunar/lunar';
 import { getDaysInMonth, getFirstDayOfMonth } from '../dateUtils/format';
