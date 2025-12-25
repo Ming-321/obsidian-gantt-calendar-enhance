@@ -200,8 +200,7 @@ export class WeekViewRenderer extends BaseCalendarRenderer {
 				if (container) {
 					this.render(container as HTMLElement, new Date());
 				}
-			},
-			this.plugin?.settings?.globalTaskFilter || ''
+			}
 		);
 	}
 }

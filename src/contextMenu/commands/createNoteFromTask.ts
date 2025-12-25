@@ -8,8 +8,7 @@ import type { GanttTask } from '../../types';
 export async function createNoteFromTask(
 	app: App,
 	task: GanttTask,
-	defaultPath: string,
-	globalFilter: string
+	defaultPath: string
 ): Promise<void> {
 	try {
 		const raw = task.content;
@@ -45,7 +44,7 @@ export async function createNoteFromTask(
 		// task.description 已经移除了元数据标记，只需额外处理 wiki 链接和 markdown 链接
 		const baseDesc = removeLinksFromDescription(cleanTaskDescriptionFromTask(task));
 		const fileName = sanitizeFileName(baseDesc);
-		
+
 		if (!fileName) {
 			new Notice('任务描述为空，无法创建文件');
 			return;
@@ -64,7 +63,7 @@ export async function createNoteFromTask(
 			const leaf = app.workspace.getLeaf(false);
 			await leaf.openFile(existingFile as any);
 			// 仍将任务内容改为双链，方便后续跳转
-			await updateTaskLineToWikiLink(app, task, fileName, globalFilter);
+			await updateTaskLineToWikiLink(app, task, fileName);
 			return;
 		}
 
@@ -73,15 +72,15 @@ export async function createNoteFromTask(
 
 		// 创建文件
 		const file = await app.vault.create(filePath, fileContent);
-		
+
 		// 打开新创建的文件
 		const leaf = app.workspace.getLeaf(false);
 		await leaf.openFile(file);
-		
+
 		new Notice(`已创建笔记: ${fileName}.md`);
 
 		// 3) 更新源任务行为双链，并移除任务中的超链接
-		await updateTaskLineToWikiLink(app, task, fileName, globalFilter);
+		await updateTaskLineToWikiLink(app, task, fileName);
 	} catch (error) {
 		console.error('Failed to create note from task:', error);
 		new Notice('创建笔记失败');
@@ -214,7 +213,7 @@ function formatDate(date: Date): string {
 /**
  * 将源任务行的任务描述改为双链形式，并移除任务行中的所有超链接
  */
-async function updateTaskLineToWikiLink(app: App, task: GanttTask, noteName: string, globalFilter: string): Promise<void> {
+async function updateTaskLineToWikiLink(app: App, task: GanttTask, noteName: string): Promise<void> {
 	const file = app.vault.getAbstractFileByPath(task.filePath);
 	if (!(file as any)) return;
 	const content = await app.vault.read(file as any);
@@ -227,6 +226,10 @@ async function updateTaskLineToWikiLink(app: App, task: GanttTask, noteName: str
 	if (!m) return;
 	const prefix = m[1];
 	const rest = m[2];
+
+	// 从插件设置中获取全局过滤器
+	const plugin = (app as any).plugins?.plugins['obsidian-gantt-calendar'];
+	const globalFilter = plugin?.settings?.globalTaskFilter || '';
 
 	// 保留是否存在全局筛选前缀
 	let gfPrefix = '';

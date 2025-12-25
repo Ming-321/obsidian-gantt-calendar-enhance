@@ -8,10 +8,9 @@ export function openEditTaskModal(
   task: GanttTask,
   enabledFormats: string[],
   onSuccess: () => void,
-  allowEditContent?: boolean,
-  globalFilter?: string
+  allowEditContent?: boolean
 ): void {
-  const modal = new EditTaskModal(app, task, enabledFormats, onSuccess, allowEditContent, globalFilter);
+  const modal = new EditTaskModal(app, task, enabledFormats, onSuccess, allowEditContent);
   modal.open();
 }
 
@@ -20,7 +19,6 @@ class EditTaskModal extends Modal {
   private enabledFormats: string[];
   private onSuccess: () => void;
   private allowEditContent: boolean;
-  private globalFilter?: string;
 
   // 状态缓存
   private completed: boolean | undefined;
@@ -33,15 +31,14 @@ class EditTaskModal extends Modal {
   private completionDate: Date | null | undefined;
   private content: string | undefined;
 
-  constructor(app: App, task: GanttTask, enabledFormats: string[], onSuccess: () => void, allowEditContent?: boolean, globalFilter?: string) {
+  constructor(app: App, task: GanttTask, enabledFormats: string[], onSuccess: () => void, allowEditContent?: boolean) {
     super(app);
     this.task = task;
     this.enabledFormats = enabledFormats;
     this.onSuccess = onSuccess;
     this.allowEditContent = !!allowEditContent;
-    this.globalFilter = globalFilter;
 
-    // 初始化为“未更改”状态（undefined），用户修改才记录
+    // 初始化为"未更改"状态（undefined），用户修改才记录
     this.completed = undefined;
     this.priority = undefined;
     this.createdDate = undefined;
@@ -161,9 +158,7 @@ class EditTaskModal extends Modal {
         .onClick(async () => {
           try {
             // 只将实际更改的字段写入，未更改的字段保留原值
-            const updates: any = {
-              globalFilter: this.globalFilter
-            };
+            const updates: any = {};
             if (this.completed !== undefined) updates.completed = this.completed;
             if (this.priority !== undefined) updates.priority = this.priority;
             if (this.createdDate !== undefined) updates.createdDate = this.createdDate;

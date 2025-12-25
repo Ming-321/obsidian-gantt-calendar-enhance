@@ -24,8 +24,7 @@ export function registerTaskContextMenu(
 	app: App,
 	enabledFormats: string[],
 	defaultNotePath: string,
-	onRefresh: () => void,
-	globalFilter?: string
+	onRefresh: () => void
 ): void {
 	taskElement.addEventListener('contextmenu', (e: MouseEvent) => {
 		e.preventDefault();
@@ -41,7 +40,7 @@ export function registerTaskContextMenu(
 				   .onClick(() => {
 					   openEditTaskModal(app, task, enabledFormats, () => {
 						   onRefresh();
-					   }, true, globalFilter); // 传递true和globalFilter以支持描述编辑
+					   }, true);
 				   });
 		});
 
@@ -51,7 +50,7 @@ export function registerTaskContextMenu(
 				.setTitle('创建任务笔记:同名')
 				.setIcon('file-plus')
 				.onClick(() => {
-					createNoteFromTask(app, task, defaultNotePath, globalFilter || '');
+					createNoteFromTask(app, task, defaultNotePath);
 				});
 		});
 
@@ -61,7 +60,7 @@ export function registerTaskContextMenu(
 				.setTitle('创建任务笔记:别名')
 				.setIcon('file-plus')
 				.onClick(() => {
-					createNoteFromTaskAlias(app, task, defaultNotePath, globalFilter || '');
+					createNoteFromTaskAlias(app, task, defaultNotePath);
 				});
 		});
 

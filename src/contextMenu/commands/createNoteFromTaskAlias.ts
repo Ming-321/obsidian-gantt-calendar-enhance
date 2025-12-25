@@ -8,8 +8,7 @@ import type { GanttTask } from '../../types';
 export async function createNoteFromTaskAlias(
 	app: App,
 	task: GanttTask,
-	defaultPath: string,
-	globalFilter: string
+	defaultPath: string
 ): Promise<void> {
 	const alias = await promptForAlias(app, task);
 	if (!alias) return;
@@ -27,7 +26,7 @@ export async function createNoteFromTaskAlias(
 			new Notice(`文件已存在: ${fileName}.md`);
 			const leaf = app.workspace.getLeaf(false);
 			await leaf.openFile(existingFile as any);
-			await updateTaskLineToWikiLink(app, task, fileName, globalFilter, alias);
+			await updateTaskLineToWikiLink(app, task, fileName, alias);
 			return;
 		}
 		const fileContent = `# ${alias}\n\n## 任务信息\n- 原任务: ${baseDesc}\n`;
@@ -35,7 +34,7 @@ export async function createNoteFromTaskAlias(
 		const leaf = app.workspace.getLeaf(false);
 		await leaf.openFile(file);
 		new Notice(`已创建笔记: ${fileName}.md`);
-		await updateTaskLineToWikiLink(app, task, fileName, globalFilter, alias);
+		await updateTaskLineToWikiLink(app, task, fileName, alias);
 	} catch (error) {
 		console.error('Failed to create alias note from task:', error);
 		new Notice('创建别名笔记失败');
@@ -110,7 +109,7 @@ async function ensureFolderExists(app: App, folderPath: string): Promise<void> {
 		await app.vault.createFolder(normalizedPath);
 	}
 }
-async function updateTaskLineToWikiLink(app: App, task: GanttTask, noteName: string, globalFilter: string, alias?: string): Promise<void> {
+async function updateTaskLineToWikiLink(app: App, task: GanttTask, noteName: string, alias?: string): Promise<void> {
 	const file = app.vault.getAbstractFileByPath(task.filePath);
 	if (!(file as any)) return;
 	const content = await app.vault.read(file as any);
@@ -122,6 +121,11 @@ async function updateTaskLineToWikiLink(app: App, task: GanttTask, noteName: str
 	if (!m) return;
 	const prefix = m[1];
 	const rest = m[2];
+
+	// 从插件设置中获取全局过滤器
+	const plugin = (app as any).plugins?.plugins['obsidian-gantt-calendar'];
+	const globalFilter = plugin?.settings?.globalTaskFilter || '';
+
 	let gfPrefix = '';
 	const gfTrim = (globalFilter || '').trim();
 	if (gfTrim && rest.trim().startsWith(gfTrim)) {

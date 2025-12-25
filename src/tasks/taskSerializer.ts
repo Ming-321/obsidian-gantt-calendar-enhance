@@ -1,3 +1,4 @@
+import { App } from 'obsidian';
 import { GanttTask } from '../types';
 
 /**
@@ -13,7 +14,6 @@ export interface TaskUpdates {
 	cancelledDate?: Date | null;
 	completionDate?: Date | null;
 	content?: string;
-	globalFilter?: string;
 }
 
 /**
@@ -90,20 +90,20 @@ function getPriorityEmoji(priority: 'highest' | 'high' | 'medium' | 'low' | 'low
  * 序列化任务为文本行
  *
  * 按照固定顺序构建任务行：
- * Tasks 格式: [复选框] [全局过滤] [优先级] [描述] [创建] [开始] [计划] [截止] [取消] [完成]
+ * Tasks 格式: [复选框] [全局过滤] [描述] [优先级] [创建] [开始] [计划] [截止] [取消] [完成]
  * Dataview 格式: [复选框] [全局过滤] [描述] [priority] [created] [start] [scheduled] [due] [cancelled] [completion]
  *
+ * @param app Obsidian App 实例（用于访问插件设置）
  * @param task 原始任务对象
  * @param updates 更新参数
  * @param format 格式 ('tasks' | 'dataview')
- * @param globalFilter 全局过滤器
  * @returns 序列化后的任务行文本
  */
 export function serializeTask(
+	app: App,
 	task: GanttTask,
 	updates: TaskUpdates,
-	format: 'tasks' | 'dataview',
-	globalFilter?: string
+	format: 'tasks' | 'dataview'
 ): string {
 	// 1. 合并原始数据和更新数据
 	// 注意：updates 中的日期字段可能是 null（表示清除），task 中的日期字段是 undefined（表示不存在）
@@ -120,13 +120,17 @@ export function serializeTask(
 		completionDate: updates.completionDate !== undefined ? (updates.completionDate || undefined) : task.completionDate,
 	};
 
-	// 2. 构建任务行的各个部分
+	// 2. 从插件设置中获取全局过滤器（唯一信源）
+	const plugin = (app as any).plugins?.plugins['obsidian-gantt-calendar'];
+	const globalFilter = plugin?.settings?.globalTaskFilter || '';
+
+	// 3. 构建任务行的各个部分
 	const parts: string[] = [];
 
 	// 复选框
 	parts.push(merged.completed ? '[x]' : '[ ]');
 
-	// 全局过滤器
+	// 全局过滤器（从插件设置中获取）
 	if (globalFilter) {
 		parts.push(globalFilter);
 	}

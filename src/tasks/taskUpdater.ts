@@ -3,58 +3,6 @@ import { GanttTask } from '../types';
 import { serializeTask, TaskUpdates } from './taskSerializer';
 
 /**
- * 从原始任务行中提取全局过滤器
- *
- * 全局过滤器通常在复选框 [ ] 后面，任务描述前面
- * 例如："- [ ] 🎯 测试任务" 中的 "🎯 " 就是全局过滤器
- *
- * @param taskLine 原始任务行
- * @param knownGlobalFilter 已知的全局过滤器（如果提供，优先使用）
- * @returns 全局过滤器，如果没有则返回 undefined
- */
-function extractGlobalFilter(taskLine: string, knownGlobalFilter?: string): string | undefined {
-	// 如果已经提供了全局过滤器，直接使用
-	if (knownGlobalFilter !== undefined && knownGlobalFilter !== '') {
-		return knownGlobalFilter;
-	}
-
-	// 否则，尝试从原始行中提取
-	// 匹配模式：复选框后面的内容，直到任务描述开始
-	// 常见的全局过滤器包括：emoji 符号、#tag、特殊关键词等
-
-	// 提取复选框后面的内容
-	const match = taskLine.match(/^\s*[-*]\s*\[[ xX]\]\s*(.+?)$/);
-	if (!match) {
-		return undefined;
-	}
-
-	const rest = match[1]; // 复选框后的所有内容
-
-	// 尝试提取全局过滤器（通常是开头的特殊标记）
-	// 匹配：emoji、#tag、或特定的关键词模式
-	const globalFilterPatterns = [
-		/^[🎯📌✅⭐🔴🟡🟢]\s*/,  // emoji 前缀
-		/^#[\w\u4e00-\u9fa5]+\s*/,  // #tag
-		/^[A-Z]{2,}\s*/,  // 大写字母缩写（如 TODO, DONE）
-		/^[🎯🎨📋💡]\s*/,  // 其他常用 emoji
-	];
-
-	for (const pattern of globalFilterPatterns) {
-		const filterMatch = rest.match(pattern);
-		if (filterMatch) {
-			const filter = filterMatch[0].trim();
-			// 验证：如果后面跟着内容，这很可能是全局过滤器
-			const remaining = rest.slice(filterMatch[0].length).trim();
-			if (remaining.length > 0) {
-				return filter + ' ';  // 保留空格
-			}
-		}
-	}
-
-	return undefined;
-}
-
-/**
  * 格式化日期为 YYYY-MM-DD
  */
 function formatDate(date: Date, format: string): string {
@@ -256,15 +204,13 @@ export async function updateTaskProperties(
 	const indent = listMatch[1];  // 缩进
 	const listMarker = listMatch[2];  // 列表标记 (- 或 *)
 
-	// 提取全局过滤器（优先使用 updates 中提供的，否则从原始行中提取）
-	const globalFilter = extractGlobalFilter(taskLine, updates.globalFilter);
-
 	// 使用新的序列化函数重建任务行（只返回任务内容部分，不包含列表标记）
+	// 序列化函数会直接从插件设置中获取全局过滤器
 	const taskContent = serializeTask(
+		app,
 		task,
 		updates,
-		formatToUse,
-		globalFilter
+		formatToUse
 	);
 
 	// 拼接完整的任务行：缩进 + 列表标记 + 空格 + 任务内容
