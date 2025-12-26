@@ -225,6 +225,21 @@ export abstract class BaseCalendarRenderer {
 				}
 			}
 
+			// 标签
+			if (task.tags && task.tags.length > 0) {
+				const tagsDiv = tooltip.createDiv('tooltip-tags');
+				const tagsLabel = tagsDiv.createEl('span', {
+					text: '标签：',
+					cls: 'tooltip-label'
+				});
+				task.tags.forEach(tag => {
+					tagsDiv.createEl('span', {
+						text: `#${tag}`,
+						cls: 'tooltip-tag-badge'
+					});
+				});
+			}
+
 			// 文件位置
 			const fileDiv = tooltip.createDiv('tooltip-file');
 			fileDiv.createEl('span', { text: `📄 ${task.fileName}:${task.lineNumber}`, cls: 'tooltip-file-location' });
@@ -404,5 +419,44 @@ export abstract class BaseCalendarRenderer {
 		if (lastIndex < text.length) {
 			container.appendText(text.substring(lastIndex));
 		}
+	}
+
+	/**
+	 * 渲染任务标签
+	 * 创建独立的标签卡片元素
+	 * @param task - 任务对象
+	 * @param container - 容器元素
+	 */
+	protected renderTaskTags(task: GanttTask, container: HTMLElement): void {
+		if (!task.tags || task.tags.length === 0) {
+			return;
+		}
+
+		const tagsContainer = container.createDiv('gantt-task-tags-inline');
+
+		task.tags.forEach(tag => {
+			const tagEl = tagsContainer.createEl('span', {
+				text: `#${tag}`,
+				cls: 'gantt-tag-badge'
+			});
+
+			// 为不同标签分配不同颜色（基于hash）
+			const colorIndex = this.getStringHashCode(tag) % 6;
+			tagEl.addClass(`tag-color-${colorIndex}`);
+		});
+	}
+
+	/**
+	 * 计算字符串的哈希值（用于标签颜色分配）
+	 * @param str - 输入字符串
+	 * @returns 哈希值（绝对值）
+	 */
+	private getStringHashCode(str: string): number {
+		let hash = 0;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) - hash) + str.charCodeAt(i);
+			hash = hash & hash; // Convert to 32bit integer
+		}
+		return Math.abs(hash);
 	}
 }

@@ -768,6 +768,128 @@ Author: sugar
 	text-overflow: ellipsis;
 }
 
+/* ==================== Task Tags Component ==================== */
+
+/* Tags inline container - 任务标签容器 */
+.gantt-task-tags-inline {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 4px;
+	flex-wrap: wrap;
+	margin-left: 4px;
+}
+
+/* Tag badge - 标签样式 */
+.gantt-tag-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	padding: 2px 8px;
+	background-color: var(--background-primary);
+	border-radius: 12px;
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+	white-space: nowrap;
+	font-weight: 500;
+	transition: all 0.2s ease;
+	cursor: default;
+}
+
+.gantt-tag-badge:hover {
+	background-color: var(--background-modifier-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 标签颜色变体（6种颜色，基于hash自动分配） */
+.gantt-tag-badge.tag-color-0 {
+	background-color: rgba(56, 132, 255, 0.1);
+	border-color: rgba(56, 132, 255, 0.2);
+	color: #3884ff;
+}
+
+.gantt-tag-badge.tag-color-1 {
+	background-color: rgba(34, 197, 94, 0.1);
+	border-color: rgba(34, 197, 94, 0.2);
+	color: #22c55e;
+}
+
+.gantt-tag-badge.tag-color-2 {
+	background-color: rgba(249, 115, 22, 0.1);
+	border-color: rgba(249, 115, 22, 0.2);
+	color: #f97316;
+}
+
+.gantt-tag-badge.tag-color-3 {
+	background-color: rgba(234, 179, 8, 0.1);
+	border-color: rgba(234, 179, 8, 0.2);
+	color: #eab308;
+}
+
+.gantt-tag-badge.tag-color-4 {
+	background-color: rgba(168, 85, 247, 0.1);
+	border-color: rgba(168, 85, 247, 0.2);
+	color: #a855f7;
+}
+
+.gantt-tag-badge.tag-color-5 {
+	background-color: rgba(236, 72, 153, 0.1);
+	border-color: rgba(236, 72, 153, 0.2);
+	color: #ec4899;
+}
+
+/* Tooltip Tags */
+.tooltip-tags {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+	padding: 8px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+}
+
+.tooltip-tag-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 12px;
+	padding: 3px 10px;
+	background-color: var(--background-primary);
+	border-radius: 4px;
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+}
+
+/* ==================== 响应式设计 ==================== */
+
+/* 小屏幕适配 */
+@media (max-width: 768px) {
+	.gantt-tag-badge {
+		font-size: 10px;
+		padding: 1px 6px;
+	}
+
+	.gantt-task-tags-inline {
+		gap: 3px;
+	}
+}
+
+/* 月视图小屏幕 - 限制标签显示 */
+.calendar-task-card--month .gantt-task-tags-inline {
+	max-width: 100%;
+	overflow: hidden;
+}
+
+.calendar-task-card--month .gantt-tag-badge {
+	max-width: 60px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 /* 6.3 Year View Components */
 .calendar-month-card {
 	background-color: var(--background-primary);

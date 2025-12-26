@@ -156,6 +156,10 @@ function generateNoteContent(task: GanttTask, mdLinks: Array<{text: string, url:
 		lines.push(`- **优先级**: ${task.priority}`);
 	}
 
+	if (task.tags && task.tags.length > 0) {
+		lines.push(`- **标签**: ${task.tags.map(t => `#${t}`).join(' ')}`);
+	}
+
 	if (task.createdDate) {
 		lines.push(`- **创建日期**: ${formatDate(task.createdDate, 'yyyy-MM-dd')}`);
 	}

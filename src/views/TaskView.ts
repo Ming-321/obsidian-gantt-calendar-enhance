@@ -176,6 +176,9 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 		}
 		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
 
+		// 渲染标签（在描述之后、优先级之前）
+		this.renderTaskTags(task, taskItem);
+
 		// 优先级标记
 		if (task.priority) {
 			const priorityIcon = this.getPriorityIcon(task.priority);

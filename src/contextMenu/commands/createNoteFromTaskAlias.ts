@@ -29,7 +29,7 @@ export async function createNoteFromTaskAlias(
 			await updateTaskLineToWikiLink(app, task, fileName, baseDesc);
 			return;
 		}
-		const fileContent = `# ${alias}\n\n## 任务信息\n- 原任务: ${baseDesc}\n`;
+		const fileContent = `# ${alias}\n\n## 任务信息\n- 原任务: ${baseDesc}\n${task.tags && task.tags.length > 0 ? `- 标签: ${task.tags.map(t => `#${t}`).join(' ')}\n` : ''}`;
 		const file = await app.vault.create(filePath, fileContent);
 		const leaf = app.workspace.getLeaf(false);
 		await leaf.openFile(file);

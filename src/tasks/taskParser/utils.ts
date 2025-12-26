@@ -54,6 +54,9 @@ export function extractTaskDescription(content: string): string {
     // 移除 Dataview [field:: value] 块
     text = text.replace(RegularExpressions.DescriptionExtraction.removeDataviewField, ' ');
 
+    // 移除标签（使用统一正则入口）
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeTags, ' ');
+
     // 折叠多余空格并修剪首尾空格
     text = text.replace(RegularExpressions.DescriptionExtraction.collapseWhitespace, ' ').trim();
 
@@ -86,6 +89,9 @@ export function extractTasksDescription(content: string): string {
     // 移除 Tasks emoji 日期属性
     text = text.replace(RegularExpressions.DescriptionExtraction.removeTasksDate, ' ');
 
+    // 移除标签（使用统一正则入口）
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeTags, ' ');
+
     // 折叠多余空格
     text = text.replace(RegularExpressions.DescriptionExtraction.collapseWhitespace, ' ').trim();
 
@@ -114,6 +120,9 @@ export function extractDataviewDescription(content: string): string {
 
     // 移除 Dataview 字段
     text = text.replace(RegularExpressions.DescriptionExtraction.removeDataviewField, ' ');
+
+    // 移除标签（使用统一正则入口）
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeTags, ' ');
 
     // 折叠多余空格
     text = text.replace(RegularExpressions.DescriptionExtraction.collapseWhitespace, ' ').trim();
@@ -289,15 +298,11 @@ type ParsedDates = Partial<Record<'createdDate' | 'startDate' | 'scheduledDate' 
 // ==================== 标签提取 ====================
 
 /**
- * 标签提取正则
- * 匹配 #tag 格式的标签
- */
-const TAG_REGEX = /#([a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)/g;
-
-/**
  * 提取任务标签
  *
  * 从任务描述中提取所有 #tag 格式的标签。
+ * 使用统一正则入口 RegularExpressions.DescriptionExtraction.matchTags
+ *
  * 标签规则：
  * - 以 # 开头
  * - 后续字符可以是字母、数字、下划线、中文
@@ -322,10 +327,13 @@ export function extractTags(description: string): string[] {
     const tags: string[] = [];
     let match: RegExpExecArray | null;
 
-    // 重置正则索引
-    TAG_REGEX.lastIndex = 0;
+    // 使用统一正则入口
+    const tagRegex = RegularExpressions.DescriptionExtraction.matchTags;
 
-    while ((match = TAG_REGEX.exec(description)) !== null) {
+    // 重置正则索引
+    tagRegex.lastIndex = 0;
+
+    while ((match = tagRegex.exec(description)) !== null) {
         tags.push(match[1]);
     }
 
@@ -336,6 +344,7 @@ export function extractTags(description: string): string[] {
  * 从任务描述中移除标签
  *
  * 移除所有 #tag 格式的标签，返回清理后的文本。
+ * 使用统一正则入口 RegularExpressions.DescriptionExtraction.removeTags
  *
  * @param description - 任务描述
  * @returns 移除标签后的描述
@@ -344,8 +353,13 @@ export function extractTags(description: string): string[] {
  * ```ts
  * removeTags("完成项目 #work #urgent")
  * // 返回: "完成项目"
+ *
+ * removeTags("任务 #前端 #vue3 开发")
+ * // 返回: "任务 开发"
  * ```
  */
 export function removeTags(description: string): string {
-    return description.replace(TAG_REGEX, '').replace(/\s+/g, ' ').trim();
+    return description.replace(RegularExpressions.DescriptionExtraction.removeTags, ' ')
+                     .replace(/\s+/g, ' ')
+                     .trim();
 }

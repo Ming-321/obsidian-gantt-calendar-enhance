@@ -138,6 +138,9 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 		const taskTextEl = taskItem.createDiv('calendar-task-card-text');
 		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
 
+		// 渲染标签
+		this.renderTaskTags(task, taskItem);
+
 		// 创建悬浮提示
 		this.createTaskTooltip(task, taskItem, cleaned);
 

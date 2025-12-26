@@ -420,6 +420,29 @@ export class RegularExpressions {
          * "任务    内容" -> "任务 内容"
          */
         collapseWhitespace: /\s{2,}/g,
+
+        /**
+         * 移除标签
+         * 匹配 #tag 格式的标签及其后的空格（用于从描述中移除）
+         *
+         * 注意：正则中包含 \s* 以匹配标签后的空格
+         * 这与现有的 removePriorityEmoji、removeTasksDate 保持一致
+         *
+         * @example
+         * "任务 #work #urgent" -> "任务  "
+         * "#前端 开发任务" -> " 开发任务"
+         * "完成任务#tag" -> "完成任务"
+         */
+        removeTags: /#([a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)\s*/g,
+
+        /**
+         * 匹配标签（用于提取标签内容）
+         * 与 removeTags 的区别：不包含 \s*，保留原始位置信息
+         *
+         * @example
+         * "任务 #work #urgent" -> 可以提取出 ["work", "urgent"]
+         */
+        matchTags: /#([a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*)/g,
     } as const;
 
     // ==================== 复选框状态正则 ====================
