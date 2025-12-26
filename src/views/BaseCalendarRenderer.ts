@@ -1,5 +1,6 @@
 import { App, Notice } from 'obsidian';
 import type { GanttTask } from '../types';
+import { DEFAULT_TAG_FILTER_STATE, type TagFilterState } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { openFileInExistingLeaf } from '../utils/fileOpener';
 import { updateTaskCompletion } from '../tasks/taskUpdater';
@@ -15,6 +16,9 @@ export abstract class BaseCalendarRenderer {
 	protected app: App;
 	protected plugin: any;
 	protected domCleanups: Array<() => void> = [];
+
+	// 标签筛选状态
+	protected tagFilterState: TagFilterState = DEFAULT_TAG_FILTER_STATE;
 
 	constructor(app: App, plugin: any) {
 		this.app = app;
@@ -106,6 +110,53 @@ export abstract class BaseCalendarRenderer {
 			}
 		}
 		this.domCleanups = [];
+	}
+
+	/**
+	 * 获取标签筛选状态
+	 */
+	public getTagFilterState(): TagFilterState {
+		return this.tagFilterState;
+	}
+
+	/**
+	 * 设置标签筛选状态
+	 */
+	public setTagFilterState(state: TagFilterState): void {
+		this.tagFilterState = state;
+	}
+
+	/**
+	 * 应用标签筛选到任务列表
+	 * @param tasks 原始任务列表
+	 * @returns 筛选后的任务列表
+	 */
+	protected applyTagFilter(tasks: GanttTask[]): GanttTask[] {
+		const { selectedTags, operator } = this.tagFilterState;
+
+		// 无筛选条件，返回全部
+		if (selectedTags.length === 0) {
+			return tasks;
+		}
+
+		return tasks.filter(task => {
+			// 任务没有标签
+			if (!task.tags || task.tags.length === 0) {
+				return false;
+			}
+
+			// AND 模式：任务必须包含所有选中标签
+			if (operator === 'AND') {
+				return selectedTags.every(tag => task.tags!.includes(tag));
+			}
+
+			// OR 模式：任务包含任一选中标签即可
+			if (operator === 'OR') {
+				return selectedTags.some(tag => task.tags!.includes(tag));
+			}
+
+			return false;
+		});
 	}
 
 	/**

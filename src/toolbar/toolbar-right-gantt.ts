@@ -3,6 +3,7 @@ import { renderStatusFilter } from './status-filter';
 import { renderRefreshButton } from './refresh-button';
 import { renderTimeGranularity } from './time-granularity';
 import { renderSortButton } from './sort-button';
+import { renderTagFilterButton } from './tag-filter';
 
 /**
  * 工具栏右侧区域 - 甘特视图功能区
@@ -11,7 +12,8 @@ export class ToolbarRightGantt {
   render(
     container: HTMLElement,
     ganttRenderer: GanttViewRenderer,
-    onRefresh: () => Promise<void>
+    onRefresh: () => Promise<void>,
+    plugin?: any
   ): void {
     container.empty();
     container.addClass('toolbar-right-gantt');
@@ -87,5 +89,17 @@ export class ToolbarRightGantt {
 
     // 刷新按钮（共享）
     renderRefreshButton(container, onRefresh, '刷新甘特图');
+
+    // 标签筛选按钮
+    if (plugin?.taskCache) {
+      renderTagFilterButton(container, {
+        getCurrentState: () => ganttRenderer.getTagFilterState(),
+        onTagFilterChange: (newState) => {
+          ganttRenderer.setTagFilterState(newState);
+          onRefresh();
+        },
+        getAllTasks: () => plugin.taskCache.getAllTasks()
+      });
+    }
   }
 }

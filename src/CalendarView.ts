@@ -147,6 +147,7 @@ export class CalendarView extends ItemView {
             ganttRenderer: this.ganttRenderer,
 			dayRenderer: this.dayRenderer,
 			weekRenderer: this.weekRenderer,
+			plugin: this.plugin,
 			onViewSwitch: (type) => this.switchView(type),
 			onPrevious: () => this.previousPeriod(),
 			onToday: () => this.goToToday(),

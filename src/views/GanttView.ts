@@ -259,6 +259,9 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
     if (this.statusFilter === 'completed') tasks = tasks.filter(t => t.completed);
     if (this.statusFilter === 'uncompleted') tasks = tasks.filter(t => !t.completed);
 
+    // 应用标签筛选
+    tasks = this.applyTagFilter(tasks);
+
     // 应用排序
     tasks = sortTasks(tasks, this.sortState);
 

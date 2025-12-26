@@ -145,3 +145,28 @@ export const DEFAULT_SORT_STATE: SortState = {
 	field: 'dueDate',
 	order: 'asc'
 };
+
+/**
+ * 标签筛选组合器类型
+ * - AND: 交集模式，任务必须包含所有选中标签
+ * - OR: 并集模式，任务包含任一选中标签即可
+ */
+export type TagFilterOperator = 'AND' | 'OR';
+
+/**
+ * 标签筛选状态
+ */
+export interface TagFilterState {
+	/** 选中的标签列表 */
+	selectedTags: string[];
+	/** 组合器：AND（交集）/ OR（并集） */
+	operator: TagFilterOperator;
+}
+
+/**
+ * 默认标签筛选状态
+ */
+export const DEFAULT_TAG_FILTER_STATE: TagFilterState = {
+	selectedTags: [],
+	operator: 'OR'
+};

@@ -72,13 +72,15 @@ export class Toolbar {
 				config.globalFilterText || '',
 				config.taskRenderer,
 				config.onFilterChange,
-				config.onRefresh
+				config.onRefresh,
+				config.plugin
 			);
 		} else if (config.currentViewType === 'gantt') {
             this.rightGanttSection.render(
                 rightContainer,
                 config.ganttRenderer,
-                config.onRefresh
+                config.onRefresh,
+                config.plugin
             );
 		} else {
 			this.rightCalendarSection.render(
@@ -88,7 +90,8 @@ export class Toolbar {
 				config.onToday,
 				config.onNext,
 				config.onViewSwitch,
-				config.onRefresh
+				config.onRefresh,
+				config.plugin
 			);
 		}
 	}
@@ -110,6 +113,9 @@ export interface ToolbarConfig {
     ganttRenderer: GanttViewRenderer;
 	dayRenderer?: DayViewRenderer;
 	weekRenderer?: WeekViewRenderer;
+
+	// 插件实例
+	plugin?: any;
 
 	// 回调函数
 	onViewSwitch: (type: CalendarViewType) => void;

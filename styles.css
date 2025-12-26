@@ -2571,3 +2571,276 @@ Author: sugar
 	width: 20px;
 	text-align: right;
 }
+
+/* ============================================
+   标签筛选器样式（紧凑版）
+   ============================================ */
+
+/* 标签筛选按钮容器 */
+.toolbar-tag-filter-container {
+	display: inline-flex;
+	align-items: center;
+}
+
+/* 标签筛选按钮 */
+.toolbar-tag-filter-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	font-size: 12px;
+}
+
+.toolbar-tag-filter-btn:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.toolbar-tag-filter-btn:active {
+	transform: translateY(0);
+}
+
+/* 标签筛选按钮 - 有选中时的样式 */
+.toolbar-tag-filter-btn.has-selection {
+	background-color: var(--interactive-accent);
+	color: white;
+	border-color: var(--interactive-accent);
+}
+
+/* 标签图标 */
+.toolbar-tag-filter-icon {
+	font-size: 12px;
+	line-height: 1;
+}
+
+/* 标签数量徽章 */
+.toolbar-tag-filter-count {
+	background-color: var(--interactive-accent);
+	color: white;
+	font-size: 9px;
+	font-weight: 600;
+	padding: 1px 4px;
+	border-radius: 6px;
+	min-width: 14px;
+	text-align: center;
+	line-height: 1.1;
+}
+
+.toolbar-tag-filter-btn.has-selection .toolbar-tag-filter-count {
+	background-color: white;
+	color: var(--interactive-accent);
+}
+
+/* ============================================
+   标签选择窗格（紧凑版）
+   ============================================ */
+
+/* 窗格容器 - 更小更紧凑 */
+.tag-filter-pane {
+	position: fixed;
+	z-index: 1000;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 6px 8px;
+	min-width: 180px;
+	max-width: 260px;
+	max-height: 280px;
+	overflow-y: auto;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 窗格滚动条样式 */
+.tag-filter-pane::-webkit-scrollbar {
+	width: 4px;
+}
+
+.tag-filter-pane::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.tag-filter-pane::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+}
+
+.tag-filter-pane::-webkit-scrollbar-thumb:hover {
+	background: var(--text-muted);
+}
+
+/* 组合器区域 - 更紧凑 */
+.tag-filter-operators {
+	display: flex;
+	gap: 4px;
+	padding-bottom: 4px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* 组合器按钮 - 更小更紧凑 */
+.tag-filter-operator-btn {
+	flex: 1;
+	padding: 2px 6px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 10px;
+	font-weight: 500;
+	color: var(--text-muted);
+	transition: all 0.12s ease;
+	text-align: center;
+	line-height: 1.4;
+}
+
+.tag-filter-operator-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.tag-filter-operator-btn.active {
+	background: var(--interactive-accent);
+	color: white;
+	border-color: var(--interactive-accent);
+}
+
+/* 标签网格容器（平铺布局） - 更紧凑 */
+.tag-filter-tags-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+/* 空状态提示 - 更紧凑 */
+.tag-filter-empty {
+	padding: 12px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 11px;
+}
+
+/* ============================================
+   胶囊样式标签项（紧凑版）
+   ============================================ */
+
+/* 标签项 - 胶囊样式单行布局 */
+.tag-filter-tag-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 3px 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary);
+	cursor: pointer;
+	transition: all 0.12s ease;
+	user-select: none;
+	font-size: 11px;
+}
+
+.tag-filter-tag-item:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+}
+
+/* 选中状态 */
+.tag-filter-tag-item.selected {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: white;
+}
+
+/* 标签名称 */
+.tag-filter-tag-name {
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--text-normal);
+	line-height: 1.2;
+}
+
+.tag-filter-tag-item.selected .tag-filter-tag-name {
+	color: white;
+}
+
+/* 任务数量 - 小徽章 */
+.tag-filter-tag-count {
+	font-size: 9px;
+	color: var(--text-muted);
+	background: var(--background-modifier-border);
+	padding: 1px 4px;
+	border-radius: 6px;
+	font-weight: 500;
+	line-height: 1;
+}
+
+.tag-filter-tag-item.selected .tag-filter-tag-count {
+	background: rgba(255, 255, 255, 0.25);
+	color: white;
+}
+
+/* ============================================
+   标签颜色变体（复用现有6种颜色）
+   ============================================ */
+
+/* 蓝色 */
+.tag-filter-tag-item.tag-color-0 .tag-filter-tag-name {
+	color: #3884ff;
+}
+
+/* 绿色 */
+.tag-filter-tag-item.tag-color-1 .tag-filter-tag-name {
+	color: #22c55e;
+}
+
+/* 橙色 */
+.tag-filter-tag-item.tag-color-2 .tag-filter-tag-name {
+	color: #f97316;
+}
+
+/* 黄色 */
+.tag-filter-tag-item.tag-color-3 .tag-filter-tag-name {
+	color: #eab308;
+}
+
+/* 紫色 */
+.tag-filter-tag-item.tag-color-4 .tag-filter-tag-name {
+	color: #a855f7;
+}
+
+/* 粉色 */
+.tag-filter-tag-item.tag-color-5 .tag-filter-tag-name {
+	color: #ec4899;
+}
+
+/* 选中状态下覆盖颜色为白色 */
+.tag-filter-tag-item.selected .tag-filter-tag-name {
+	color: white !important;
+}
+
+/* ============================================
+   响应式适配
+   ============================================ */
+
+@media (max-width: 768px) {
+	.tag-filter-pane {
+		min-width: 160px;
+		max-width: 200px;
+	}
+
+	.tag-filter-tag-item {
+		font-size: 10px;
+		padding: 2px 5px;
+	}
+
+	.tag-filter-tag-name {
+		font-size: 10px;
+	}
+
+	.tag-filter-tag-count {
+		font-size: 8px;
+		padding: 1px 3px;
+	}
+}

@@ -4,6 +4,7 @@ import type { TaskViewRenderer } from '../views/TaskView';
 import { renderStatusFilter } from './status-filter';
 import { renderRefreshButton } from './refresh-button';
 import { renderSortButton } from './sort-button';
+import { renderTagFilterButton } from './tag-filter';
 
 /**
  * 工具栏右侧区域 - 任务视图功能区
@@ -20,13 +21,15 @@ export class ToolbarRightTask {
 	 * @param taskRenderer 任务视图渲染器
 	 * @param onFilterChange 筛选变更回调
 	 * @param onRefresh 刷新回调
+	 * @param plugin 插件实例
 	 */
 	render(
 		container: HTMLElement,
 		globalFilterText: string,
 		taskRenderer: TaskViewRenderer,
 		onFilterChange: () => void,
-		onRefresh: () => Promise<void>
+		onRefresh: () => Promise<void>,
+		plugin?: any
 	): void {
 		container.empty();
 		container.addClass('toolbar-right-task');
@@ -151,6 +154,18 @@ export class ToolbarRightTask {
 				onFilterChange();
 			}
 		});
+
+		// 标签筛选按钮
+		if (plugin?.taskCache) {
+			renderTagFilterButton(container, {
+				getCurrentState: () => taskRenderer.getTagFilterState(),
+				onTagFilterChange: (newState) => {
+					taskRenderer.setTagFilterState(newState);
+					onFilterChange();
+				},
+				getAllTasks: () => plugin.taskCache.getAllTasks()
+			});
+		}
 
 		// 刷新按钮（共享）
 		renderRefreshButton(container, onRefresh, '刷新任务');

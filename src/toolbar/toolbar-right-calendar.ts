@@ -1,6 +1,7 @@
 import { setIcon } from 'obsidian';
 import { renderRefreshButton } from './refresh-button';
 import { renderSortButton } from './sort-button';
+import { renderTagFilterButton } from './tag-filter';
 import type { CalendarViewType } from '../types';
 import type { DayViewRenderer } from '../views/DayView';
 import type { WeekViewRenderer } from '../views/WeekView';
@@ -31,6 +32,7 @@ export class ToolbarRightCalendar {
 	 * @param onNext 下一期回调
 	 * @param onViewSwitch 视图切换回调
 	 * @param onRefresh 刷新回调
+	 * @param plugin 插件实例
 	 */
 	render(
 		container: HTMLElement,
@@ -39,7 +41,8 @@ export class ToolbarRightCalendar {
 		onToday: () => void,
 		onNext: () => void,
 		onViewSwitch: (type: CalendarViewType) => void,
-		onRefresh: () => Promise<void>
+		onRefresh: () => Promise<void>,
+		plugin?: any
 	): void {
 		container.empty();
 		container.addClass('calendar-toolbar-right');
@@ -91,5 +94,24 @@ export class ToolbarRightCalendar {
 
 		// 刷新按钮（共享）
 		renderRefreshButton(container, onRefresh, '刷新任务');
+
+		// 标签筛选按钮
+		if (plugin?.taskCache) {
+			const getRenderer = () => {
+				if (currentViewType === 'day') return this.dayRenderer;
+				if (currentViewType === 'week') return this.weekRenderer;
+				// 对于 month 和 year 视图，使用 dayRenderer 作为默认
+				return this.dayRenderer;
+			};
+
+			renderTagFilterButton(container, {
+				getCurrentState: () => getRenderer()?.getTagFilterState() || { selectedTags: [], operator: 'OR' },
+				onTagFilterChange: (newState) => {
+					getRenderer()?.setTagFilterState(newState);
+					onRefresh();
+				},
+				getAllTasks: () => plugin.taskCache.getAllTasks()
+			});
+		}
 	}
 }

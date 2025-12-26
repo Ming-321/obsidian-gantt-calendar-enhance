@@ -10,9 +10,11 @@ export class YearViewRenderer extends BaseCalendarRenderer {
 
 	render(container: HTMLElement, currentDate: Date): void {
 		const year = currentDate.getFullYear();
-		
+
 		// 预计算当年每日任务数量
-		const tasks: GanttTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
+		let tasks: GanttTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
+		// 应用标签筛选
+		tasks = this.applyTagFilter(tasks);
 		const dateField = this.plugin.settings.dateFilterField || 'dueDate';
 		const countsMap: Map<string, number> = new Map();
 		const startDate = new Date(year, 0, 1);

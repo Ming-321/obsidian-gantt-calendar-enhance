@@ -84,7 +84,9 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 		container.empty();
 
 		try {
-			const tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			// 应用标签筛选
+			tasks = this.applyTagFilter(tasks);
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
 
 			const normalizedTarget = new Date(targetDate);
