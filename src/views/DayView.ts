@@ -5,6 +5,7 @@ import type { GanttTask, SortState } from '../types';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
 import { TaskCardClasses, DayViewClasses, withModifiers } from '../utils/bem';
+import { TaskCardComponent, DayViewConfig } from '../components/TaskCard';
 
 /**
  * 日视图渲染器
@@ -139,7 +140,7 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 				return;
 			}
 
-			currentDayTasks.forEach(task => this.renderDayTaskItem(task, listContainer, normalizedTarget));
+			currentDayTasks.forEach(task => this.renderTaskItem(task, listContainer, normalizedTarget));
 		} catch (error) {
 			console.error('Error loading day view tasks', error);
 			listContainer.empty();
@@ -148,72 +149,20 @@ export class DayViewRenderer extends BaseCalendarRenderer {
 	}
 
 	/**
-	 * 渲染日视图任务项
-	 * 日视图任务卡片仅显示：复选框、任务描述、标签、优先级
+	 * 渲染日视图任务项（使用统一组件）
 	 */
-	private renderDayTaskItem(task: GanttTask, listContainer: HTMLElement, targetDate: Date): void {
-		const taskItem = listContainer.createDiv(TaskCardClasses.block);
-		taskItem.addClass(TaskCardClasses.modifiers.dayView);
-		taskItem.addClass(task.completed ? TaskCardClasses.modifiers.completed : TaskCardClasses.modifiers.pending);
-
-		// 应用状态颜色
-		this.applyStatusColors(task, taskItem);
-
-		// 复选框
-		this.createTaskCheckbox(task, taskItem);
-
-		// 任务内容
-		const cleaned = task.description;
-		const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
-
-		// 使用富文本渲染支持链接
-		const taskTextEl = taskItem.createDiv(TaskCardClasses.elements.text);
-		if (this.plugin?.settings?.showGlobalFilterInTaskText && gf) {
-			taskTextEl.appendText(gf + ' ');
-		}
-		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
-
-		// 渲染标签
-		this.renderTaskTags(task, taskItem);
-
-		// 优先级标记
-		if (task.priority) {
-			const priorityIcon = this.getPriorityIcon(task.priority);
-			const priorityEl = taskItem.createDiv(TaskCardClasses.elements.priority);
-			const priorityClass = this.getPriorityClass(task.priority);
-			priorityEl.createEl('span', { text: priorityIcon, cls: `${TaskCardClasses.elements.priorityBadge} ${priorityClass}` });
-		}
-
-		// 警告图标
-		if (task.warning) {
-			taskItem.createEl('span', {
-				text: '⚠️',
-				cls: TaskCardClasses.elements.warning,
-				attr: { title: task.warning }
-			});
-		}
-
-		// 点击打开文件
-		taskItem.addEventListener('click', async () => {
-			await this.openTaskFile(task);
-		});
-
-		// 注册右键菜单
-		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
-		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
-		const { registerTaskContextMenu } = require('../contextMenu/contextMenuIndex');
-		registerTaskContextMenu(
-			taskItem,
+	private renderTaskItem(task: GanttTask, listContainer: HTMLElement, targetDate: Date): void {
+		new TaskCardComponent({
 			task,
-			this.app,
-			enabledFormats,
-			taskNotePath,
-			() => {
+			config: DayViewConfig,
+			container: listContainer,
+			app: this.app,
+			plugin: this.plugin,
+			onClick: (task) => {
 				// 刷新任务列表
 				this.loadDayViewTasks(listContainer, targetDate);
 			},
-			this.plugin?.settings?.globalTaskFilter || ''
-		);
+		}).render();
 	}
 
 	/**

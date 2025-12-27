@@ -1,7 +1,7 @@
 import { BaseCalendarRenderer } from './BaseCalendarRenderer';
 import { generateMonthCalendar } from '../calendar/calendarGenerator';
 import type { GanttTask } from '../types';
-import { TaskCardClasses } from '../utils/bem';
+import { TaskCardComponent, MonthViewConfig } from '../components/TaskCard';
 
 /**
  * 月视图渲染器
@@ -112,7 +112,7 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 			// 限制显示数量
 			const taskLimit = this.plugin.settings.monthViewTaskLimit || 5;
 			const displayTasks = currentDayTasks.slice(0, taskLimit);
-			displayTasks.forEach(task => this.renderMonthTaskItem(task, container));
+			displayTasks.forEach(task => this.renderTaskItem(task, container));
 
 			// 显示更多任务提示
 			if (currentDayTasks.length > taskLimit) {
@@ -125,52 +125,22 @@ export class MonthViewRenderer extends BaseCalendarRenderer {
 	}
 
 	/**
-	 * 渲染月视图任务项
+	 * 渲染月视图任务项（使用统一组件）
 	 */
-	private renderMonthTaskItem(task: GanttTask, container: HTMLElement): void {
-		const taskItem = container.createDiv(TaskCardClasses.block);
-		taskItem.addClass(TaskCardClasses.modifiers.monthView);
-		taskItem.addClass(task.completed ? TaskCardClasses.modifiers.completed : TaskCardClasses.modifiers.pending);
-
-		// 应用状态颜色
-		this.applyStatusColors(task, taskItem);
-
-		const cleaned = task.description;
-
-		// 使用富文本渲染支持链接
-		const taskTextEl = taskItem.createDiv(TaskCardClasses.elements.text);
-		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
-
-		// 渲染标签
-		this.renderTaskTags(task, taskItem);
-
-		// 创建悬浮提示
-		this.createTaskTooltip(task, taskItem, cleaned);
-
-		// 点击打开文件
-		taskItem.onclick = async (e: MouseEvent) => {
-			e.stopPropagation();
-			await this.openTaskFile(task);
-		};
-
-		// 注册右键菜单
-		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
-		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
-		const { registerTaskContextMenu } = require('../contextMenu/contextMenuIndex');
-		registerTaskContextMenu(
-			taskItem,
+	private renderTaskItem(task: GanttTask, container: HTMLElement): void {
+		new TaskCardComponent({
 			task,
-			this.app,
-			enabledFormats,
-			taskNotePath,
-			() => {
+			config: MonthViewConfig,
+			container,
+			app: this.app,
+			plugin: this.plugin,
+			onClick: (task) => {
 				// 刷新当前月视图
-				const container = document.querySelector('.calendar-month-view-container');
-				if (container) {
-					this.render(container as HTMLElement, new Date());
+				const viewContainer = document.querySelector('.calendar-month-view-container');
+				if (viewContainer) {
+					this.render(viewContainer as HTMLElement, new Date());
 				}
 			},
-			this.plugin?.settings?.globalTaskFilter || ''
-		);
+		}).render();
 	}
 }

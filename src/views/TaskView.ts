@@ -4,7 +4,8 @@ import type { GanttTask, SortState } from '../types';
 import { registerTaskContextMenu } from '../contextMenu/contextMenuIndex';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
-import { TaskCardClasses, TimeBadgeClasses, ViewClasses, withModifiers } from '../utils/bem';
+import { ViewClasses, withModifiers } from '../utils/bem';
+import { TaskCardComponent, TaskViewConfig } from '../components/TaskCard';
 
 /**
  * 任务视图渲染器
@@ -12,13 +13,13 @@ import { TaskCardClasses, TimeBadgeClasses, ViewClasses, withModifiers } from '.
 export class TaskViewRenderer extends BaseCalendarRenderer {
 	// 任务筛选状态
 	private taskFilter: 'all' | 'completed' | 'uncompleted' = 'all';
-	
+
 	// 时间字段筛选
 	private timeFieldFilter: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'dueDate';
-	
+
 	// 时间值筛选
 	private timeValueFilter: Date | null = null;
-    
+
 	// 日期范围模式：全部/当天/当周/当月/自定义日期
 	private dateRangeMode: 'all' | 'day' | 'week' | 'month' | 'custom' = 'week';
 
@@ -50,11 +51,11 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	public setSpecificDate(date: Date | null): void {
 		this.timeValueFilter = date;
 	}
-    
+
 	public getDateRangeMode(): 'all' | 'day' | 'week' | 'month' | 'custom' {
 		return this.dateRangeMode;
 	}
-    
+
 	public setDateRangeMode(mode: 'all' | 'day' | 'week' | 'month' | 'custom'): void {
 		this.dateRangeMode = mode;
 	}
@@ -73,7 +74,7 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	public createStatusFilterGroup(container: HTMLElement, onFilterChange: () => void): void {
 		const statusFilterGroup = container.createDiv('toolbar-right-task-status-group');
 		const statusLabel = statusFilterGroup.createEl('span', { text: '状态', cls: 'toolbar-right-task-status-label' });
-		
+
 		const statusSelect = statusFilterGroup.createEl('select', { cls: 'toolbar-right-task-status-select' });
 		statusSelect.innerHTML = `
 			<option value="all">全部</option>
@@ -112,55 +113,53 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 				tasks = tasks.filter(t => !t.completed);
 			}
 
-		// 旧的单日精确筛选已被统一的日期范围模式取代
-        
-		// 日期范围筛选
-		const mode = this.getDateRangeMode();
-		if (mode !== 'all') {
-			const ref = this.timeValueFilter ?? new Date();
-			const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
-			const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
-			const startOfWeek = (d: Date) => { const x = startOfDay(d); const day = x.getDay(); const diff = (day + 6) % 7; x.setDate(x.getDate() - diff); return x; };
-			const endOfWeek = (d: Date) => { const s = startOfWeek(d); const e = new Date(s); e.setDate(s.getDate() + 6); e.setHours(23,59,59,999); return e; };
-			const startOfMonth = (d: Date) => { const x = startOfDay(d); x.setDate(1); return x; };
-			const endOfMonth = (d: Date) => { const x = startOfDay(d); x.setMonth(x.getMonth()+1, 0); x.setHours(23,59,59,999); return x; };
+			// 日期范围筛选
+			const mode = this.getDateRangeMode();
+			if (mode !== 'all') {
+				const ref = this.timeValueFilter ?? new Date();
+				const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+				const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
+				const startOfWeek = (d: Date) => { const x = startOfDay(d); const day = x.getDay(); const diff = (day + 6) % 7; x.setDate(x.getDate() - diff); return x; };
+				const endOfWeek = (d: Date) => { const s = startOfWeek(d); const e = new Date(s); e.setDate(s.getDate() + 6); e.setHours(23,59,59,999); return e; };
+				const startOfMonth = (d: Date) => { const x = startOfDay(d); x.setDate(1); return x; };
+				const endOfMonth = (d: Date) => { const x = startOfDay(d); x.setMonth(x.getMonth()+1, 0); x.setHours(23,59,59,999); return x; };
 
-			let rangeStart: Date;
-			let rangeEnd: Date;
-			if (mode === 'day' || mode === 'custom') {
-				rangeStart = startOfDay(ref);
-				rangeEnd = endOfDay(ref);
-			} else if (mode === 'week') {
-				rangeStart = startOfWeek(ref);
-				rangeEnd = endOfWeek(ref);
-			} else { // month
-				rangeStart = startOfMonth(ref);
-				rangeEnd = endOfMonth(ref);
+				let rangeStart: Date;
+				let rangeEnd: Date;
+				if (mode === 'day' || mode === 'custom') {
+					rangeStart = startOfDay(ref);
+					rangeEnd = endOfDay(ref);
+				} else if (mode === 'week') {
+					rangeStart = startOfWeek(ref);
+					rangeEnd = endOfWeek(ref);
+				} else { // month
+					rangeStart = startOfMonth(ref);
+					rangeEnd = endOfMonth(ref);
+				}
+
+				tasks = tasks.filter(task => {
+					const dateValue = (task as any)[this.timeFieldFilter];
+					if (!dateValue) return false;
+					const taskDate = new Date(dateValue);
+					if (isNaN(taskDate.getTime())) return false;
+					return taskDate >= rangeStart && taskDate <= rangeEnd;
+				});
 			}
 
-			tasks = tasks.filter(task => {
-				const dateValue = (task as any)[this.timeFieldFilter];
-				if (!dateValue) return false;
-				const taskDate = new Date(dateValue);
-				if (isNaN(taskDate.getTime())) return false;
-				return taskDate >= rangeStart && taskDate <= rangeEnd;
-			});
-		}
+			// 应用标签筛选
+			tasks = this.applyTagFilter(tasks);
 
-		// 应用标签筛选
-		tasks = this.applyTagFilter(tasks);
+			// 应用排序
+			tasks = sortTasks(tasks, this.sortState);
 
-		// 应用排序
-		tasks = sortTasks(tasks, this.sortState);
+			listContainer.empty();
 
-		listContainer.empty();
+			if (tasks.length === 0) {
+				listContainer.createEl('div', { text: '未找到符合条件的任务', cls: 'gantt-task-empty' });
+				return;
+			}
 
-		if (tasks.length === 0) {
-			listContainer.createEl('div', { text: '未找到符合条件的任务', cls: 'gantt-task-empty' });
-			return;
-		}
-
-		tasks.forEach(task => this.renderTaskItem(task, listContainer));
+			tasks.forEach(task => this.renderTaskItem(task, listContainer));
 		} catch (error) {
 			console.error('Error rendering task view', error);
 			listContainer.empty();
@@ -169,102 +168,19 @@ export class TaskViewRenderer extends BaseCalendarRenderer {
 	}
 
 	/**
-	 * 渲染任务项
+	 * 渲染任务项（使用统一组件）
 	 */
 	private renderTaskItem(task: GanttTask, listContainer: HTMLElement): void {
-		const taskItem = listContainer.createDiv(TaskCardClasses.block);
-		taskItem.addClass(TaskCardClasses.modifiers.taskView);
-		taskItem.addClass(task.completed ? TaskCardClasses.modifiers.completed : TaskCardClasses.modifiers.pending);
-
-		// 应用状态颜色
-		this.applyStatusColors(task, taskItem);
-
-		// 复选框
-		this.createTaskCheckbox(task, taskItem);
-
-		// 任务内容
-		const cleaned = task.description;
-		const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
-
-		// 使用富文本渲染支持链接
-		const taskTextEl = taskItem.createDiv(TaskCardClasses.elements.text);
-		if (this.plugin?.settings?.showGlobalFilterInTaskText && gf) {
-			taskTextEl.appendText(gf + ' ');
-		}
-		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
-
-		// 渲染标签
-		this.renderTaskTags(task, taskItem);
-
-		// 优先级标记
-		if (task.priority) {
-			const priorityIcon = this.getPriorityIcon(task.priority);
-			const priorityEl = taskItem.createDiv(TaskCardClasses.elements.priority);
-			const priorityClass = this.getPriorityClass(task.priority);
-			priorityEl.createEl('span', { text: priorityIcon, cls: `${TaskCardClasses.elements.priorityBadge} ${priorityClass}` });
-		}
-
-		// 时间属性
-		const timePropertiesEl = taskItem.createDiv(TaskCardClasses.elements.times);
-
-		if (task.createdDate) {
-			timePropertiesEl.createEl('span', { text: `创建:${this.formatDateForDisplay(task.createdDate)}`, cls: `${TaskCardClasses.elements.timeBadge} ${TimeBadgeClasses.created}` });
-		}
-
-		if (task.startDate) {
-			timePropertiesEl.createEl('span', { text: `开始:${this.formatDateForDisplay(task.startDate)}`, cls: `${TaskCardClasses.elements.timeBadge} ${TimeBadgeClasses.start}` });
-		}
-
-		if (task.scheduledDate) {
-			timePropertiesEl.createEl('span', { text: `计划:${this.formatDateForDisplay(task.scheduledDate)}`, cls: `${TaskCardClasses.elements.timeBadge} ${TimeBadgeClasses.scheduled}` });
-		}
-
-		if (task.dueDate) {
-			const dueEl = taskItem.createEl('span', { text: `截止:${this.formatDateForDisplay(task.dueDate)}`, cls: `${TaskCardClasses.elements.timeBadge} ${TimeBadgeClasses.due}` });
-			if (task.dueDate < new Date() && !task.completed) {
-				dueEl.addClass(TimeBadgeClasses.overdue);
-			}
-			timePropertiesEl.appendChild(dueEl);
-		}
-
-		if (task.cancelledDate) {
-			timePropertiesEl.createEl('span', { text: `取消:${this.formatDateForDisplay(task.cancelledDate)}`, cls: `${TaskCardClasses.elements.timeBadge} ${TimeBadgeClasses.cancelled}` });
-		}
-
-		if (task.completionDate) {
-			timePropertiesEl.createEl('span', { text: `完成:${this.formatDateForDisplay(task.completionDate)}`, cls: `${TaskCardClasses.elements.timeBadge} ${TimeBadgeClasses.completion}` });
-		}
-
-		// 文件位置
-		taskItem.createEl('span', { text: `${task.fileName}:${task.lineNumber}`, cls: TaskCardClasses.elements.file });
-
-		// 警告图标
-		if (task.warning) {
-			taskItem.createEl('span', {
-				text: '⚠️',
-				cls: TaskCardClasses.elements.warning,
-				attr: { title: task.warning }
-			});
-		}
-
-		// 点击打开文件
-		taskItem.addEventListener('click', async () => {
-			await this.openTaskFile(task);
-		});
-
-		// 注册右键菜单
-		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
-		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
-		registerTaskContextMenu(
-			taskItem,
+		new TaskCardComponent({
 			task,
-			this.app,
-			enabledFormats,
-			taskNotePath,
-			() => {
+			config: TaskViewConfig,
+			container: listContainer,
+			app: this.app,
+			plugin: this.plugin,
+			onClick: (task) => {
 				// 刷新任务列表
 				this.loadTaskList(listContainer);
-			}
-		);
+			},
+		}).render();
 	}
 }

@@ -5,7 +5,7 @@ import { updateTaskDateField } from '../tasks/taskUpdater';
 import type { GanttTask, SortState } from '../types';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
-import { TaskCardClasses } from '../utils/bem';
+import { TaskCardComponent, WeekViewConfig } from '../components/TaskCard';
 
 /**
  * 周视图渲染器
@@ -149,7 +149,7 @@ export class WeekViewRenderer extends BaseCalendarRenderer {
 				return;
 			}
 
-			currentDayTasks.forEach(task => this.renderWeekTaskItem(task, columnContainer, targetDate));
+			currentDayTasks.forEach(task => this.renderTaskItem(task, columnContainer, targetDate));
 		} catch (error) {
 			console.error('Error loading week view tasks', error);
 			columnContainer.createEl('div', { text: '加载出错', cls: 'calendar-week-task-empty' });
@@ -157,74 +157,23 @@ export class WeekViewRenderer extends BaseCalendarRenderer {
 	}
 
 	/**
-	 * 渲染周视图任务项
+	 * 渲染周视图任务项（使用统一组件）
 	 */
-	private renderWeekTaskItem(task: GanttTask, container: HTMLElement, dayDate?: Date): void {
-		const taskItem = container.createDiv(TaskCardClasses.block);
-		taskItem.addClass(TaskCardClasses.modifiers.weekView);
-		taskItem.addClass(task.completed ? TaskCardClasses.modifiers.completed : TaskCardClasses.modifiers.pending);
-
-		// 应用状态颜色
-		this.applyStatusColors(task, taskItem);
-
-		// 设置可拖拽
-		taskItem.draggable = true;
-		taskItem.setAttribute('data-task-id', `${task.filePath}:${task.lineNumber}`);
-		if (dayDate) {
-			taskItem.setAttribute('data-target-date', dayDate.toISOString().split('T')[0]);
-		}
-
-		// 复选框
-		const checkbox = this.createTaskCheckbox(task, taskItem);
-
-		// 拖拽事件
-		taskItem.addEventListener('dragstart', (e: DragEvent) => {
-			if (e.dataTransfer) {
-				e.dataTransfer.effectAllowed = 'move';
-				e.dataTransfer.setData('taskId', `${task.filePath}:${task.lineNumber}`);
-				taskItem.style.opacity = '0.6';
-			}
-		});
-
-		taskItem.addEventListener('dragend', (e: DragEvent) => {
-			taskItem.style.opacity = '1';
-		});
-
-		// 任务内容
-		const cleaned = task.description;
-
-		// 使用富文本渲染支持链接
-		const taskTextEl = taskItem.createDiv(TaskCardClasses.elements.text);
-		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
-
-		// 渲染标签
-		this.renderTaskTags(task, taskItem);
-
-		// 创建悬浮提示
-		this.createTaskTooltip(task, taskItem, cleaned);
-
-		// 点击打开文件
-		taskItem.onclick = async () => {
-			await this.openTaskFile(task);
-		};
-
-		// 注册右键菜单
-		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
-		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
-		const { registerTaskContextMenu } = require('../contextMenu/contextMenuIndex');
-		registerTaskContextMenu(
-			taskItem,
+	private renderTaskItem(task: GanttTask, container: HTMLElement, targetDate: Date): void {
+		new TaskCardComponent({
 			task,
-			this.app,
-			enabledFormats,
-			taskNotePath,
-			() => {
+			config: WeekViewConfig,
+			container,
+			app: this.app,
+			plugin: this.plugin,
+			targetDate,
+			onClick: (task) => {
 				// 刷新当前周视图
-				const container = document.querySelector('.calendar-week-view-container');
-				if (container) {
-					this.render(container as HTMLElement, new Date());
+				const viewContainer = document.querySelector('.calendar-week-view-container');
+				if (viewContainer) {
+					this.render(viewContainer as HTMLElement, new Date());
 				}
-			}
-		);
+			},
+		}).render();
 	}
 }

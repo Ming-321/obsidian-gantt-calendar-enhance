@@ -2,7 +2,7 @@ import { BaseCalendarRenderer } from './BaseCalendarRenderer';
 import type { GanttTask, GanttTimeGranularity, SortState } from '../types';
 import { formatDate, getTodayDate } from '../dateUtils/dateUtilsIndex';
 import { sortTasks } from '../tasks/taskSorter';
-import { TaskCardClasses } from '../utils/bem';
+import { TaskCardComponent, GanttViewConfig } from '../components/TaskCard';
 
 /**
  * 甘特图视图渲染器
@@ -336,33 +336,21 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
     const ganttBarsGrid = ganttBarsScroll.createDiv('gantt-bars-grid');
 
     for (const item of withRange) {
-      // 左侧：任务卡片
-      const taskCard = taskList.createDiv(TaskCardClasses.block);
-      taskCard.addClass(TaskCardClasses.modifiers.ganttView);
-      taskCard.addClass(item.task.completed ? TaskCardClasses.modifiers.completed : TaskCardClasses.modifiers.pending);
-
-      // 应用状态颜色
-      this.applyStatusColors(item.task, taskCard);
-
-      const cleaned = item.task.description;
-      const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
-      
-      // 构建完整的任务描述用于tooltip
-      let fullDescription = '';
-      if (this.plugin?.settings?.showGlobalFilterInTaskText && gf) {
-        fullDescription = gf + ' ';
-        taskCard.appendText(gf + ' ');
-      }
-      fullDescription += cleaned;
-      
-      // 设置title属性，鼠标悬浮时显示完整描述
-      taskCard.setAttr('title', fullDescription);
-      
-      this.renderTaskDescriptionWithLinks(taskCard, cleaned);
-
-      taskCard.addEventListener('click', async () => {
-        await this.openTaskFile(item.task);
-      });
+      // 左侧：任务卡片（使用统一组件）
+      new TaskCardComponent({
+        task: item.task,
+        config: GanttViewConfig,
+        container: taskList,
+        app: this.app,
+        plugin: this.plugin,
+        onClick: (task) => {
+          // 刷新当前甘特图视图
+          const viewContainer = document.querySelector('.gc-view--gc');
+          if (viewContainer) {
+            this.render(viewContainer as HTMLElement, new Date());
+          }
+        },
+      }).render();
 
       // 右侧：甘特条行（使用与时间刻度相同的grid布局）
       const barRow = ganttBarsGrid.createDiv('gantt-bar-row');
