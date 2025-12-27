@@ -8,6 +8,7 @@ import { updateTaskCompletion } from '../../tasks/taskUpdater';
 import { getStatusColor, DEFAULT_TASK_STATUSES } from '../../tasks/taskStatus';
 import { RegularExpressions } from '../../utils/RegularExpressions';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
+import { TooltipManager } from '../../utils/tooltipManager';
 
 /**
  * 任务卡片渲染器
@@ -339,122 +340,19 @@ export class TaskCardRenderer {
 	}
 
 	/**
-	 * 附加悬浮提示
+	 * 附加悬浮提示（使用 TooltipManager 单例复用）
 	 */
 	attachTooltip(card: HTMLElement, task: GanttTask): void {
-		let tooltip: HTMLElement | null = null;
-		let hideTimeout: number | null = null;
-		const cleaned = task.description;
+		// 获取 TooltipManager 单例
+		const tooltipManager = TooltipManager.getInstance(this.plugin);
 
-		const showTooltip = (e: MouseEvent) => {
-			if (hideTimeout) {
-				window.clearTimeout(hideTimeout);
-				hideTimeout = null;
-			}
+		card.addEventListener('mouseenter', () => {
+			tooltipManager.show(task, card);
+		});
 
-			if (tooltip) {
-				tooltip.remove();
-			}
-
-			tooltip = document.body.createDiv('gc-task-tooltip');
-			tooltip.style.opacity = '0';
-
-			// 任务描述
-			const descDiv = tooltip.createDiv('gc-task-tooltip__description');
-			descDiv.createEl('strong', { text: cleaned });
-
-			// 优先级
-			if (task.priority) {
-				const priorityDiv = tooltip.createDiv('gc-task-tooltip__priority');
-				const priorityIcon = this.getPriorityIcon(task.priority);
-				priorityDiv.createEl('span', { text: `${priorityIcon} 优先级: ${task.priority}`, cls: `priority-${task.priority}` });
-			}
-
-			// 时间属性
-			const hasTimeProperties = task.createdDate || task.startDate || task.scheduledDate ||
-				task.dueDate || task.cancelledDate || task.completionDate;
-
-			if (hasTimeProperties) {
-				const timeDiv = tooltip.createDiv('gc-task-tooltip__times');
-
-				if (task.createdDate) {
-					timeDiv.createEl('div', { text: `➕ 创建: ${this.formatDateForDisplay(task.createdDate)}`, cls: 'gc-task-tooltip__time-item' });
-				}
-				if (task.startDate) {
-					timeDiv.createEl('div', { text: `🛫 开始: ${this.formatDateForDisplay(task.startDate)}`, cls: 'gc-task-tooltip__time-item' });
-				}
-				if (task.scheduledDate) {
-					timeDiv.createEl('div', { text: `⏳ 计划: ${this.formatDateForDisplay(task.scheduledDate)}`, cls: 'gc-task-tooltip__time-item' });
-				}
-				if (task.dueDate) {
-					const dueEl = timeDiv.createEl('div', { text: `📅 截止: ${this.formatDateForDisplay(task.dueDate)}`, cls: 'gc-task-tooltip__time-item' });
-					if (task.dueDate < new Date() && !task.completed) {
-						dueEl.addClass('gc-task-tooltip__time-item--overdue');
-					}
-				}
-				if (task.cancelledDate) {
-					timeDiv.createEl('div', { text: `❌ 取消: ${this.formatDateForDisplay(task.cancelledDate)}`, cls: 'gc-task-tooltip__time-item' });
-				}
-				if (task.completionDate) {
-					timeDiv.createEl('div', { text: `✅ 完成: ${this.formatDateForDisplay(task.completionDate)}`, cls: 'gc-task-tooltip__time-item' });
-				}
-			}
-
-			// 标签
-			if (task.tags && task.tags.length > 0) {
-				const tagsDiv = tooltip.createDiv('gc-task-tooltip__tags');
-				const tagsLabel = tagsDiv.createEl('span', { text: '标签：', cls: 'gc-task-tooltip__label' });
-				task.tags.forEach(tag => {
-					tagsDiv.createEl('span', { text: `#${tag}`, cls: 'gc-tag gc-tag--tooltip' });
-				});
-			}
-
-			// 文件位置
-			const fileDiv = tooltip.createDiv('gc-task-tooltip__file');
-			fileDiv.createEl('span', { text: `📄 ${task.fileName}:${task.lineNumber}`, cls: 'gc-task-tooltip__file-location' });
-
-			// 定位悬浮提示
-			const rect = card.getBoundingClientRect();
-			const tooltipWidth = 300;
-
-			let left = rect.right + 10;
-			let top = rect.top;
-
-			if (left + tooltipWidth > window.innerWidth) {
-				left = rect.left - tooltipWidth - 10;
-			}
-			if (left < 0) {
-				left = (window.innerWidth - tooltipWidth) / 2;
-			}
-
-			tooltip.style.left = `${left}px`;
-			tooltip.style.top = `${top}px`;
-
-			setTimeout(() => {
-				if (tooltip) {
-					tooltip.style.opacity = '1';
-					tooltip.addClass('gc-task-tooltip--visible');
-				}
-			}, 10);
-		};
-
-		const hideTooltip = () => {
-			hideTimeout = window.setTimeout(() => {
-				if (tooltip) {
-					tooltip.removeClass('gc-task-tooltip--visible');
-					tooltip.style.opacity = '0';
-					setTimeout(() => {
-						if (tooltip) {
-							tooltip.remove();
-							tooltip = null;
-						}
-					}, 200);
-				}
-			}, 100);
-		};
-
-		card.addEventListener('mouseenter', showTooltip);
-		card.addEventListener('mouseleave', hideTooltip);
+		card.addEventListener('mouseleave', () => {
+			tooltipManager.hide();
+		});
 	}
 
 	/**

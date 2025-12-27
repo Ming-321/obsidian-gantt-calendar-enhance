@@ -59,9 +59,9 @@ class AliasInputModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.createEl('h2', { text: '输入笔记别名' });
+		contentEl.createEl('h2', { text: '输入笔记名称' });
 		const input = contentEl.createEl('input', { type: 'text', value: '' });
-		input.placeholder = '请输入笔记名称（别名）';
+		input.placeholder = '请输入笔记名称(任务描述为笔记别名)';
 		input.style.width = '100%';
 		input.focus();
 		new Setting(contentEl)

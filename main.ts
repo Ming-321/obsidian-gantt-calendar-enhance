@@ -3,6 +3,7 @@ import { CalendarView, CALENDAR_VIEW_ID } from './src/CalendarView';
 import { GanttCalendarSettings, DEFAULT_SETTINGS, GanttCalendarSettingTab } from './src/settings';
 import { TaskCacheManager } from './src/taskManager';
 import { registerAllCommands } from './src/commands/commandsIndex';
+import { TooltipManager } from './src/utils/tooltipManager';
 
 export default class GanttCalendarPlugin extends Plugin {
     settings: GanttCalendarSettings;
@@ -96,11 +97,14 @@ export default class GanttCalendarPlugin extends Plugin {
     }
 
     onunload() {
+        // Clear tooltip manager
+        TooltipManager.reset();
+
         // Clear task cache
         if (this.taskCache) {
             this.taskCache.clear();
         }
-        
+
         this.app.workspace.getLeavesOfType(CALENDAR_VIEW_ID).forEach(leaf => leaf.detach());
     }
 
