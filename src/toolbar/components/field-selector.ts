@@ -3,6 +3,8 @@
  * @module toolbar/components/field-selector
  */
 
+import { ToolbarComponentClasses } from '../../utils/bem';
+
 /**
  * 时间字段类型
  */
@@ -54,10 +56,6 @@ export interface FieldSelectorOptions {
 	customOptions?: DateFieldOption[];
 	/** 容器样式类 */
 	containerClass?: string;
-	/** 标签样式类 */
-	labelClass?: string;
-	/** 选择器样式类 */
-	selectClass?: string;
 }
 
 /**
@@ -83,24 +81,23 @@ export function renderFieldSelector(
 		label = '字段筛选',
 		excludeFields = [],
 		customOptions,
-		containerClass,
-		labelClass = 'toolbar-right-task-field-filter-label',
-		selectClass = 'toolbar-right-task-field-select'
+		containerClass
 	} = options;
+	const classes = ToolbarComponentClasses.fieldSelector;
 
 	// 创建字段筛选组
-	const fieldFilterGroup = container.createDiv('toolbar-field-filter-group');
+	const fieldFilterGroup = container.createDiv(classes.group);
 	if (containerClass) fieldFilterGroup.addClass(containerClass);
 
 	// 创建标签
 	const fieldLabel = fieldFilterGroup.createEl('span', {
 		text: label,
-		cls: labelClass
+		cls: classes.label
 	});
 
 	// 创建选择器
 	const fieldSelect = fieldFilterGroup.createEl('select', {
-		cls: selectClass
+		cls: classes.select
 	}) as HTMLSelectElement;
 
 	// 获取字段选项
@@ -151,8 +148,6 @@ export interface DualFieldSelectorOptions {
 	onStartFieldChange: (field: DateFieldType) => void;
 	onEndFieldChange: (field: DateFieldType) => void;
 	containerClass?: string;
-	labelClass?: string;
-	selectClass?: string;
 	excludeFields?: DateFieldType[];
 }
 
@@ -166,12 +161,11 @@ export function renderDualFieldSelector(
 		onStartFieldChange,
 		onEndFieldChange,
 		containerClass,
-		labelClass = 'toolbar-gantt-field-label',
-		selectClass = 'toolbar-gantt-field-select',
 		excludeFields = []
 	} = options;
+	const classes = ToolbarComponentClasses.fieldSelector;
 
-	const wrapper = container.createDiv('toolbar-dual-field-selector-wrapper');
+	const wrapper = container.createDiv(classes.dualWrapperGantt);
 	if (containerClass) wrapper.addClass(containerClass);
 
 	// 开始时间选择器
@@ -179,9 +173,7 @@ export function renderDualFieldSelector(
 		currentField: startField,
 		onFieldChange: onStartFieldChange,
 		label: '开始时间',
-		excludeFields,
-		labelClass,
-		selectClass
+		excludeFields
 	});
 
 	// 结束时间选择器
@@ -189,9 +181,7 @@ export function renderDualFieldSelector(
 		currentField: endField,
 		onFieldChange: onEndFieldChange,
 		label: '结束时间',
-		excludeFields,
-		labelClass,
-		selectClass
+		excludeFields
 	});
 
 	// 清理函数
@@ -224,9 +214,6 @@ export function renderGanttFieldSelector(
 
 	return renderFieldSelector(container, {
 		...rest,
-		label: selectorType === 'start' ? '开始时间' : '结束时间',
-		labelClass: 'toolbar-gantt-field-label',
-		selectClass: 'toolbar-gantt-field-select',
-		containerClass: 'toolbar-gantt-field-group'
+		label: selectorType === 'start' ? '开始时间' : '结束时间'
 	});
 }

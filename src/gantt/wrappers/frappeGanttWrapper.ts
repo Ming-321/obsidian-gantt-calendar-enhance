@@ -4,7 +4,7 @@
  */
 
 import { SvgGanttRenderer } from './svgGanttRenderer';
-import type { FrappeTask, FrappeGanttConfig, IFrappeGantt } from '../types';
+import type { FrappeTask, FrappeGanttConfig, IFrappeGantt, DateFieldType } from '../types';
 import type { GanttTask } from '../../types';
 
 /**
@@ -21,6 +21,8 @@ export class FrappeGanttWrapper {
 	private plugin: any;
 	private app: any;  // Obsidian App 实例
 	private originalTasks: GanttTask[] = [];
+	private startField: DateFieldType = 'startDate';
+	private endField: DateFieldType = 'dueDate';
 
 	/**
 	 * 构造函数
@@ -29,12 +31,16 @@ export class FrappeGanttWrapper {
 	 * @param config - 甘特图配置
 	 * @param plugin - 插件实例（用于 TooltipManager）
 	 * @param originalTasks - 原始任务列表（用于 tooltip 显示）
+	 * @param startField - 开始时间字段
+	 * @param endField - 结束时间字段
 	 */
-	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, originalTasks: GanttTask[] = []) {
+	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, originalTasks: GanttTask[] = [], startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
 		this.container = container;
 		this.plugin = plugin;
 		this.app = plugin?.app;
 		this.originalTasks = originalTasks;
+		this.startField = startField;
+		this.endField = endField;
 		this.config = {
 			...config,
 			header_height: config.header_height ?? 50,
@@ -60,8 +66,16 @@ export class FrappeGanttWrapper {
 		}
 
 		try {
-			// 创建 SVG 渲染器（传递 plugin、原始任务列表和 app）
-			this.renderer = new SvgGanttRenderer(this.container, this.config, this.plugin, this.originalTasks, this.app);
+			// 创建 SVG 渲染器（传递所有参数）
+			this.renderer = new SvgGanttRenderer(
+				this.container,
+				this.config,
+				this.plugin,
+				this.originalTasks,
+				this.app,
+				this.startField,
+				this.endField
+			);
 
 			// 设置事件处理器
 			this.renderer.setEventHandlers({

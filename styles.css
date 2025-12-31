@@ -661,6 +661,174 @@ Author: sugar
 	flex-wrap: wrap;
 }
 
+/* ============================================
+   工具栏组件样式 (BEM: gc-toolbar)
+   ============================================ */
+
+/* 通用按钮组样式 - 带边框的紧凑按钮组 */
+/* 甘特图视图专用按钮组 (--gantt modifier) */
+.gc-toolbar__time-granularity-group--gantt,
+.gc-toolbar__status-filter-group--gantt,
+.gc-toolbar__sort-container--gantt,
+.gc-toolbar__tag-filter-container--gantt,
+.gc-toolbar__field-selector-dual-wrapper--gantt {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 2px;
+	background-color: var(--background-secondary);
+}
+
+/* 字段选择器组 */
+.gc-toolbar__field-selector-group--gantt {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* 时间颗粒度按钮 */
+.gc-toolbar__today-btn {
+	padding: 4px 10px;
+	border: none;
+	border-radius: 4px;
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.gc-toolbar__today-btn:hover {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.gc-toolbar__time-granularity-btn {
+	padding: 4px 12px;
+	border: none;
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--text-muted);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.gc-toolbar__time-granularity-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.gc-toolbar__time-granularity-btn--active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-weight: 600;
+}
+
+/* 状态筛选 */
+.gc-toolbar__status-filter-label {
+	font-size: 13px;
+	color: var(--text-muted);
+	padding-left: 6px;
+}
+
+.gc-toolbar__status-filter-select {
+	padding: 4px 8px;
+	border: none;
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--text-normal);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+/* 排序按钮 */
+.gc-toolbar__sort-btn {
+	padding: 4px 10px;
+	border: none;
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--text-normal);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.gc-toolbar__sort-btn:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* 标签筛选按钮 */
+.gc-toolbar__tag-filter-btn {
+	padding: 4px 10px;
+	border: none;
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--text-normal);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.gc-toolbar__tag-filter-btn:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.gc-toolbar__tag-filter-btn--has-selection {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.gc-toolbar__tag-filter-count {
+	min-width: 16px;
+	height: 16px;
+	padding: 0 4px;
+	border-radius: 8px;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: 11px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 字段选择器 */
+.gc-toolbar__field-selector-label {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.gc-toolbar__field-selector-select {
+	padding: 4px 8px;
+	border: none;
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--text-normal);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+/* 向下兼容旧类名 */
+.toolbar-dual-field-selector-wrapper {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.toolbar-field-filter-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
 .toolbar-time-granularity-group {
 	display: inline-flex;
 	align-items: center;
@@ -722,11 +890,262 @@ Author: sugar
 
 .toolbar-gantt-field-select {
 	padding: 4px 8px;
-	border: 1px solid var(--input-border-color);
+	border: none;
 	border-radius: 4px;
-	background-color: var(--background-secondary);
+	background-color: transparent;
 	color: var(--text-normal);
 	font-size: 12px;
+}
+
+/* ============================================
+   排序下拉菜单样式 (BEM: gc-toolbar)
+   ============================================ */
+
+.gc-toolbar__sort-dropdown {
+	position: fixed;
+	z-index: 1000;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 4px 0;
+	min-width: 160px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gc-toolbar__sort-dropdown-header {
+	padding: 8px 12px;
+	font-size: 11px;
+	color: var(--text-muted);
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 4px;
+}
+
+.gc-toolbar__sort-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	user-select: none;
+}
+
+.gc-toolbar__sort-menu-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.gc-toolbar__sort-menu-item--active {
+	background-color: var(--background-modifier-hover);
+	color: var(--interactive-accent);
+}
+
+.gc-toolbar__sort-option-icon {
+	font-size: 14px;
+	width: 20px;
+	text-align: center;
+}
+
+.gc-toolbar__sort-option-label {
+	flex: 1;
+	font-size: 13px;
+}
+
+.gc-toolbar__sort-option-indicator {
+	font-size: 12px;
+	width: 20px;
+	text-align: right;
+}
+
+.gc-toolbar__sort-icon {
+	font-size: 14px;
+}
+
+.gc-toolbar__sort-dropdown-icon {
+	font-size: 10px;
+	opacity: 0.7;
+}
+
+/* ============================================
+   标签筛选下拉菜单样式 (BEM: gc-toolbar)
+   ============================================ */
+
+.gc-toolbar__tag-filter-pane {
+	position: fixed;
+	z-index: 1000;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 6px 8px;
+	min-width: 180px;
+	max-width: 260px;
+	max-height: 280px;
+	overflow-y: auto;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.gc-toolbar__tag-filter-pane::-webkit-scrollbar {
+	width: 4px;
+}
+
+.gc-toolbar__tag-filter-pane::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.gc-toolbar__tag-filter-pane::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+}
+
+.gc-toolbar__tag-filter-pane::-webkit-scrollbar-thumb:hover {
+	background: var(--text-muted);
+}
+
+.gc-toolbar__tag-filter-operators {
+	display: flex;
+	gap: 4px;
+	padding-bottom: 4px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.gc-toolbar__tag-filter-operator-btn {
+	flex: 1;
+	padding: 2px 6px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 10px;
+	font-weight: 500;
+	color: var(--text-muted);
+	transition: all 0.12s ease;
+	text-align: center;
+	line-height: 1.4;
+}
+
+.gc-toolbar__tag-filter-operator-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.gc-toolbar__tag-filter-operator-btn--active {
+	background: var(--interactive-accent);
+	color: white;
+	border-color: var(--interactive-accent);
+}
+
+.gc-toolbar__tag-filter-tags-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.gc-toolbar__tag-filter-empty {
+	padding: 12px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 11px;
+}
+
+.gc-toolbar__tag-filter-tag-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 3px 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary);
+	cursor: pointer;
+	transition: all 0.12s ease;
+	user-select: none;
+	font-size: 11px;
+}
+
+.gc-toolbar__tag-filter-tag-item:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+}
+
+.gc-toolbar__tag-filter-tag-item--selected {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: white;
+}
+
+.gc-toolbar__tag-filter-tag-name {
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--text-normal);
+	line-height: 1.2;
+}
+
+.gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-name {
+	color: white;
+}
+
+.gc-toolbar__tag-filter-tag-count {
+	font-size: 9px;
+	color: var(--text-muted);
+	background: var(--background-modifier-border);
+	padding: 1px 4px;
+	border-radius: 6px;
+	font-weight: 500;
+	line-height: 1;
+}
+
+.gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-count {
+	background: rgba(255, 255, 255, 0.25);
+	color: white;
+}
+
+/* 标签颜色变体 */
+.gc-toolbar__tag-filter-tag-item.tag-color-0 .gc-toolbar__tag-filter-tag-name {
+	color: #3884ff;
+}
+
+.gc-toolbar__tag-filter-tag-item.tag-color-1 .gc-toolbar__tag-filter-tag-name {
+	color: #22c55e;
+}
+
+.gc-toolbar__tag-filter-tag-item.tag-color-2 .gc-toolbar__tag-filter-tag-name {
+	color: #f97316;
+}
+
+.gc-toolbar__tag-filter-tag-item.tag-color-3 .gc-toolbar__tag-filter-tag-name {
+	color: #eab308;
+}
+
+.gc-toolbar__tag-filter-tag-item.tag-color-4 .gc-toolbar__tag-filter-tag-name {
+	color: #a855f7;
+}
+
+.gc-toolbar__tag-filter-tag-item.tag-color-5 .gc-toolbar__tag-filter-tag-name {
+	color: #ec4899;
+}
+
+.gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-name {
+	color: white !important;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+	.gc-toolbar__tag-filter-pane {
+		min-width: 160px;
+		max-width: 200px;
+	}
+
+	.gc-toolbar__tag-filter-tag-item {
+		font-size: 10px;
+		padding: 2px 5px;
+	}
+
+	.gc-toolbar__tag-filter-tag-name {
+		font-size: 10px;
+	}
+
+	.gc-toolbar__tag-filter-tag-count {
+		font-size: 8px;
+		padding: 1px 3px;
+	}
 }
 
 /* 6.2 Task Card Component (统一任务卡片) */
@@ -3186,6 +3605,49 @@ Author: sugar
 	pointer-events: none;
 }
 
+/* 任务列表项 */
+.gantt-task-list-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 100%;
+	font-size: 12px;
+	color: var(--text-normal);
+}
+
+.gantt-task-list-item__text {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.gantt-task-list-item__text:hover {
+	color: var(--interactive-accent);
+}
+
+/* 任务复选框 */
+.gc-gantt-view__task-checkbox {
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	margin: 0;
+	accent-color: var(--interactive-accent);
+}
+
+/* 拖动手柄 */
+.gc-gantt-view__handle-left,
+.gc-gantt-view__handle-right {
+	opacity: 0.5;
+	transition: opacity 0.15s ease;
+}
+
+.gc-gantt-view__bar-group:hover .gc-gantt-view__handle-left,
+.gc-gantt-view__bar-group:hover .gc-gantt-view__handle-right {
+	opacity: 1;
+}
+
 /* 今天标记线 */
 .gantt-today-line {
 	stroke: var(--interactive-accent);
@@ -3194,22 +3656,6 @@ Author: sugar
 	pointer-events: none;
 }
 
-/* 自定义弹窗 */
-.gc-gantt-view-tooltip {
-	min-width: 200px;
-	max-width: 300px;
-	padding: 12px;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	font-size: 13px;
-	line-height: 1.4;
-}
-
-.gc-gantt-view-tooltip strong {
-	color: var(--text-normal);
-}
 
 /* 空状态 */
 .gantt-empty-state {
@@ -3283,18 +3729,6 @@ Author: sugar
 	font-weight: 600;
 }
 
-/* 自定义弹窗 */
-.gc-gantt-view-tooltip {
-	min-width: 200px;
-	max-width: 300px;
-	padding: 12px;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	font-size: 13px;
-	line-height: 1.4;
-}
 
 .gc-tag--popup {
 	display: inline-block;

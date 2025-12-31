@@ -117,9 +117,15 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
 		// 清理上一次的渲染
 		this.cleanup();
 
+		// 清理旧的甘特图容器（防止重复创建）
+		const oldViews = container.querySelectorAll('.gc-view--gantt');
+		oldViews.forEach(el => el.remove());
+
+		// 清空容器
+		container.empty();
+
 		// 创建根容器
 		const root = container.createDiv('gc-view gc-view--gantt');
-		root.empty();
 
 		// 加载并渲染任务
 		this.loadAndRenderGantt(root);
@@ -186,8 +192,8 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
 				// tooltip 由全局 TooltipManager 统一管理
 			};
 
-			// 9. 初始化 Frappe Gantt 包装器（传递 plugin 和原始任务列表用于 tooltip）
-			this.ganttWrapper = new FrappeGanttWrapper(ganttRoot, config, this.plugin, filteredTasks);
+			// 9. 初始化 Frappe Gantt 包装器（传递 plugin、原始任务列表和字段配置）
+			this.ganttWrapper = new FrappeGanttWrapper(ganttRoot, config, this.plugin, filteredTasks, this.startField, this.endField);
 
 			// 10. 渲染甘特图
 			await this.ganttWrapper.init(frappeTasks);

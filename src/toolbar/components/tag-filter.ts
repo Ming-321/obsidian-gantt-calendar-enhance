@@ -5,6 +5,7 @@
 
 import type { GanttTask } from '../../types';
 import type { TagFilterState } from '../../types';
+import { ToolbarComponentClasses } from '../../utils/bem';
 
 /**
  * 标签筛选器配置选项
@@ -72,22 +73,23 @@ export function renderTagFilterButton(
 	options: TagFilterOptions
 ): { cleanup: () => void } {
 	const { getCurrentState, onTagFilterChange, getAllTasks } = options;
+	const classes = ToolbarComponentClasses.tagFilter;
 
 	// 创建按钮容器
-	const buttonContainer = container.createDiv('toolbar-tag-filter-container');
+	const buttonContainer = container.createDiv(classes.containerGantt);
 
 	// 创建标签筛选按钮
 	const tagBtn = buttonContainer.createEl('button', {
-		cls: 'calendar-view-compact-btn toolbar-tag-filter-btn',
+		cls: `calendar-view-compact-btn ${classes.btn}`,
 		attr: { title: '标签筛选', 'aria-label': '标签筛选' }
 	});
 
 	// 按钮图标
-	const iconSpan = tagBtn.createSpan('toolbar-tag-filter-icon');
+	const iconSpan = tagBtn.createSpan(classes.icon);
 	iconSpan.setText('🏷️');
 
 	// 选中数量徽章
-	const countBadge = tagBtn.createSpan('toolbar-tag-filter-count');
+	const countBadge = tagBtn.createSpan(classes.count);
 	countBadge.setText('0');
 	countBadge.style.display = 'none';
 
@@ -99,16 +101,16 @@ export function renderTagFilterButton(
 		if (count > 0) {
 			countBadge.setText(String(count));
 			countBadge.style.display = 'inline';
-			tagBtn.addClass('has-selection');
+			tagBtn.addClass(classes.btnHasSelection);
 		} else {
 			countBadge.style.display = 'none';
-			tagBtn.removeClass('has-selection');
+			tagBtn.removeClass(classes.btnHasSelection);
 		}
 	};
 
 	// 创建标签选择窗格
 	const pane = document.createElement('div');
-	pane.addClass('tag-filter-pane');
+	pane.addClass(classes.pane);
 	pane.style.display = 'none';
 	document.body.appendChild(pane);
 
@@ -123,11 +125,11 @@ export function renderTagFilterButton(
 	const updateOperatorButtons = () => {
 		const state = getCurrentState();
 		if (state.operator === 'AND') {
-			andBtnElement?.addClass('active');
-			orBtnElement?.removeClass('active');
+			andBtnElement?.addClass(classes.operatorBtnActive);
+			orBtnElement?.removeClass(classes.operatorBtnActive);
 		} else {
-			andBtnElement?.removeClass('active');
-			orBtnElement?.addClass('active');
+			andBtnElement?.removeClass(classes.operatorBtnActive);
+			orBtnElement?.addClass(classes.operatorBtnActive);
 		}
 	};
 
@@ -141,29 +143,29 @@ export function renderTagFilterButton(
 		const tagCounts = extractAllTags(allTasks);
 
 		// 组合器区域
-		const operators = pane.createDiv('tag-filter-operators');
+		const operators = pane.createDiv(classes.operators);
 
 		andBtnElement = operators.createEl('button', {
 			text: 'AND',
-			cls: 'tag-filter-operator-btn',
+			cls: classes.operatorBtn,
 			attr: {
 				title: '交集模式：任务必须包含所有选中标签',
 				'aria-label': 'AND 交集模式',
 				'type': 'button'
 			}
 		});
-		if (state.operator === 'AND') andBtnElement.addClass('active');
+		if (state.operator === 'AND') andBtnElement.addClass(classes.operatorBtnActive);
 
 		orBtnElement = operators.createEl('button', {
 			text: 'OR',
-			cls: 'tag-filter-operator-btn',
+			cls: classes.operatorBtn,
 			attr: {
 				title: '并集模式：任务包含任一选中标签即可',
 				'aria-label': 'OR 并集模式',
 				'type': 'button'
 			}
 		});
-		if (state.operator === 'OR') orBtnElement.addClass('active');
+		if (state.operator === 'OR') orBtnElement.addClass(classes.operatorBtnActive);
 
 		// 组合器按钮点击事件 - 阻止冒泡，不重新渲染
 		andBtnElement.addEventListener('click', (e) => {
@@ -185,7 +187,7 @@ export function renderTagFilterButton(
 		});
 
 		// 标签网格区域
-		const grid = pane.createDiv('tag-filter-tags-grid');
+		const grid = pane.createDiv(classes.tagsGrid);
 
 		// 按数量降序排序
 		const sortedTags = Array.from(tagCounts.entries())
@@ -195,7 +197,7 @@ export function renderTagFilterButton(
 		if (sortedTags.length === 0) {
 			const emptyMsg = grid.createEl('div', {
 				text: '暂无标签',
-				cls: 'tag-filter-empty'
+				cls: classes.empty
 			});
 			return;
 		}
@@ -206,20 +208,20 @@ export function renderTagFilterButton(
 			const colorIndex = getTagColorIndex(tag);
 
 			const tagItem = grid.createEl('div', {
-				cls: `tag-filter-tag-item tag-color-${colorIndex}`,
+				cls: `${classes.tagItem} tag-color-${colorIndex}`,
 				attr: {
 					'data-tag': tag,
 					role: 'button',
 					'aria-pressed': String(isSelected)
 				}
 			});
-			if (isSelected) tagItem.addClass('selected');
+			if (isSelected) tagItem.addClass(classes.tagItemSelected);
 
 			// 存储引用以便后续更新
 			tagItemElements.set(tag, tagItem);
 
 			// 胶囊样式：标签名称和数量在同一行
-			tagItem.innerHTML = `<span class="tag-filter-tag-name">#${tag}</span><span class="tag-filter-tag-count">${count}</span>`;
+			tagItem.innerHTML = `<span class="${classes.tagName}">#${tag}</span><span class="${classes.tagCount}">${count}</span>`;
 
 			// 点击切换选中状态（不重新渲染窗格）
 			tagItem.addEventListener('click', (e) => {
@@ -243,10 +245,10 @@ export function renderTagFilterButton(
 				// 只更新当前标签项的选中状态，不重新渲染整个窗格
 				const nowSelected = newSelected.includes(tag);
 				if (nowSelected) {
-					tagItem.addClass('selected');
+					tagItem.addClass(classes.tagItemSelected);
 					tagItem.setAttribute('aria-pressed', 'true');
 				} else {
-					tagItem.removeClass('selected');
+					tagItem.removeClass(classes.tagItemSelected);
 					tagItem.setAttribute('aria-pressed', 'false');
 				}
 			});

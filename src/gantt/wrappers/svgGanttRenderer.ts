@@ -12,7 +12,7 @@
  * └────────────┴──────────────────────────────┘
  */
 
-import type { FrappeTask, FrappeGanttConfig } from '../types';
+import type { FrappeTask, FrappeGanttConfig, DateFieldType } from '../types';
 import type { GanttTask } from '../../types';
 import { GanttClasses } from '../../utils/bem';
 import { TooltipManager, type MousePosition } from '../../utils/tooltipManager';
@@ -74,13 +74,17 @@ export class SvgGanttRenderer {
 	// 事件回调
 	private onDateChange?: (task: FrappeTask, start: Date, end: Date) => void;
 	private onProgressChange?: (task: FrappeTask, progress: number) => void;
+	private startField: DateFieldType = 'startDate';
+	private endField: DateFieldType = 'dueDate';
 
-	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, originalTasks: GanttTask[] = [], app: any = null) {
+	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, originalTasks: GanttTask[] = [], app: any = null, startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
 		this.container = container;
 		this.config = config;
 		this.plugin = plugin;
 		this.originalTasks = originalTasks;
 		this.app = app || plugin?.app;
+		this.startField = startField;
+		this.endField = endField;
 
 		// 从配置读取尺寸
 		this.headerHeight = config.header_height ?? 50;
@@ -437,7 +441,6 @@ export class SvgGanttRenderer {
 		// 绘制任务名称
 		this.tasks.forEach((task, index) => {
 			const y = index * this.rowHeight;
-			const textY = y + this.rowHeight / 2;
 
 			// 行背景（偶数行添加背景色）
 			if (index % 2 === 0) {
@@ -467,18 +470,39 @@ export class SvgGanttRenderer {
 				height: 100%;
 				font-size: 12px;
 				color: var(--text-normal);
-				white-space: nowrap;
-				overflow: hidden;
-				text-overflow: ellipsis;
+				gap: 8px;
 				padding: 0;
 			`;
 
-			// 查找原始任务以获取完整描述
+			// 查找原始任务以获取完整信息
 			const originalTask = this.findOriginalTask(task);
 			const description = originalTask?.description || task.name;
+			const isCompleted = originalTask?.completed || task.progress === 100;
+
+			// === 创建复选框 ===
+			const checkbox = this.createTaskCheckbox(task, originalTask, isCompleted);
+			contentDiv.appendChild(checkbox);
+
+			// === 创建可点击的文本容器 ===
+			const textContainer = document.createElement('div');
+			textContainer.className = 'gantt-task-list-item__text';
+			textContainer.style.cssText = `
+				flex: 1;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				cursor: pointer;
+			`;
+
+			// 设置点击事件用于跳转（阻止链接点击触发）
+			textContainer.addEventListener('click', (e) => {
+				if ((e.target as HTMLElement).tagName !== 'A') {
+					this.handleTaskListItemClick(originalTask);
+				}
+			});
 
 			// 使用富文本渲染（支持链接）
-			this.renderTaskDescriptionWithLinks(contentDiv, description);
+			this.renderTaskDescriptionWithLinks(textContainer, description);
+			contentDiv.appendChild(textContainer);
 
 			foreignObj.appendChild(contentDiv);
 			svg.appendChild(foreignObj);
@@ -587,6 +611,63 @@ export class SvgGanttRenderer {
 		if (lastIndex < text.length) {
 			container.appendText(text.substring(lastIndex));
 		}
+	}
+
+	/**
+	 * 创建任务复选框
+	 */
+	private createTaskCheckbox(
+		frappeTask: FrappeTask,
+		originalTask: GanttTask | null,
+		isCompleted: boolean
+	): HTMLInputElement {
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.checked = isCompleted;
+		checkbox.className = 'gc-gantt-view__task-checkbox';
+		checkbox.style.cssText = `
+			flex-shrink: 0;
+			width: 16px;
+			height: 16px;
+			cursor: pointer;
+			margin: 0;
+			accent-color: var(--interactive-accent);
+		`;
+
+		// 阻止点击事件冒泡到任务列表项
+		checkbox.addEventListener('click', (e) => {
+			e.stopPropagation();
+		});
+
+		// 监听复选框变化
+		checkbox.addEventListener('change', async (e) => {
+			e.stopPropagation();
+			const newCompletedState = (e.target as HTMLInputElement).checked;
+
+			// 通过 onProgressChange 回调更新任务
+			if (this.onProgressChange) {
+				try {
+					await this.onProgressChange(frappeTask, newCompletedState ? 100 : 0);
+				} catch (error) {
+					console.error('[SvgGanttRenderer] Error updating task completion:', error);
+					// 恢复复选框状态
+					checkbox.checked = isCompleted;
+				}
+			}
+		});
+
+		return checkbox;
+	}
+
+	/**
+	 * 处理任务列表项点击事件 - 跳转到文件
+	 */
+	private handleTaskListItemClick(task: GanttTask | null): void {
+		if (!task || !this.app) return;
+
+		// 使用 openFileInExistingLeaf 跳转到文件
+		const { openFileInExistingLeaf } = require('../../utils/fileOpener');
+		openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
 	}
 
 	/**
@@ -850,35 +931,90 @@ export class SvgGanttRenderer {
 			bar.setAttribute('cursor', 'pointer');
 
 			// 进度条
+			let progressElement: SVGRectElement | null = null;
 			if (task.progress > 0 && task.progress < 100) {
 				const progressWidth = barWidth * task.progress / 100;
-				const progress = document.createElementNS(ns, 'rect');
-				progress.setAttribute('x', String(x));
-				progress.setAttribute('y', String(y));
-				progress.setAttribute('width', String(Math.max(progressWidth - 8, 0)));
-				progress.setAttribute('height', '24');
-				progress.setAttribute('rx', '4');
-				progress.setAttribute('fill', fillColor);
-				progress.setAttribute('opacity', '0.4');
-				barGroup.appendChild(progress);
+				const elem = document.createElementNS(ns, 'rect') as SVGRectElement;
+				elem.setAttribute('x', String(x));
+				elem.setAttribute('y', String(y));
+				elem.setAttribute('width', String(Math.max(progressWidth - 8, 0)));
+				elem.setAttribute('height', '24');
+				elem.setAttribute('rx', '4');
+				elem.setAttribute('fill', fillColor);
+				elem.setAttribute('opacity', '0.4');
+				progressElement = elem;
 			}
 
-			// 添加点击事件
-			bar.addEventListener('click', () => this.handleTaskClick(task));
+			// === 添加拖动手柄 ===
+			const HANDLE_HIT_AREA = 12;
+			const HANDLE_VISUAL_SIZE = 4;
 
-			// 添加悬停效果
+			// 左侧手柄 - 修改开始时间
+			const leftHandle = document.createElementNS(ns, 'rect');
+			leftHandle.setAttribute('x', String(x));
+			leftHandle.setAttribute('y', String(y));
+			leftHandle.setAttribute('width', String(HANDLE_HIT_AREA));
+			leftHandle.setAttribute('height', '24');
+			leftHandle.setAttribute('fill', 'transparent');
+			(leftHandle as any).style.cursor = 'w-resize';
+			leftHandle.classList.add('gc-gantt-view__handle-left');
+
+			// 左侧视觉提示
+			const leftVisual = document.createElementNS(ns, 'rect');
+			leftVisual.setAttribute('x', String(x + 2));
+			leftVisual.setAttribute('y', String(y + 8));
+			leftVisual.setAttribute('width', String(HANDLE_VISUAL_SIZE));
+			leftVisual.setAttribute('height', '8');
+			leftVisual.setAttribute('rx', '1');
+			leftVisual.setAttribute('fill', 'white');
+			leftVisual.setAttribute('opacity', '0.5');
+			(leftVisual as any).style.pointerEvents = 'none';
+
+			// 右侧手柄 - 修改结束时间
+			const rightHandleX = x + Math.max(barWidth, 20) - HANDLE_HIT_AREA;
+			const rightHandle = document.createElementNS(ns, 'rect');
+			rightHandle.setAttribute('x', String(rightHandleX));
+			rightHandle.setAttribute('y', String(y));
+			rightHandle.setAttribute('width', String(HANDLE_HIT_AREA));
+			rightHandle.setAttribute('height', '24');
+			rightHandle.setAttribute('fill', 'transparent');
+			(rightHandle as any).style.cursor = 'e-resize';
+			rightHandle.classList.add('gc-gantt-view__handle-right');
+
+			// 右侧视觉提示
+			const rightVisual = document.createElementNS(ns, 'rect');
+			rightVisual.setAttribute('x', String(rightHandleX + HANDLE_HIT_AREA - 2 - HANDLE_VISUAL_SIZE));
+			rightVisual.setAttribute('y', String(y + 8));
+			rightVisual.setAttribute('width', String(HANDLE_VISUAL_SIZE));
+			rightVisual.setAttribute('height', '8');
+			rightVisual.setAttribute('rx', '1');
+			rightVisual.setAttribute('fill', 'white');
+			rightVisual.setAttribute('opacity', '0.5');
+			(rightVisual as any).style.pointerEvents = 'none';
+
+			// 设置拖动事件
+			this.setupTaskBarDragging(barGroup as SVGGElement, bar as SVGRectElement, leftHandle as SVGRectElement, rightHandle as SVGRectElement, task, minDate);
+
+			// 添加点击和悬停事件
+			bar.addEventListener('click', () => this.handleTaskClick(task));
 			bar.addEventListener('mouseenter', (event: MouseEvent) => {
 				bar.setAttribute('opacity', '1');
-				// 传递鼠标位置，使弹窗跟随鼠标
 				this.showPopup(task, bar, { x: event.clientX, y: event.clientY });
 			});
-
 			bar.addEventListener('mouseleave', () => {
 				bar.setAttribute('opacity', '0.85');
 				this.hidePopup();
 			});
 
-			barGroup.appendChild(bar);
+			// 添加元素到组
+			if (progressElement) {
+				barGroup.appendChild(progressElement);  // 进度条
+			}
+			barGroup.appendChild(bar);       // 主任务条
+			barGroup.appendChild(leftHandle);   // 左侧手柄
+			barGroup.appendChild(leftVisual);   // 左侧视觉
+			barGroup.appendChild(rightHandle);  // 右侧手柄
+			barGroup.appendChild(rightVisual);  // 右侧视觉
 			tasksGroup.appendChild(barGroup);
 		});
 
@@ -940,6 +1076,325 @@ export class SvgGanttRenderer {
 
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
 		tooltipManager.hide();
+	}
+
+	/**
+	 * 拖动状态
+	 */
+	private taskDragState = {
+		isDragging: false,
+		dragType: 'none' as 'none' | 'move' | 'resize-left' | 'resize-right',
+		task: null as FrappeTask | null,
+		originalTask: null as GanttTask | null,
+		startX: 0,
+		originalStart: null as Date | null,
+		originalEnd: null as Date | null,
+		taskMinDate: null as Date | null,
+		hasMoved: false,
+		barElement: null as SVGRectElement | null,
+		leftHandleElement: null as SVGRectElement | null,
+		rightHandleElement: null as SVGRectElement | null,
+		leftVisualElement: null as SVGRectElement | null,
+		rightVisualElement: null as SVGRectElement | null,
+	};
+
+	/**
+	 * 设置任务条拖动事件
+	 */
+	private setupTaskBarDragging(
+		barGroup: SVGGElement,
+		bar: SVGRectElement,
+		leftHandle: SVGRectElement,
+		rightHandle: SVGRectElement,
+		task: FrappeTask,
+		minDate: Date
+	): void {
+		const originalTask = this.findOriginalTask(task);
+
+		// 左手柄拖动 - 只修改开始时间
+		leftHandle.addEventListener('mousedown', (e: MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.startDragging(task, originalTask, 'resize-left', e.clientX, minDate, bar, leftHandle, null);
+		});
+
+		// 右手柄拖动 - 只修改结束时间
+		rightHandle.addEventListener('mousedown', (e: MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.startDragging(task, originalTask, 'resize-right', e.clientX, minDate, bar, null, rightHandle);
+		});
+
+		// 任务条整体拖动 - 同时修改开始和结束时间
+		bar.addEventListener('mousedown', (e: MouseEvent) => {
+			e.preventDefault();
+			this.startDragging(task, originalTask, 'move', e.clientX, minDate, bar, null, null);
+		});
+	}
+
+	/**
+	 * 开始拖动
+	 */
+	private startDragging(
+		task: FrappeTask,
+		originalTask: GanttTask | null,
+		dragType: 'move' | 'resize-left' | 'resize-right',
+		startX: number,
+		minDate: Date,
+		bar: SVGRectElement,
+		leftHandle: SVGRectElement | null,
+		rightHandle: SVGRectElement | null
+	): void {
+		this.taskDragState = {
+			isDragging: true,
+			dragType,
+			task,
+			originalTask,
+			startX,
+			originalStart: new Date(task.start),
+			originalEnd: new Date(task.end),
+			taskMinDate: minDate,
+			hasMoved: false,
+			barElement: bar,
+			leftHandleElement: leftHandle,
+			rightHandleElement: rightHandle,
+			leftVisualElement: null,
+			rightVisualElement: null,
+		};
+
+		// 保存视觉元素引用
+		const barGroup = bar.parentElement;
+		if (barGroup) {
+			this.taskDragState.leftVisualElement = barGroup.querySelector('.gc-gantt-view__handle-left + rect + *') as SVGRectElement;
+			this.taskDragState.rightVisualElement = barGroup.querySelector('.gc-gantt-view__handle-right + rect + *') as SVGRectElement;
+		}
+
+		// 设置全局光标
+		const cursorMap = {
+			'move': 'grabbing',
+			'resize-left': 'w-resize',
+			'resize-right': 'e-resize',
+		};
+		document.body.style.cursor = cursorMap[dragType];
+		document.body.style.userSelect = 'none';
+
+		// 设置全局事件监听
+		document.addEventListener('mousemove', this.handleDragMove);
+		document.addEventListener('mouseup', this.handleDragEnd);
+	}
+
+	/**
+	 * 处理拖动移动（绑定方法）
+	 */
+	private handleDragMove = (e: MouseEvent): void => {
+		if (!this.taskDragState.isDragging) return;
+
+		const deltaX = e.clientX - this.taskDragState.startX;
+		const daysDelta = Math.round(deltaX / this.columnWidth);
+
+		if (daysDelta === 0) return;
+
+		this.taskDragState.hasMoved = true;
+
+		const { dragType, originalStart, originalEnd, taskMinDate } = this.taskDragState;
+		let newStart: Date;
+		let newEnd: Date;
+
+		switch (dragType) {
+			case 'move':
+				// 整体拖动：同时修改开始和结束时间
+				newStart = this.addDays(originalStart!, daysDelta);
+				newEnd = this.addDays(originalEnd!, daysDelta);
+				break;
+			case 'resize-left':
+				// 左侧拖动：只修改开始时间
+				newStart = this.addDays(originalStart!, daysDelta);
+				newEnd = originalEnd!;
+				// 确保开始时间不晚于结束时间
+				if (newStart >= newEnd) {
+					newStart = new Date(newEnd);
+					newStart.setDate(newStart.getDate() - 1);
+				}
+				break;
+			case 'resize-right':
+				// 右侧拖动：只修改结束时间
+				newStart = originalStart!;
+				newEnd = this.addDays(originalEnd!, daysDelta);
+				// 确保结束时间不早于开始时间
+				if (newEnd <= newStart) {
+					newEnd = new Date(newStart);
+					newEnd.setDate(newEnd.getDate() + 1);
+				}
+				break;
+			default:
+				return;
+		}
+
+		// 实时更新任务条视觉
+		this.updateTaskBarVisual(newStart, newEnd, taskMinDate!);
+	}
+
+	/**
+	 * 处理拖动结束（绑定方法）
+	 */
+	private handleDragEnd = async (e: MouseEvent): Promise<void> => {
+		if (!this.taskDragState.isDragging) return;
+
+		const { task, dragType, originalStart, originalEnd, startX, hasMoved } = this.taskDragState;
+
+		// 重置状态
+		this.taskDragState.isDragging = false;
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+
+		// 移除全局事件监听
+		document.removeEventListener('mousemove', this.handleDragMove);
+		document.removeEventListener('mouseup', this.handleDragEnd);
+
+		if (!hasMoved) {
+			// 没有移动，视为点击
+			if (task!) this.handleTaskClick(task!);
+			return;
+		}
+
+		const daysDelta = Math.round((e.clientX - startX) / this.columnWidth);
+		if (daysDelta === 0) {
+			this.refresh(this.tasks);
+			return;
+		}
+
+		// 计算新日期
+		let newStart: Date;
+		let newEnd: Date;
+
+		switch (dragType) {
+			case 'move':
+				newStart = this.addDays(originalStart!, daysDelta);
+				newEnd = this.addDays(originalEnd!, daysDelta);
+				break;
+			case 'resize-left':
+				newStart = this.addDays(originalStart!, daysDelta);
+				newEnd = originalEnd!;
+				if (newStart >= newEnd) {
+					newStart = new Date(newEnd);
+					newStart.setDate(newStart.getDate() - 1);
+				}
+				break;
+			case 'resize-right':
+				newStart = originalStart!;
+				newEnd = this.addDays(originalEnd!, daysDelta);
+				if (newEnd <= newStart) {
+					newEnd = newStart;
+					newEnd.setDate(newEnd.getDate() + 1);
+				}
+				break;
+			default:
+				return;
+		}
+
+		// 调用相应的更新方法
+		try {
+			if (dragType === 'move') {
+				// 整体拖动：使用现有的 onDateChange 回调
+				if (this.onDateChange && task!) {
+					await this.onDateChange(task!, newStart, newEnd);
+				}
+			} else if (dragType === 'resize-left') {
+				// 左侧拖动：只更新开始时间
+				if (task!) await this.handleStartDateChange(task!, newStart);
+			} else if (dragType === 'resize-right') {
+				// 右侧拖动：只更新结束时间
+				if (task!) await this.handleEndDateChange(task!, newEnd);
+			}
+		} catch (error) {
+			console.error('[SvgGanttRenderer] Error updating task dates:', error);
+		}
+	}
+
+	/**
+	 * 日期加减天数
+	 */
+	private addDays(date: Date, days: number): Date {
+		const result = new Date(date);
+		result.setDate(result.getDate() + days);
+		return result;
+	}
+
+	/**
+	 * 实时更新任务条视觉
+	 */
+	private updateTaskBarVisual(newStart: Date, newEnd: Date, minDate: Date): void {
+		if (!this.taskDragState.task) return;
+
+		const { barElement, leftHandleElement, rightHandleElement, leftVisualElement, rightVisualElement } = this.taskDragState;
+
+		// 计算新的位置和宽度
+		const startOffset = Math.floor((newStart.getTime() - minDate.getTime()) / (24 * 60 * 60 * 1000));
+		const duration = Math.ceil((newEnd.getTime() - newStart.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+		const x = this.padding + startOffset * this.columnWidth;
+		const barWidth = duration * this.columnWidth - 8;
+
+		// 更新任务条
+		barElement!.setAttribute('x', String(x));
+		barElement!.setAttribute('width', String(Math.max(barWidth, 20)));
+
+		// 更新手柄位置
+		if (leftHandleElement) {
+			leftHandleElement.setAttribute('x', String(x));
+		}
+		if (leftVisualElement) {
+			leftVisualElement.setAttribute('x', String(x + 2));
+		}
+
+		const rightHandleX = x + Math.max(barWidth, 20) - 12; // HANDLE_HIT_AREA
+		if (rightHandleElement) {
+			rightHandleElement.setAttribute('x', String(rightHandleX));
+		}
+		if (rightVisualElement) {
+			rightVisualElement.setAttribute('x', String(rightHandleX + 12 - 2 - 4)); // HANDLE_HIT_AREA - 2 - HANDLE_VISUAL_SIZE
+		}
+	}
+
+	/**
+	 * 单独更新开始时间（左侧拖动）
+	 */
+	private async handleStartDateChange(task: FrappeTask, newStart: Date): Promise<void> {
+		if (!this.plugin || !this.originalTasks?.length) return;
+
+		const originalTask = this.findOriginalTask(task);
+		if (!originalTask) return;
+
+		const { updateTaskProperties } = require('../../tasks/taskUpdater');
+		const updates: Record<string, Date> = {};
+		updates[this.startField] = newStart;
+
+		try {
+			await updateTaskProperties(this.app, originalTask, updates, this.plugin.settings.enabledTaskFormats);
+			await this.plugin.taskCache.updateFileCache(originalTask.filePath);
+		} catch (error) {
+			console.error('[SvgGanttRenderer] Error updating start date:', error);
+		}
+	}
+
+	/**
+	 * 单独更新结束时间（右侧拖动）
+	 */
+	private async handleEndDateChange(task: FrappeTask, newEnd: Date): Promise<void> {
+		if (!this.plugin || !this.originalTasks?.length) return;
+
+		const originalTask = this.findOriginalTask(task);
+		if (!originalTask) return;
+
+		const { updateTaskProperties } = require('../../tasks/taskUpdater');
+		const updates: Record<string, Date> = {};
+		updates[this.endField] = newEnd;
+
+		try {
+			await updateTaskProperties(this.app, originalTask, updates, this.plugin.settings.enabledTaskFormats);
+			await this.plugin.taskCache.updateFileCache(originalTask.filePath);
+		} catch (error) {
+			console.error('[SvgGanttRenderer] Error updating end date:', error);
+		}
 	}
 
 	/**
