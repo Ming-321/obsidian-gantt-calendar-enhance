@@ -52,7 +52,8 @@ export class SvgGanttRenderer {
 	private headerHeight = 50;
 	private rowHeight = 40;
 	private columnWidth = 50;
-	private taskColumnWidth = 200;  // 任务列宽度
+	private taskNumberColumnWidth = 40;  // 任务序号列宽度
+	private taskColumnWidth = 240;  // 任务列宽度（包含序号列）
 	private resizerWidth = 4;  // 分隔条宽度
 	private padding = 18;
 
@@ -89,7 +90,8 @@ export class SvgGanttRenderer {
 		// 从配置读取尺寸
 		this.headerHeight = config.header_height ?? 50;
 		this.columnWidth = config.column_width ?? 50;
-		this.taskColumnWidth = 200;  // 固定任务列宽度
+		this.taskNumberColumnWidth = 40;  // 固定序号列宽度
+		this.taskColumnWidth = this.taskNumberColumnWidth + 200;  // 序号列 + 任务内容列
 		this.padding = config.padding ?? 18;
 	}
 
@@ -151,7 +153,8 @@ export class SvgGanttRenderer {
 		// 计算尺寸
 		const ganttWidth = totalDays * this.columnWidth + this.padding * 2;
 		const ganttHeight = this.headerHeight + this.tasks.length * this.rowHeight + this.padding * 2;
-		const taskListWidth = this.taskColumnWidth;
+		// 任务列表使用足够大的宽度来显示完整任务描述
+		const taskListWidth = 2040; // taskNumberColumnWidth (40) + contentWidth (2000)
 		const taskListHeight = ganttHeight;
 
 		// 创建 BEM 结构的布局容器
@@ -161,7 +164,7 @@ export class SvgGanttRenderer {
 		this.cornerContainer = this.ganttLayout.createDiv(GanttClasses.elements.corner);
 		this.cornerSvg = this.createSvgElement(
 			this.cornerContainer,
-			taskListWidth,
+			this.taskColumnWidth,
 			this.headerHeight,
 			GanttClasses.elements.cornerSvg
 		);
@@ -348,34 +351,25 @@ export class SvgGanttRenderer {
 						viewBox[2] = String(newWidth);
 						this.cornerSvg.setAttribute('viewBox', viewBox.join(' '));
 					}
-					// 更新内部 rect 宽度
+					// 更新内部 rect 宽度和分隔线位置
 					const bgRect = this.cornerSvg.querySelector('rect');
 					if (bgRect) {
 						bgRect.setAttribute('width', String(newWidth));
 					}
+					// 更新标题位置和分隔线
+					const texts = this.cornerSvg.querySelectorAll('text');
+					if (texts.length >= 2) {
+						// 任务列标题
+						texts[1].setAttribute('x', String(this.taskNumberColumnWidth + (newWidth - this.taskNumberColumnWidth) / 2));
+					}
+					const dividerLine = this.cornerSvg.querySelector('line[stroke-width="1"]');
+					if (dividerLine) {
+						dividerLine.setAttribute('x1', String(this.taskNumberColumnWidth));
+						dividerLine.setAttribute('x2', String(this.taskNumberColumnWidth));
+					}
 				}
 
-				// 更新 tasklist SVG 元素
-				if (this.taskListSvg) {
-					this.taskListSvg.setAttribute('width', String(newWidth));
-					const viewBox = this.taskListSvg.getAttribute('viewBox')?.split(' ');
-					if (viewBox && viewBox.length === 4) {
-						viewBox[2] = String(newWidth);
-						this.taskListSvg.setAttribute('viewBox', viewBox.join(' '));
-					}
-					// 更新所有 rect 和 line 的宽度
-					const rects = this.taskListSvg.querySelectorAll('rect');
-					rects.forEach(rect => {
-						rect.setAttribute('width', String(newWidth));
-					});
-					const lines = this.taskListSvg.querySelectorAll('line');
-					lines.forEach(line => {
-						const x2 = line.getAttribute('x2');
-						if (x2 === '200' || x2 === this.taskColumnWidth.toString()) {
-							line.setAttribute('x2', String(newWidth));
-						}
-					});
-				}
+				// tasklist SVG 保持固定大宽度以显示完整任务描述，不随拖动改变
 			}
 		});
 
@@ -390,7 +384,7 @@ export class SvgGanttRenderer {
 	}
 
 	/**
-	 * 渲染左上角空白区域
+	 * 渲染左上角空白区域（包含序号和任务列标题）
 	 */
 	private renderCorner(svg: SVGSVGElement | null): void {
 		if (!svg) return;
@@ -408,16 +402,37 @@ export class SvgGanttRenderer {
 		bg.setAttribute('fill', 'var(--background-secondary)');
 		svg.appendChild(bg);
 
-		// 可选：添加标题
-		const text = document.createElementNS(ns, 'text');
-		text.setAttribute('x', String(width / 2));
-		text.setAttribute('y', String(height / 2 + 5));
-		text.setAttribute('text-anchor', 'middle');
-		text.setAttribute('font-size', '12');
-		text.setAttribute('font-weight', '600');
-		text.setAttribute('fill', 'var(--text-muted)');
-		text.textContent = '任务列表';
-		svg.appendChild(text);
+		// 序号列标题
+		const numberText = document.createElementNS(ns, 'text');
+		numberText.setAttribute('x', String(this.taskNumberColumnWidth / 2));
+		numberText.setAttribute('y', String(height / 2 + 5));
+		numberText.setAttribute('text-anchor', 'middle');
+		numberText.setAttribute('font-size', '11');
+		numberText.setAttribute('font-weight', '600');
+		numberText.setAttribute('fill', 'var(--text-muted)');
+		numberText.textContent = '序号';
+		svg.appendChild(numberText);
+
+		// 任务列标题
+		const taskText = document.createElementNS(ns, 'text');
+		taskText.setAttribute('x', String(this.taskNumberColumnWidth + (width - this.taskNumberColumnWidth) / 2));
+		taskText.setAttribute('y', String(height / 2 + 5));
+		taskText.setAttribute('text-anchor', 'middle');
+		taskText.setAttribute('font-size', '11');
+		taskText.setAttribute('font-weight', '600');
+		taskText.setAttribute('fill', 'var(--text-muted)');
+		taskText.textContent = '任务';
+		svg.appendChild(taskText);
+
+		// 序号列和任务列之间的分隔线
+		const dividerLine = document.createElementNS(ns, 'line');
+		dividerLine.setAttribute('x1', String(this.taskNumberColumnWidth));
+		dividerLine.setAttribute('y1', '0');
+		dividerLine.setAttribute('x2', String(this.taskNumberColumnWidth));
+		dividerLine.setAttribute('y2', String(height));
+		dividerLine.setAttribute('stroke', 'var(--background-modifier-border)');
+		dividerLine.setAttribute('stroke-width', '1');
+		svg.appendChild(dividerLine);
 	}
 
 	/**
@@ -428,12 +443,15 @@ export class SvgGanttRenderer {
 
 		const ns = 'http://www.w3.org/2000/svg';
 		const width = this.taskColumnWidth;
+		const numberWidth = this.taskNumberColumnWidth;
+		// 使用足够大的宽度来显示完整任务描述
+		const contentWidth = 2000;
 
 		// 背景 - 只需要任务区域的高度
 		const bg = document.createElementNS(ns, 'rect');
 		bg.setAttribute('x', '0');
 		bg.setAttribute('y', '0');
-		bg.setAttribute('width', String(width));
+		bg.setAttribute('width', String(contentWidth + numberWidth));
 		bg.setAttribute('height', String(this.tasks.length * this.rowHeight));
 		bg.setAttribute('fill', 'var(--background-primary)');
 		svg.appendChild(bg);
@@ -441,29 +459,52 @@ export class SvgGanttRenderer {
 		// 绘制任务名称
 		this.tasks.forEach((task, index) => {
 			const y = index * this.rowHeight;
+			const taskNumber = index + 1;
 
 			// 行背景（偶数行添加背景色）
 			if (index % 2 === 0) {
 				const rowBg = document.createElementNS(ns, 'rect');
 				rowBg.setAttribute('x', '0');
 				rowBg.setAttribute('y', String(y));
-				rowBg.setAttribute('width', String(width));
+				rowBg.setAttribute('width', String(contentWidth + numberWidth));
 				rowBg.setAttribute('height', String(this.rowHeight));
 				rowBg.setAttribute('fill', 'var(--background-secondary)');
 				rowBg.setAttribute('opacity', '0.3');
 				svg.appendChild(rowBg);
 			}
 
-			// 使用 foreignObject 渲染富文本任务描述
-			const foreignObj = document.createElementNS(ns, 'foreignObject');
-			foreignObj.setAttribute('x', String(this.padding));
-			foreignObj.setAttribute('y', String(y));
-			foreignObj.setAttribute('width', String(width - this.padding * 2));
-			foreignObj.setAttribute('height', String(this.rowHeight));
+			// === 序号列 ===
+			const numberForeignObj = document.createElementNS(ns, 'foreignObject');
+			numberForeignObj.setAttribute('x', '0');
+			numberForeignObj.setAttribute('y', String(y));
+			numberForeignObj.setAttribute('width', String(numberWidth));
+			numberForeignObj.setAttribute('height', String(this.rowHeight));
+
+			const numberDiv = document.createElement('div');
+			numberDiv.className = GanttClasses.elements.taskNumberCell;
+			numberDiv.style.cssText = `
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				height: 100%;
+				font-size: 11px;
+				color: var(--text-muted);
+				font-weight: 500;
+			`;
+			numberDiv.textContent = String(taskNumber);
+			numberForeignObj.appendChild(numberDiv);
+			svg.appendChild(numberForeignObj);
+
+			// === 任务内容列 ===
+			const contentForeignObj = document.createElementNS(ns, 'foreignObject');
+			contentForeignObj.setAttribute('x', String(numberWidth));
+			contentForeignObj.setAttribute('y', String(y));
+			contentForeignObj.setAttribute('width', String(contentWidth));
+			contentForeignObj.setAttribute('height', String(this.rowHeight));
 
 			// 创建 HTML 内容容器
 			const contentDiv = document.createElement('div');
-			contentDiv.className = 'gantt-task-list-item';
+			contentDiv.className = GanttClasses.elements.taskContentCell;
 			contentDiv.style.cssText = `
 				display: flex;
 				align-items: center;
@@ -471,7 +512,8 @@ export class SvgGanttRenderer {
 				font-size: 12px;
 				color: var(--text-normal);
 				gap: 8px;
-				padding: 0;
+				padding: 0 8px;
+				width: 100%;
 			`;
 
 			// 查找原始任务以获取完整信息
@@ -488,8 +530,7 @@ export class SvgGanttRenderer {
 			textContainer.className = 'gantt-task-list-item__text';
 			textContainer.style.cssText = `
 				flex: 1;
-				overflow: hidden;
-				text-overflow: ellipsis;
+				white-space: nowrap;
 				cursor: pointer;
 			`;
 
@@ -504,14 +545,24 @@ export class SvgGanttRenderer {
 			this.renderTaskDescriptionWithLinks(textContainer, description);
 			contentDiv.appendChild(textContainer);
 
-			foreignObj.appendChild(contentDiv);
-			svg.appendChild(foreignObj);
+			contentForeignObj.appendChild(contentDiv);
+			svg.appendChild(contentForeignObj);
 
-			// 分隔线
+			// 序号列和任务列之间的竖线分隔
+			const dividerLine = document.createElementNS(ns, 'line');
+			dividerLine.setAttribute('x1', String(numberWidth));
+			dividerLine.setAttribute('y1', String(y));
+			dividerLine.setAttribute('x2', String(numberWidth));
+			dividerLine.setAttribute('y2', String((index + 1) * this.rowHeight));
+			dividerLine.setAttribute('stroke', 'var(--background-modifier-border)');
+			dividerLine.setAttribute('stroke-width', '1');
+			svg.appendChild(dividerLine);
+
+			// 底部分隔线
 			const line = document.createElementNS(ns, 'line');
 			line.setAttribute('x1', '0');
 			line.setAttribute('y1', String((index + 1) * this.rowHeight));
-			line.setAttribute('x2', String(width));
+			line.setAttribute('x2', String(contentWidth + numberWidth));
 			line.setAttribute('y2', String((index + 1) * this.rowHeight));
 			line.setAttribute('stroke', 'var(--background-modifier-border)');
 			line.setAttribute('stroke-width', '0.5');

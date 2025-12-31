@@ -59,9 +59,7 @@ export class ToolbarRightTask {
 				onFilterChange();
 			},
 			label: '字段筛选',
-			containerClass: 'toolbar-right-task-field-filter-group',
-			labelClass: 'toolbar-right-task-field-filter-label',
-			selectClass: 'toolbar-right-task-field-select'
+			containerClass: 'toolbar-right-task-field-filter-group'
 		});
 
 		// 日期筛选组
