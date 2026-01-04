@@ -10,9 +10,9 @@ import { TaskViewRenderer } from './views/TaskView';
 import { GanttViewRenderer } from './views/GanttView';
 import { Toolbar } from './toolbar/toolbar';
 
-export const CALENDAR_VIEW_ID = 'gantt-calendar-view';
+export const GC_VIEW_ID = 'gantt-calendar-view';
 
-export class CalendarView extends ItemView {
+export class GCMainView extends ItemView {
 	private currentDate: Date = new Date();
 	private viewType: CalendarViewType = 'year';
 	private lastCalendarViewType: CalendarViewType = 'month';
@@ -50,7 +50,7 @@ export class CalendarView extends ItemView {
 	}
 
 	getViewType(): string {
-		return CALENDAR_VIEW_ID;
+		return GC_VIEW_ID;
 	}
 
 	getDisplayText(): string {

@@ -1,5 +1,5 @@
 import { App, Plugin, TFile, Notice } from 'obsidian';
-import { CalendarView, CALENDAR_VIEW_ID } from './src/CalendarView';
+import { GCMainView, GC_VIEW_ID } from './src/GCMainView';
 import { GanttCalendarSettings, DEFAULT_SETTINGS, GanttCalendarSettingTab } from './src/settings';
 import { TaskCacheManager } from './src/taskManager';
 import { registerAllCommands } from './src/commands/commandsIndex';
@@ -67,7 +67,7 @@ export default class GanttCalendarPlugin extends Plugin {
         );
 
         // Register the calendar view
-        this.registerView(CALENDAR_VIEW_ID, (leaf) => new CalendarView(leaf, this));
+        this.registerView(GC_VIEW_ID, (leaf) => new GCMainView(leaf, this));
 
         // This creates an icon in the left ribbon.
         const ribbonIconEl = this.addRibbonIcon('calendar-days', '甘特日历', (evt: MouseEvent) => {
@@ -105,18 +105,18 @@ export default class GanttCalendarPlugin extends Plugin {
             this.taskCache.clear();
         }
 
-        this.app.workspace.getLeavesOfType(CALENDAR_VIEW_ID).forEach(leaf => leaf.detach());
+        this.app.workspace.getLeavesOfType(GC_VIEW_ID).forEach(leaf => leaf.detach());
     }
 
     async activateView() {
         const { workspace } = this.app;
 
-        let leaf = workspace.getLeavesOfType(CALENDAR_VIEW_ID)[0];
+        let leaf = workspace.getLeavesOfType(GC_VIEW_ID)[0];
         if (!leaf) {
             // Create new leaf in main area
             leaf = workspace.getLeaf('tab');
             await leaf.setViewState({
-                type: CALENDAR_VIEW_ID,
+                type: GC_VIEW_ID,
                 active: true,
             });
         }
@@ -150,9 +150,9 @@ export default class GanttCalendarPlugin extends Plugin {
     }
 
     refreshCalendarViews() {
-        const leaves = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_ID);
+        const leaves = this.app.workspace.getLeavesOfType(GC_VIEW_ID);
         leaves.forEach(leaf => {
-            const view = leaf.view as unknown as CalendarView;
+            const view = leaf.view as unknown as GCMainView;
             if (view && view.refreshSettings) {
                 view.refreshSettings();
             }
