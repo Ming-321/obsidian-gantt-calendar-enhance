@@ -111,6 +111,49 @@ export class SvgGanttRenderer {
 	}
 
 	/**
+	 * 增量更新任务（不完整重建视图）
+	 * 只更新受影响的 DOM 元素，保持滚动位置
+	 */
+	updateTasks(newTasks: FrappeTask[]): void {
+		const oldTasks = this.tasks;
+		this.tasks = newTasks;
+
+		// 构建任务ID映射
+		const oldTaskMap = new Map(oldTasks.map(t => [t.id, t]));
+		const newTaskMap = new Map(newTasks.map(t => [t.id, t]));
+
+		// 找出新增、删除、修改的任务
+		const added = newTasks.filter(t => !oldTaskMap.has(t.id));
+		const removed = oldTasks.filter(t => !newTaskMap.has(t.id));
+		const modified = newTasks.filter(t => {
+			const old = oldTaskMap.get(t.id);
+			return old && this.isTaskDifferent(old, t);
+		});
+
+		// 如果变化太大，执行完整渲染
+		if (added.length + removed.length > 5) {
+			this.render();
+			return;
+		}
+
+		// 执行增量更新
+		this.updateTaskListIncremental(added, removed, modified, newTasks);
+		this.updateGanttAreaIncremental(added, removed, modified, newTasks);
+	}
+
+	/**
+	 * 检查任务是否发生变化
+	 */
+	private isTaskDifferent(old: FrappeTask, current: FrappeTask): boolean {
+		return old.start !== current.start ||
+			   old.end !== current.end ||
+			   old.progress !== current.progress ||
+			   old.completed !== current.completed ||
+			   old.name !== current.name ||
+			   old.custom_class !== current.custom_class;
+	}
+
+	/**
 	 * 更新配置
 	 */
 	updateConfig(config: Partial<FrappeGanttConfig>): void {
@@ -1042,8 +1085,11 @@ export class SvgGanttRenderer {
 			// 设置拖动事件
 			this.setupTaskBarDragging(barGroup as SVGGElement, bar as SVGRectElement, leftHandle as SVGRectElement, rightHandle as SVGRectElement, task, minDate);
 
-			// 添加点击和悬停事件
-			bar.addEventListener('click', () => this.handleTaskClick(task));
+			// 添加点击和悬停事件（如果刚结束拖动，不执行点击）
+			bar.addEventListener('click', () => {
+				if (this.taskDragState.justFinishedDragging) return;
+				this.handleTaskClick(task);
+			});
 			bar.addEventListener('mouseenter', (event: MouseEvent) => {
 				bar.setAttribute('opacity', '1');
 				this.showPopup(task, bar, { x: event.clientX, y: event.clientY });
@@ -1134,6 +1180,7 @@ export class SvgGanttRenderer {
 		rightHandleElement: null as SVGRectElement | null,
 		leftVisualElement: null as SVGRectElement | null,
 		rightVisualElement: null as SVGRectElement | null,
+		justFinishedDragging: false, // 标志位：刚结束拖动，用于屏蔽点击事件
 	};
 
 	/**
@@ -1194,6 +1241,7 @@ export class SvgGanttRenderer {
 			rightHandleElement: rightHandle,
 			leftVisualElement: null,
 			rightVisualElement: null,
+			justFinishedDragging: false,
 		};
 
 		// 保存视觉元素引用
@@ -1286,10 +1334,16 @@ export class SvgGanttRenderer {
 		document.removeEventListener('mouseup', this.handleDragEnd);
 
 		if (!hasMoved) {
-			// 没有移动，视为点击
+			// 没有移动，视为点击，不设置标志位
 			if (task!) this.handleTaskClick(task!);
 			return;
 		}
+
+		// 有移动，设置标志位屏蔽点击事件
+		this.taskDragState.justFinishedDragging = true;
+		setTimeout(() => {
+			this.taskDragState.justFinishedDragging = false;
+		}, 100); // 100ms 后恢复点击功能
 
 		const daysDelta = Math.round((e.clientX - startX) / this.columnWidth);
 		if (daysDelta === 0) {
@@ -1395,19 +1449,13 @@ export class SvgGanttRenderer {
 	private async handleStartDateChange(task: FrappeTask, newStart: Date): Promise<void> {
 		if (!this.plugin || !task.filePath) return;
 
-		// 从 FrappeTask 创建临时的 GanttTask 对象用于更新
-		const tempTask: any = {
-			filePath: task.filePath,
-			fileName: task.fileName,
-			lineNumber: task.lineNumber,
-		};
-
 		const { updateTaskProperties } = require('../../tasks/taskUpdater');
 		const updates: Record<string, Date> = {};
 		updates[this.startField] = newStart;
 
 		try {
-			await updateTaskProperties(this.app, tempTask, updates, this.plugin.settings.enabledTaskFormats);
+			// 直接使用 task（已包含完整任务信息）
+			await updateTaskProperties(this.app, task as any, updates, this.plugin.settings.enabledTaskFormats);
 			await this.plugin.taskCache.updateFileCache(task.filePath);
 		} catch (error) {
 			console.error('[SvgGanttRenderer] Error updating start date:', error);
@@ -1420,22 +1468,151 @@ export class SvgGanttRenderer {
 	private async handleEndDateChange(task: FrappeTask, newEnd: Date): Promise<void> {
 		if (!this.plugin || !task.filePath) return;
 
-		// 从 FrappeTask 创建临时的 GanttTask 对象用于更新
-		const tempTask: any = {
-			filePath: task.filePath,
-			fileName: task.fileName,
-			lineNumber: task.lineNumber,
-		};
-
 		const { updateTaskProperties } = require('../../tasks/taskUpdater');
 		const updates: Record<string, Date> = {};
 		updates[this.endField] = newEnd;
 
 		try {
-			await updateTaskProperties(this.app, tempTask, updates, this.plugin.settings.enabledTaskFormats);
+			// 直接使用 task（已包含完整任务信息）
+			await updateTaskProperties(this.app, task as any, updates, this.plugin.settings.enabledTaskFormats);
 			await this.plugin.taskCache.updateFileCache(task.filePath);
 		} catch (error) {
 			console.error('[SvgGanttRenderer] Error updating end date:', error);
+		}
+	}
+
+	/**
+	 * 增量更新任务列表区域
+	 */
+	private updateTaskListIncremental(
+		added: FrappeTask[],
+		removed: FrappeTask[],
+		modified: FrappeTask[],
+		allTasks: FrappeTask[]
+	): void {
+		const svg = this.taskListSvg;
+		if (!svg) return;
+
+		// 1. 移除删除的任务
+		removed.forEach(task => {
+			const row = svg.querySelector(`[data-task-row="${task.id}"]`);
+			if (row) row.remove();
+		});
+
+		// 2. 更新现有任务
+		allTasks.forEach((task, index) => {
+			const row = svg.querySelector(`[data-task-row="${task.id}"]`);
+			if (row) {
+				// 更新复选框状态
+				const checkbox = row.querySelector('input[type="checkbox"]') as HTMLInputElement;
+				if (checkbox) {
+					const isCompleted = task.completed || task.progress === 100;
+					checkbox.checked = isCompleted;
+				}
+				// 更新序号
+				const numberCell = row.querySelector('.gantt-task-number');
+				if (numberCell) {
+					numberCell.textContent = String(index + 1);
+				}
+			}
+		});
+
+		// 3. 简化处理：如果任务数量变化，重新渲染整个列表
+		if (added.length > 0 || removed.length > 0) {
+			// 重新渲染任务列表
+			svg.innerHTML = '';
+			this.renderTaskList(svg);
+		}
+	}
+
+	/**
+	 * 增量更新甘特图区域
+	 */
+	private updateGanttAreaIncremental(
+		added: FrappeTask[],
+		removed: FrappeTask[],
+		modified: FrappeTask[],
+		allTasks: FrappeTask[]
+	): void {
+		if (!this.ganttSvg) return;
+
+		const tasksGroup = this.ganttSvg.querySelector('.gantt-tasks-group') as SVGGElement;
+		if (!tasksGroup) return;
+
+		// 1. 移除删除的任务条
+		removed.forEach(task => {
+			const barGroup = tasksGroup.querySelector(`[data-task-bar="${task.id}"]`);
+			if (barGroup) barGroup.remove();
+		});
+
+		// 2. 更新现有任务条
+		modified.forEach(task => {
+			const barGroup = tasksGroup.querySelector(`[data-task-bar="${task.id}"]`) as SVGGElement;
+			if (barGroup) {
+				this.updateTaskBarElement(barGroup, task);
+			}
+		});
+
+		// 3. 添加新任务条（简化处理：重新渲染整个甘特图区域）
+		if (added.length > 0) {
+			if (this.ganttSvg) {
+				const { minDate, totalDays } = this.calculateDateRange();
+				const ganttHeight = this.tasks.length * this.rowHeight + 10;
+				this.renderGanttChart(this.ganttSvg, minDate, totalDays, ganttHeight);
+			}
+		}
+	}
+
+	/**
+	 * 更新单个任务条元素
+	 */
+	private updateTaskBarElement(barGroup: SVGGElement, task: FrappeTask): void {
+		const ns = 'http://www.w3.org/2000/svg';
+		const { minDate } = this.calculateDateRange();
+		const startDate = new Date(task.start);
+		const endDate = new Date(task.end);
+
+		const startDays = Math.floor((startDate.getTime() - minDate.getTime()) / (24 * 60 * 60 * 1000));
+		const endDays = Math.floor((endDate.getTime() - minDate.getTime()) / (24 * 60 * 60 * 1000));
+		const duration = endDays - startDays + 1;
+
+		const x = this.padding + startDays * this.columnWidth;
+		const y = this.tasks.findIndex(t => t.id === task.id) * this.rowHeight + 10; // 10px top padding
+		const width = duration * this.columnWidth;
+
+		// 更新任务条位置和宽度
+		const bar = barGroup.querySelector('.task-bar') as SVGRectElement;
+		if (bar) {
+			bar.setAttribute('x', String(x));
+			bar.setAttribute('width', String(Math.max(width, 20)));
+			bar.setAttribute('y', String(y));
+
+			// 更新颜色（根据完成状态）
+			const isCompleted = task.completed || task.progress === 100;
+			if (isCompleted) {
+				bar.setAttribute('fill', 'var(--checkbox-done)'); // 完成状态颜色
+			} else {
+				// 根据优先级设置颜色
+				const priorityClass = task.custom_class?.split(' ').find(c => c.startsWith('priority-'));
+				if (priorityClass === 'priority-high') {
+					bar.setAttribute('fill', 'var(--tag-fill-hot)');
+				} else if (priorityClass === 'priority-medium') {
+					bar.setAttribute('fill', 'var(--tag-fill-warm)');
+				} else if (priorityClass === 'priority-low') {
+					bar.setAttribute('fill', 'var(--tag-fill-cool)');
+				} else {
+					bar.setAttribute('fill', 'var(--interactive-accent)');
+				}
+			}
+		}
+
+		// 更新进度条
+		const progressRect = barGroup.querySelector('.task-progress') as SVGRectElement;
+		if (progressRect) {
+			const progressWidth = width * (task.progress / 100);
+			progressRect.setAttribute('x', String(x));
+			progressRect.setAttribute('y', String(y));
+			progressRect.setAttribute('width', String(progressWidth));
 		}
 	}
 

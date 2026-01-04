@@ -1,97 +1,60 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code (claude.ai/code) 在此代码库中工作时提供指导。
 
-## Build Commands
+## 构建命令
 
 ```bash
-npm install              # Install dependencies
-npm run dev             # Development build with hot reload
-npm run build           # Production build (runs tsc + esbuild)
+npm install              # 安装依赖
+npm run dev             # 开发构建，支持热重载
+npm run build           # 生产构建（运行 tsc + esbuild）
 ```
 
-**Important**: After building, copy `main.js`, `manifest.json`, and `styles.css` to `<Vault>/.obsidian/plugins/obsidian-gantt-calendar/` and reload Obsidian to test.
+**重要**：构建完成后，需将 `main.js`、`manifest.json` 和 `styles.css` 复制到 `<Vault>/.obsidian/plugins/obsidian-gantt-calendar/`，然后重新加载 Obsidian 进行测试。
 
-## Project Overview
+## 项目概述
 
-This is an Obsidian plugin that provides a calendar view with Gantt chart functionality and task management. It supports both Tasks plugin (emoji) and Dataview plugin (field) task formats.
+这是一个 Obsidian 插件，提供带有甘特图功能的日历视图和任务管理。支持 Tasks 插件（emoji 格式）和 Dataview 插件（field 格式）两种任务格式。
 
-## Architecture
+## 架构
 
-### Entry Point
-- `main.ts` - Plugin lifecycle (onload/onunload), registers views, commands, and event listeners
-- `CalendarView.ts` - Main view container that manages all sub-views
+### 入口点
+- `main.ts` - 插件生命周期（onload/onunload），注册视图、命令和事件监听器
+- `CalendarView.ts` - 主视图容器，管理所有子视图
 
-### View System
-The plugin uses a base class pattern for views:
-- `BaseCalendarRenderer` - Shared methods for all views (task rendering, tooltips, link parsing)
-- Views extend this base: `YearView`, `MonthView`, `WeekView`, `DayView`, `TaskView`, `GanttView`
+### 视图系统
+插件使用基类模式构建视图：
+- `BaseCalendarRenderer` - 所有视图的共享方法（任务渲染、工具提示、链接解析）
+- 各视图继承此基类：`YearView`、`MonthView`、`WeekView`、`DayView`、`TaskView`、`GanttView`
 
-### Toolbar System
-Three-region layout in `src/toolbar/`:
-- **Left**: View toggle (Calendar ↔ Tasks)
-- **Center**: Date range/title display
-- **Right**: Navigation buttons (different per view)
+### 工具栏系统
+`src/toolbar/` 中的三区域布局：
+- **左侧**：视图切换（日历 ↔ 任务）
+- **中间**：日期范围/标题显示
+- **右侧**：导航按钮（因视图而异）
 
-### Task Management
-- `TaskCacheManager` (taskManager.ts) - Singleton pattern, caches all tasks with incremental updates
-- `tasks/parser.ts` - Parses Tasks (emoji) and Dataview (field) formats
-- `tasks/search.ts` - Filters tasks by date/status
+### 任务管理
+- `TaskCacheManager` (taskManager.ts) - 单例模式，缓存所有任务并支持增量更新
+- `tasks/parser.ts` - 解析 Tasks（emoji）和 Dataview（field）格式
+- `tasks/search.ts` - 按日期/状态过滤任务
 
-### Task Format Compatibility
+### 任务格式兼容性
 
-**Tasks format (emoji)**:
+**Tasks 格式（emoji）**：
 ```
-- [ ] 🎯 Task title ⏫ ➕ 2025-01-10 📅 2025-01-15
-```
-
-**Dataview format (fields)**:
-```
-- [ ] 🎯 Task title [priority:: high] [created:: 2025-01-10] [due:: 2025-01-15]
+- [ ] 🎯 任务标题 ⏫ ➕ 2025-01-10 📅 2025-01-15
 ```
 
-Priority levels: `🔺` (highest), `⏫` (high), `🔼` (medium), `🔽` (low), `⏬` (lowest)
-Date emojis: `➕` (created), `🛫` (start), `⏳` (scheduled), `📅` (due), `✅` (completion), `❌` (cancelled)
+**Dataview 格式（field）**：
+```
+- [ ] 🎯 任务标题 [priority:: high] [created:: 2025-01-10] [due:: 2025-01-15]
+```
 
-### Lunar Calendar Module
-`src/lunar/` handles Chinese calendar conversion, festivals, and solar terms.
+优先级：`🔺`（最高）、`⏫`（高）、`🔼`（中）、`🔽`（低）、`⏬`（最低）
+日期 emoji：`➕`（创建日期）、`🛫`（开始日期）、`⏳`（计划日期）、`📅`（到期日期）、`✅`（完成日期）、`❌`（取消日期）
 
-## Key Patterns
-
-### File Organization
-- Keep `main.ts` minimal - delegate to modules
-- Commands in `src/commands/`, context menu commands in `src/contextMenu/`
-- Split files >200-300 lines into focused modules
-- Use `this.register*` helpers for cleanup on unload
-
-### Task Cache Flow
-1. On load: `TaskCacheManager.initialize()` scans all .md files in batches of 50
-2. On file change: `updateFileCache()` re-parses affected file
-3. Deep comparison (`areTasksEqual`) prevents unnecessary view updates
-4. Subscribed views refresh only when tasks actually change
-
-### Adding New Views
-1. Extend `BaseCalendarRenderer`
-2. Implement `render()` method
-3. Register in `CalendarView.ts` view map
-4. Add toolbar button if needed
-
-### Command Registration
-Use ID prefix pattern:
-- `gantt-calendar-common` - simple commands
-- `gantt-calendar-editor` - editor operations
-- `gantt-calendar-conditional` - availability-checked commands
-
-## Known Issues
-- Task tooltip may not disappear after refresh (high priority)
-- Refresh button causes severe lag (high priority)
-
-## Configuration
-Settings defined in `src/settings.ts` with defaults. User choices persist via `loadData()`/`saveData()`.
-CSS variables updated for festival colors on settings change.
-
-## Dependencies
-- TypeScript 4.7.4, ES6 target
-- esbuild for bundling
-- Obsidian API types (`obsidian` package)
-- No runtime dependencies - all bundled into `main.js`
+## 代码统一管理规范
+DOM类名统一使用 ./src/utils/bem.ts 进行管理, 新建类名需在此文件中进行定义并引用
+正则表达式统一使用 ./src/utils/RegularExpression.ts 进行管理.
+全局任务悬浮窗统一复用 ./src/utils/tooltipManager.ts
+任务条目更新统一复用 updateTaskProperties函数进行.

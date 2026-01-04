@@ -56,6 +56,20 @@ export class TaskDataAdapter {
 			filePath: task.filePath,
 			fileName: task.fileName,
 			lineNumber: task.lineNumber,
+
+			// 完整任务信息（用于更新时保留原始数据）
+			content: task.content,
+			description: task.description,
+			tags: task.tags,
+			priority: task.priority,
+			format: task.format,
+			status: task.status,
+			createdDate: task.createdDate,
+			startDate: task.startDate,
+			scheduledDate: task.scheduledDate,
+			dueDate: task.dueDate,
+			cancelledDate: task.cancelledDate,
+			completionDate: task.completionDate,
 		};
 	}
 

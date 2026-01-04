@@ -3,10 +3,15 @@
  * 处理甘特图中的任务更新事件，同步回 Markdown 文件
  */
 
-import { App, Notice, TFile } from 'obsidian';
+import { App, Notice } from 'obsidian';
 import type { GanttTask } from '../../types';
 import type { FrappeTask, DateFieldType } from '../types';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
+
+/**
+ * 任务更新回调函数类型
+ */
+export type TaskUpdateCallback = (filePath: string) => void;
 
 /**
  * 任务更新处理器
@@ -19,6 +24,11 @@ export class TaskUpdateHandler {
 		private app: App,
 		private plugin: any
 	) {}
+
+	/**
+	 * 任务更新完成后的回调（用于增量更新视图）
+	 */
+	onTaskUpdated?: TaskUpdateCallback;
 
 	/**
 	 * 处理日期变更（拖拽任务条）
@@ -46,42 +56,29 @@ export class TaskUpdateHandler {
 				return;
 			}
 
-			// 获取文件对象
-			const file = this.app.vault.getAbstractFileByPath(frappeTask.filePath);
-			if (!file || !(file instanceof TFile)) {
-				new Notice('无法找到文件');
-				return;
-			}
+			// 使用 updateTaskProperties
+			const { updateTaskProperties } = await import('../../tasks/taskUpdater');
+			const updates: Record<string, Date> = {
+				[startField]: newStart,
+				[endField]: newEnd,
+			};
 
-			// 读取文件内容
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
-
-			if (frappeTask.lineNumber < 0 || frappeTask.lineNumber >= lines.length) {
-				new Notice('任务行号超出范围');
-				return;
-			}
-
-			// 更新任务行
-			const originalLine = lines[frappeTask.lineNumber];
-			const updatedLine = this.updateTaskDatesInLine(
-				originalLine,
-				newStart,
-				newEnd,
-				startField,
-				endField
+			// 直接使用 frappeTask（已包含完整任务信息）
+			await updateTaskProperties(
+				this.app,
+				frappeTask as any, // 类型断言：FrappeTask 实际包含完整任务信息
+				updates,
+				this.plugin.settings.enabledTaskFormats
 			);
 
-			lines[frappeTask.lineNumber] = updatedLine;
-
-			// 写回文件
-			await this.app.vault.modify(file, lines.join('\n'));
-
-			// 通知缓存更新
-			await this.plugin.taskCache.updateFileCache(frappeTask.filePath);
+			// 静默更新缓存（不触发全局刷新）
+			await this.plugin.taskCache.updateFileCache(frappeTask.filePath, true, true);
 
 			// 显示通知
 			new Notice(`任务时间已更新: ${formatDate(newStart, 'yyyy-MM-dd')} - ${formatDate(newEnd, 'yyyy-MM-dd')}`);
+
+			// 通知视图进行增量更新
+			this.onTaskUpdated?.(frappeTask.filePath);
 
 		} catch (error) {
 			console.error('[TaskUpdateHandler] Error updating task:', error);
@@ -109,31 +106,25 @@ export class TaskUpdateHandler {
 				return;
 			}
 
-			// 获取文件对象
-			const file = this.app.vault.getAbstractFileByPath(frappeTask.filePath);
-			if (!file || !(file instanceof TFile)) {
-				new Notice('无法找到文件');
-				return;
-			}
+			const completed = progress >= 100;
 
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
+			// 使用 updateTaskCompletion，它会自动更新 completionDate 和 status
+			const { updateTaskCompletion } = await import('../../tasks/taskUpdater');
+			// 直接使用 frappeTask（已包含完整任务信息）
+			await updateTaskCompletion(
+				this.app,
+				frappeTask as any, // 类型断言：FrappeTask 实际包含完整任务信息
+				completed,
+				this.plugin.settings.enabledTaskFormats
+			);
 
-			if (frappeTask.lineNumber < 0 || frappeTask.lineNumber >= lines.length) {
-				new Notice('任务行号超出范围');
-				return;
-			}
+			// 静默更新缓存（不触发全局刷新）
+			await this.plugin.taskCache.updateFileCache(frappeTask.filePath, true, true);
 
-			// 更新复选框状态
-			const originalLine = lines[frappeTask.lineNumber];
-			const updatedLine = this.updateTaskCompletionInLine(originalLine, progress >= 100);
+			new Notice(completed ? '任务已标记为完成' : '任务已标记为未完成');
 
-			lines[frappeTask.lineNumber] = updatedLine;
-			await this.app.vault.modify(file, lines.join('\n'));
-
-			await this.plugin.taskCache.updateFileCache(frappeTask.filePath);
-
-			new Notice(progress >= 100 ? '任务已标记为完成' : '任务已标记为未完成');
+			// 通知视图进行增量更新
+			this.onTaskUpdated?.(frappeTask.filePath);
 
 		} catch (error) {
 			console.error('[TaskUpdateHandler] Error updating progress:', error);
@@ -161,95 +152,6 @@ export class TaskUpdateHandler {
 			true,
 			{ state: { line: frappeTask.lineNumber } }
 		);
-	}
-
-	/**
-	 * 更新任务行中的日期标记
-	 *
-	 * @param line - 原始任务行
-	 * @param newStart - 新的开始日期
-	 * @param newEnd - 新的结束日期
-	 * @param startField - 开始字段名
-	 * @param endField - 结束字段名
-	 * @returns 更新后的任务行
-	 */
-	private updateTaskDatesInLine(
-		line: string,
-		newStart: Date,
-		newEnd: Date,
-		startField: DateFieldType,
-		endField: DateFieldType
-	): string {
-		const startEmoji = this.getDateEmoji(startField);
-		const endEmoji = this.getDateEmoji(endField);
-		const startDateStr = formatDate(newStart, 'yyyy-MM-dd');
-		const endDateStr = formatDate(newEnd, 'yyyy-MM-dd');
-
-		let updatedLine = line;
-
-		// 更新开始日期
-		if (startEmoji) {
-			const startRegex = new RegExp(`${startEmoji}\\s*\\d{4}-\\d{2}-\\d{2}`, 'g');
-			if (startRegex.test(updatedLine)) {
-				updatedLine = updatedLine.replace(startRegex, `${startEmoji} ${startDateStr}`);
-			} else {
-				// 如果没有找到，添加到行末
-				updatedLine = updatedLine.trimEnd() + ` ${startEmoji} ${startDateStr}`;
-			}
-		}
-
-		// 更新结束日期
-		if (endEmoji) {
-			const endRegex = new RegExp(`${endEmoji}\\s*\\d{4}-\\d{2}-\\d{2}`, 'g');
-			if (endRegex.test(updatedLine)) {
-				updatedLine = updatedLine.replace(endRegex, `${endEmoji} ${endDateStr}`);
-			} else {
-				// 如果没有找到，添加到行末
-				updatedLine = updatedLine.trimEnd() + ` ${endEmoji} ${endDateStr}`;
-			}
-		}
-
-		return updatedLine;
-	}
-
-	/**
-	 * 更新任务行的完成状态
-	 *
-	 * @param line - 原始任务行
-	 * @param completed - 是否完成
-	 * @returns 更新后的任务行
-	 */
-	private updateTaskCompletionInLine(line: string, completed: boolean): string {
-		// 更新复选框
-		const checkboxRegex = /^(\s*[-*+])\s*\[[ x]\]/;
-		const match = line.match(checkboxRegex);
-
-		if (match) {
-			const prefix = match[1];
-			const newCheckbox = completed ? '[x]' : '[ ]';
-			return line.replace(checkboxRegex, `${prefix} ${newCheckbox}`);
-		}
-
-		return line;
-	}
-
-	/**
-	 * 获取日期字段对应的 emoji
-	 *
-	 * @param field - 日期字段名
-	 * @returns 对应的 emoji 或 null
-	 */
-	private getDateEmoji(field: DateFieldType): string | null {
-		const emojiMap: Record<DateFieldType, string> = {
-			createdDate: '➕',
-			startDate: '🛫',
-			scheduledDate: '⏳',
-			dueDate: '📅',
-			completionDate: '✅',
-			cancelledDate: '❌'
-		};
-
-		return emojiMap[field] || null;
 	}
 
 	/**

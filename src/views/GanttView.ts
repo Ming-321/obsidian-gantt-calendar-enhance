@@ -36,8 +36,8 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
 	private timeGranularity: GanttTimeGranularity = 'day';
 	private frappeViewMode: FrappeGanttConfig['view_mode'] = 'day';
 
-	// 排序状态
-	private sortState: SortState = { field: 'startDate', order: 'asc' };
+	// 排序状态（默认按截止时间降序）
+	private sortState: SortState = { field: 'dueDate', order: 'desc' };
 
 	// Frappe Gantt 组件
 	private ganttWrapper: FrappeGanttWrapper | null = null;
@@ -172,6 +172,10 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
 			// 7. 初始化更新处理器
 			if (!this.updateHandler) {
 				this.updateHandler = new TaskUpdateHandler(this.app, this.plugin);
+				// 设置增量更新回调
+				this.updateHandler.onTaskUpdated = (filePath: string) => {
+					this.incrementallyUpdate(filePath);
+				};
 			}
 
 			// 8. 配置 Frappe Gantt
@@ -198,7 +202,12 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
 			// 10. 渲染甘特图
 			await this.ganttWrapper.init(frappeTasks);
 
-			// 11. 创建控制面板（可选）
+			// 11. 滚动到今天
+			if (this.ganttWrapper) {
+				this.ganttWrapper.scrollToToday();
+			}
+
+			// 12. 创建控制面板（可选）
 			this.renderControlPanel(root, frappeTasks.length);
 
 		} catch (error) {
@@ -332,6 +341,72 @@ export class GanttViewRenderer extends BaseCalendarRenderer {
 			'month': 'month'
 		};
 		return modeMap[granularity] || 'day';
+	}
+
+	/**
+	 * 增量更新（不完整重建视图）
+	 * 当单个任务更新时调用，只更新受影响的 DOM 元素
+	 */
+	private incrementallyUpdate(filePath: string): void {
+		try {
+			// 1. 更新内部任务数据
+			const allTasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			const oldFrappeTasks = this.currentFrappeTasks;
+			this.currentTasks = allTasks;
+
+			// 2. 应用筛选和排序
+			let filteredTasks = TaskDataAdapter.applyFilters(
+				allTasks,
+				this.statusFilter,
+				this.tagFilterState.selectedTags,
+				this.tagFilterState.operator
+			);
+			filteredTasks = sortTasks(filteredTasks, this.sortState);
+
+			// 3. 转换为 FrappeTask
+			const frappeTasks = TaskDataAdapter.toFrappeTasks(
+				filteredTasks,
+				this.startField,
+				this.endField
+			);
+			this.currentFrappeTasks = frappeTasks;
+
+			// 4. 判断更新策略
+			if (this.shouldFullRefresh(oldFrappeTasks, frappeTasks)) {
+				// 排序变化或任务数量变化大，执行完整刷新
+				this.refresh();
+			} else {
+				// 只更新视觉，保持滚动位置
+				if (this.ganttWrapper) {
+					this.ganttWrapper.updateTasks(frappeTasks);
+				}
+			}
+		} catch (error) {
+			console.error('[GanttViewRenderer] Error in incremental update:', error);
+			// 出错时回退到完整刷新
+			this.refresh();
+		}
+	}
+
+	/**
+	 * 判断是否需要完整刷新
+	 */
+	private shouldFullRefresh(oldTasks: import('../gantt').FrappeTask[], newTasks: import('../gantt').FrappeTask[]): boolean {
+		// 任务数量变化超过阈值，完整刷新
+		if (Math.abs(oldTasks.length - newTasks.length) > 5) {
+			return true;
+		}
+
+		// 检查任务顺序是否变化
+		if (oldTasks.length !== newTasks.length) return true;
+
+		for (let i = 0; i < oldTasks.length; i++) {
+			if (oldTasks[i].id !== newTasks[i].id) {
+				return true; // 顺序变了
+			}
+		}
+
+		return false; // 顺序没变，可以增量更新
 	}
 
 	/**

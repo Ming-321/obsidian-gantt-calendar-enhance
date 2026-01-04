@@ -2,6 +2,8 @@
  * Frappe Gantt 集成相关类型定义
  */
 
+import type { TaskStatusType } from '../tasks/taskStatus';
+
 /**
  * Frappe Gantt 任务格式
  * @see https://github.com/frappe/gantt
@@ -33,6 +35,33 @@ export interface FrappeTask {
 	fileName?: string;
 	/** 行号（用于跳转） */
 	lineNumber?: number;
+
+	// ==================== 完整任务信息（用于更新时保留原始数据） ====================
+	/** 原始任务内容（保留完整格式用于写回） */
+	content?: string;
+	/** 任务描述 */
+	description?: string;
+	/** 任务标签列表 */
+	tags?: string[];
+	/** 优先级 */
+	priority?: string;
+	/** 源格式类型 */
+	format?: 'tasks' | 'dataview';
+	/** 任务状态类型 */
+	status?: TaskStatusType;
+
+	/** 创建日期 */
+	createdDate?: Date;
+	/** 开始日期 */
+	startDate?: Date;
+	/** 计划日期 */
+	scheduledDate?: Date;
+	/** 截止日期 */
+	dueDate?: Date;
+	/** 取消日期 */
+	cancelledDate?: Date;
+	/** 完成日期 */
+	completionDate?: Date;
 }
 
 /**

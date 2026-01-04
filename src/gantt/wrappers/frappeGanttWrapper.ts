@@ -94,20 +94,6 @@ export class FrappeGanttWrapper {
 	}
 
 	/**
-	 * 更新任务数据
-	 *
-	 * @param tasks - 新的任务列表
-	 */
-	updateTasks(tasks: FrappeTask[]): void {
-		if (!this.renderer) {
-			console.warn('[FrappeGanttWrapper] Renderer not initialized, call init() first');
-			return;
-		}
-
-		this.renderer.refresh(tasks);
-	}
-
-	/**
 	 * 更新配置
 	 *
 	 * @param newConfig - 新的配置选项
@@ -138,6 +124,15 @@ export class FrappeGanttWrapper {
 	scrollToToday(): void {
 		if (this.renderer) {
 			this.renderer.scrollToToday();
+		}
+	}
+
+	/**
+	 * 增量更新任务（不完整重建视图）
+	 */
+	updateTasks(frappeTasks: FrappeTask[]): void {
+		if (this.renderer) {
+			this.renderer.updateTasks(frappeTasks);
 		}
 	}
 
