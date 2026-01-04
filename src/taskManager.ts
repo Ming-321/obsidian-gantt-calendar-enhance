@@ -168,8 +168,28 @@ export class TaskCacheManager {
 	getAllTasks(): GanttTask[] {
 		// 即使初始化未完成，也返回当前已解析的缓存，避免界面空白
 		const allTasks: GanttTask[] = [];
-		for (const tasks of this.cache.values()) {
+
+		for (const [path, tasks] of this.cache.entries()) {
 			allTasks.push(...tasks);
+		}
+
+		// 检查是否有重复的任务（相同的文件和行号）
+		const taskKeyMap = new Map<string, number>();
+		const duplicates: Array<{ key: string; count: number }> = [];
+		allTasks.forEach(task => {
+			const key = `${task.filePath}:${task.lineNumber}`;
+			const count = taskKeyMap.get(key) || 0;
+			taskKeyMap.set(key, count + 1);
+		});
+
+		taskKeyMap.forEach((count, key) => {
+			if (count > 1) {
+				duplicates.push({ key, count });
+			}
+		});
+
+		if (duplicates.length > 0) {
+			console.error('[TaskCache] ⚠️ DUPLICATE TASKS FOUND:', duplicates);
 		}
 
 		return allTasks.sort((a, b) => {

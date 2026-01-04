@@ -49,6 +49,13 @@ export class TaskDataAdapter {
 			end: this.formatDate(normalizedEndDate),
 			progress: this.calculateProgress(task),
 			custom_class: this.getCustomClass(task),
+
+			// 保存原始任务信息，避免后续查找
+			completed: task.completed,
+			cancelled: task.cancelled,
+			filePath: task.filePath,
+			fileName: task.fileName,
+			lineNumber: task.lineNumber,
 		};
 	}
 

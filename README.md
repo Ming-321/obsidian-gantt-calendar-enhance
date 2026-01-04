@@ -24,13 +24,7 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
 
 ### 安装插件
 
-#### 方法一：社区插件商店（推荐）
-1. 打开 Obsidian 设置
-2. 进入 **社区插件** → 浏览
-3. 搜索 **"Gantt Calendar"**
-4. 点击安装并启用
-
-#### 方法二：手动安装
+手动安装
 1. 下载最新的 [Release](https://github.com/sustcsugar/obsidian-gantt-calendar/releases)
 2. 解压后将文件夹复制到 `<你的库>/.obsidian/plugins/`
 3. 重启 Obsidian 并在设置中启用插件
@@ -44,6 +38,7 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
 - 在工具栏左侧点击 **Calendar** / **Tasks** 按钮快速切换
 
 ### 创建第一个任务
+> 通过quickadd/tasks插件,进行任务的创建
 
 在任何 Markdown 文件中输入：
 ```markdown
@@ -63,47 +58,8 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
 - **左侧**：视图切换（Calendar ↔ Tasks）
 - **中间**：当前日期范围/标题显示（日视图显示农历节日）
 - **右侧**：功能按钮
-  - Calendar 视图：上一期 | 今天 | 下一期
-  - Tasks 视图：全部/未完成/已完成 | 筛选状态 | 刷新
 
 ---
-
-### 任务视图
-
-#### 任务筛选
-- **完成状态筛选**：全部 / 未完成 / 已完成（活跃按钮高亮）
-- **全局标记筛选**：仅显示包含指定前缀的任务（如 `🎯 `）
-- **刷新按钮**：手动重新加载任务缓存
-
-#### 任务卡片显示
-每个任务以卡片形式展示，包含三行信息：
-
-**第一行** - 基本信息
-```
-☐ 复选框  任务描述  🔴 优先级
-```
-
-**第二行** - 时间属性（存在时显示）
-```
-创建: 2025-01-10 | 开始: 2025-01-11 | 截止: 2025-01-15
-```
-
-**第三行** - 任务位置
-```
-📄 文件名.md:42
-```
-
-#### 任务交互
-- **点击任务** → 跳转到源文件位置
-- **右键任务** → 打开上下文菜单（编辑任务、创建任务笔记等）
-- **优先级颜色**：
-  - 🔴 highest | 🟠 high | 🟡 medium
-  - ⚪ normal | 🟢 low | 🔵 lowest
-- **视觉反馈**：
-  - 已完成：半透明 + 绿色左边框
-  - 待完成：橙色左边框
-  - 逾期截止日期：红色警告
-  - 悬停：卡片右移动画
 
 #### 任务格式
 
@@ -172,12 +128,6 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
   - 垂直布局（上下分屏）：任务在上，笔记在下
 - **农历信息栏**：显示农历日期、节日、节气
 - **任务跳转**：点击任务直接定位到源文件
-
-#### 甘特图视图
-- **时间线可视化**：横向时间轴展示任务时间跨度
-- **时间颗粒度切换**：支持日/周/月/年四种时间刻度
-- **任务筛选**：按完成状态和优先级筛选
-- **颜色标识**：优先级和状态通过颜色区分
 
 
 
@@ -248,23 +198,22 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
 - ✅ 任务右键菜单（编辑任务、创建任务笔记）
 - ✅ 任务复选框功能（支持完成状态切换）
 - ✅ 两种任务格式均支持复选框
-- ✅ 甘特图视图（时间线可视化）
 - ✅ 任务属性批量编辑模态框
 - ✅ 代码结构重组优化
 
-### 🔜 计划中（v1.2.0）
+### 🔜 计划中
 - [ ] 任务解析增强
     - [ ] Tasks 格式跨行任务解析
     - [ ] 子任务解析
-    - [ ] 任务描述中超链接与双链渲染
-    - [ ] 不规范任务格式警告提示
+    - ✅ 任务描述中超链接与双链渲染
+    - ✅ 不规范任务格式警告提示
 - [ ] 任务视图增强
-    - [ ] 任务排序功能（按优先级/日期/文件名）
-    - [ ] 批量任务操作
-    - [ ] 任务统计看板（完成率/逾期任务统计）
+    - ✅ 任务排序功能（按优先级/日期/文件名）
+    - ✅ 任务统计看板（完成率/逾期任务统计）
 - [ ] 日历视图交互
-    - [ ] 拖动任务修改日期
-    - [ ] 日视图嵌入 Daily Note 样式优化
+    - ✅ 拖动任务修改日期
+    - ✅ 日视图嵌入 Daily Note 样式优化
+- ✅ 甘特图视图（时间线可视化）
 
 ### 💡 未来计划（v2.0.0）
 - [ ] 移动端适配优化
@@ -279,139 +228,15 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
 - ✅ 日历视图的任务悬浮卡片，有概率会不消失
     - ✅ 打开插件的情况下，如果点击刷新按钮重新解析任务，会大概率导致悬浮窗问题
 - ✅ 刷新按钮，在打开插件的情况下，点击刷新按钮会造成严重的卡顿
-- [ ] 任务卡片右键菜单
+- ✅ 任务卡片右键菜单
     - ✅ 编辑任务的
-    - [ ] 创建别名笔记
+    - ✅ 创建别名笔记
 
 
-
----
-
-## 🛠️ 开发构建
-
-### 环境要求
-- **Node.js**：18+ LTS
-- **包管理器**：npm
-- **打包工具**：esbuild
-
-### 安装依赖
-```bash
-npm install
-```
-
-### 开发模式
-启动热重载监听（修改代码自动编译）：
-```bash
-npm run dev
-```
-
-### 生产构建
-编译生成 `main.js`：
-```bash
-npm run build
-```
-
-### 测试安装
-将以下文件复制到插件目录：
-```
-<你的库>/.obsidian/plugins/obsidian-gantt-calendar/
-├── main.js
-├── manifest.json
-└── styles.css
-```
-
-然后在 Obsidian 中重新加载插件。
-
-### 技术栈
-- **TypeScript** - 主要开发语言
-- **Obsidian API** - 插件核心框架
-- **esbuild** - 高速打包工具
-- **lunar.ts** - 农历计算库
-
-### 项目结构
-```
-src/
-├── CalendarView.ts          # 主视图容器，管理所有子视图
-├── calendarGenerator.ts     # 日历数据生成（月历）
-├── calendarUtils.ts         # 日历工具统一导出
-├── taskManager.ts           # 任务缓存管理器（单例模式）
-├── settings.ts              # 插件设置面板
-├── types.ts                 # TypeScript 类型定义
-│
-├── calendar/                # 日历相关模块
-│   ├── calendarGenerator.ts # 月历数据生成
-│   └── calendarIndex.ts     # 统一导出
-│
-├── dateUtils/               # 日期工具模块
-│   ├── dateCompare.ts       # 日期比较（isToday, isThisMonth）
-│   ├── format.ts            # 日期格式化
-│   ├── today.ts             # 获取今天日期
-│   ├── week.ts              # 周相关工具
-│   └── dateUtilsIndex.ts    # 统一导出
-│
-├── utils/                   # 通用工具模块
-│   ├── fileOpener.ts        # 文件打开工具
-│   └── index.ts             # 统一导出
-│
-├── lunar/                   # 农历计算模块
-│   ├── lunar.ts             # 农历转换核心
-│   ├── lunarConvert.ts      # 阴阳历转换
-│   ├── lunarData.ts         # 农历数据
-│   ├── festival.ts          # 节日计算
-│   ├── solarTerm.ts         # 节气计算
-│   └── lunarUtils.ts        # 工具函数
-│
-├── tasks/                   # 任务处理模块
-│   ├── taskParser.ts        # 任务解析（Tasks + Dataview）
-│   ├── taskSearch.ts        # 任务搜索筛选
-│   ├── taskUtils.ts         # 任务工具函数
-│   └── taskUpdater.ts       # 任务属性更新
-│
-├── views/                   # 视图渲染器
-│   ├── BaseCalendarRenderer.ts  # 基类，共享方法
-│   ├── YearView.ts          # 年视图
-│   ├── MonthView.ts         # 月视图
-│   ├── WeekView.ts          # 周视图
-│   ├── DayView.ts           # 日视图
-│   ├── TaskView.ts          # 任务列表视图
-│   └── GanttView.ts         # 甘特图视图
-│
-├── toolbar/                 # 工具栏模块
-│   ├── toolbar.ts           # 工具栏容器
-│   ├── toolbar-left.ts      # 左侧（视图切换）
-│   ├── toolbar-center.ts    # 中间（日期显示）
-│   ├── toolbar-right-calendar.ts  # 右侧（日历导航）
-│   ├── toolbar-right-task.ts      # 右侧（任务筛选）
-│   ├── toolbar-right-gantt.ts     # 右侧（甘特图控制）
-│   ├── time-granularity.ts  # 时间颗粒度选择
-│   ├── status-filter.ts     # 状态筛选
-│   └── refresh-button.ts    # 刷新按钮
-│
-├── commands/                # 命令模块
-│   ├── common.ts            # 通用命令
-│   ├── editor.ts            # 编辑器命令
-│   ├── conditional.ts       # 条件命令
-│   └── commandsIndex.ts     # 统一导出
-│
-└── contextMenu/             # 右键菜单模块
-    ├── contextMenuIndex.ts  # 统一导出
-    └── commands/            # 菜单命令
-        ├── editTask.ts      # 编辑任务
-        ├── createNoteFromTask.ts     # 创建任务笔记（同名）
-        ├── createNoteFromTaskAlias.ts # 创建任务笔记（别名）
-        └── cancelTask.ts    # 取消任务
-```
 
 ### 贡献指南
 欢迎提交 Issue 和 Pull Request！
 
-1. Fork 本项目
-2. 创建特性分支：`git checkout -b feature/AmazingFeature`
-3. 提交更改：`git commit -m 'Add some AmazingFeature'`
-4. 推送到分支：`git push origin feature/AmazingFeature`
-5. 提交 Pull Request
-
----
 
 ## 📄 许可证
 

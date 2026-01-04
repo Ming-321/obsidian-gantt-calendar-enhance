@@ -46,7 +46,6 @@ export class SvgGanttRenderer {
 	private container: HTMLElement;
 	private plugin: any;
 	private app: any;  // Obsidian App 实例
-	private originalTasks: GanttTask[] = [];  // 原始任务列表（用于 tooltip）
 
 	// 尺寸相关
 	private headerHeight = 50;
@@ -78,11 +77,11 @@ export class SvgGanttRenderer {
 	private startField: DateFieldType = 'startDate';
 	private endField: DateFieldType = 'dueDate';
 
-	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, originalTasks: GanttTask[] = [], app: any = null, startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
+	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, _originalTasks: GanttTask[] = [], app: any = null, startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
 		this.container = container;
 		this.config = config;
 		this.plugin = plugin;
-		this.originalTasks = originalTasks;
+		// _originalTasks 参数保留以保持向后兼容，但不再使用（FrappeTask 已包含所有必要信息）
 		this.app = app || plugin?.app;
 		this.startField = startField;
 		this.endField = endField;
@@ -461,6 +460,9 @@ export class SvgGanttRenderer {
 			const y = index * this.rowHeight;
 			const taskNumber = index + 1;
 
+			// 直接从 FrappeTask 获取信息（不需要查找 originalTask）
+			const isCompleted = task.completed || task.progress === 100;
+
 			// 行背景（偶数行添加背景色）
 			if (index % 2 === 0) {
 				const rowBg = document.createElementNS(ns, 'rect');
@@ -516,13 +518,8 @@ export class SvgGanttRenderer {
 				width: 100%;
 			`;
 
-			// 查找原始任务以获取完整信息
-			const originalTask = this.findOriginalTask(task);
-			const description = originalTask?.description || task.name;
-			const isCompleted = originalTask?.completed || task.progress === 100;
-
 			// === 创建复选框 ===
-			const checkbox = this.createTaskCheckbox(task, originalTask, isCompleted);
+			const checkbox = this.createTaskCheckbox(task, isCompleted);
 			contentDiv.appendChild(checkbox);
 
 			// === 创建可点击的文本容器 ===
@@ -537,12 +534,12 @@ export class SvgGanttRenderer {
 			// 设置点击事件用于跳转（阻止链接点击触发）
 			textContainer.addEventListener('click', (e) => {
 				if ((e.target as HTMLElement).tagName !== 'A') {
-					this.handleTaskListItemClick(originalTask);
+					this.handleTaskListItemClick(task);
 				}
 			});
 
 			// 使用富文本渲染（支持链接）
-			this.renderTaskDescriptionWithLinks(textContainer, description);
+			this.renderTaskDescriptionWithLinks(textContainer, task.name);
 			contentDiv.appendChild(textContainer);
 
 			contentForeignObj.appendChild(contentDiv);
@@ -669,7 +666,6 @@ export class SvgGanttRenderer {
 	 */
 	private createTaskCheckbox(
 		frappeTask: FrappeTask,
-		originalTask: GanttTask | null,
 		isCompleted: boolean
 	): HTMLInputElement {
 		const checkbox = document.createElement('input');
@@ -713,8 +709,8 @@ export class SvgGanttRenderer {
 	/**
 	 * 处理任务列表项点击事件 - 跳转到文件
 	 */
-	private handleTaskListItemClick(task: GanttTask | null): void {
-		if (!task || !this.app) return;
+	private handleTaskListItemClick(task: FrappeTask): void {
+		if (!task.filePath || !task.lineNumber || !this.app) return;
 
 		// 使用 openFileInExistingLeaf 跳转到文件
 		const { openFileInExistingLeaf } = require('../../utils/fileOpener');
@@ -1089,34 +1085,26 @@ export class SvgGanttRenderer {
 	}
 
 	/**
-	 * 根据 FrappeTask ID 查找对应的原始任务
-	 */
-	private findOriginalTask(frappeTask: FrappeTask): GanttTask | null {
-		// 解析任务 ID: {sanitizedName}-{lineNumber}-{index}
-		// 注意：sanitizedName 是经过处理的文件名（特殊字符被替换为 _）
-		const parts = frappeTask.id.split('-');
-		if (parts.length < 2) return null;
-
-		const lineNumber = parseInt(parts[parts.length - 2]);
-
-		// 使用 lineNumber 来匹配，因为文件名中的特殊字符会被 sanitize
-		return this.originalTasks.find(t => t.lineNumber === lineNumber) || null;
-	}
-
-	/**
 	 * 显示弹窗（使用全局 TooltipManager）
 	 * @param task - Frappe 任务
 	 * @param targetElement - 目标元素
 	 * @param mousePosition - 鼠标位置（可选）
 	 */
 	private showPopup(task: FrappeTask, targetElement: Element, mousePosition?: MousePosition): void {
-		if (!this.plugin || !this.originalTasks?.length) return;
+		if (!this.plugin || !task.filePath) return;
 
-		const originalTask = this.findOriginalTask(task);
-		if (!originalTask) return;
+		// 从 FrappeTask 创建临时的 GanttTask 对象用于 tooltip
+		const tempTask: any = {
+			filePath: task.filePath,
+			fileName: task.fileName,
+			lineNumber: task.lineNumber,
+			description: task.name,
+			completed: task.completed,
+			cancelled: task.cancelled,
+		};
 
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
-		tooltipManager.show(originalTask, targetElement as HTMLElement, mousePosition);
+		tooltipManager.show(tempTask, targetElement as HTMLElement, mousePosition);
 	}
 
 	/**
@@ -1136,7 +1124,6 @@ export class SvgGanttRenderer {
 		isDragging: false,
 		dragType: 'none' as 'none' | 'move' | 'resize-left' | 'resize-right',
 		task: null as FrappeTask | null,
-		originalTask: null as GanttTask | null,
 		startX: 0,
 		originalStart: null as Date | null,
 		originalEnd: null as Date | null,
@@ -1160,26 +1147,24 @@ export class SvgGanttRenderer {
 		task: FrappeTask,
 		minDate: Date
 	): void {
-		const originalTask = this.findOriginalTask(task);
-
 		// 左手柄拖动 - 只修改开始时间
 		leftHandle.addEventListener('mousedown', (e: MouseEvent) => {
 			e.preventDefault();
 			e.stopPropagation();
-			this.startDragging(task, originalTask, 'resize-left', e.clientX, minDate, bar, leftHandle, null);
+			this.startDragging(task, 'resize-left', e.clientX, minDate, bar, leftHandle, null);
 		});
 
 		// 右手柄拖动 - 只修改结束时间
 		rightHandle.addEventListener('mousedown', (e: MouseEvent) => {
 			e.preventDefault();
 			e.stopPropagation();
-			this.startDragging(task, originalTask, 'resize-right', e.clientX, minDate, bar, null, rightHandle);
+			this.startDragging(task, 'resize-right', e.clientX, minDate, bar, null, rightHandle);
 		});
 
 		// 任务条整体拖动 - 同时修改开始和结束时间
 		bar.addEventListener('mousedown', (e: MouseEvent) => {
 			e.preventDefault();
-			this.startDragging(task, originalTask, 'move', e.clientX, minDate, bar, null, null);
+			this.startDragging(task, 'move', e.clientX, minDate, bar, null, null);
 		});
 	}
 
@@ -1188,7 +1173,6 @@ export class SvgGanttRenderer {
 	 */
 	private startDragging(
 		task: FrappeTask,
-		originalTask: GanttTask | null,
 		dragType: 'move' | 'resize-left' | 'resize-right',
 		startX: number,
 		minDate: Date,
@@ -1200,7 +1184,6 @@ export class SvgGanttRenderer {
 			isDragging: true,
 			dragType,
 			task,
-			originalTask,
 			startX,
 			originalStart: new Date(task.start),
 			originalEnd: new Date(task.end),
@@ -1410,18 +1393,22 @@ export class SvgGanttRenderer {
 	 * 单独更新开始时间（左侧拖动）
 	 */
 	private async handleStartDateChange(task: FrappeTask, newStart: Date): Promise<void> {
-		if (!this.plugin || !this.originalTasks?.length) return;
+		if (!this.plugin || !task.filePath) return;
 
-		const originalTask = this.findOriginalTask(task);
-		if (!originalTask) return;
+		// 从 FrappeTask 创建临时的 GanttTask 对象用于更新
+		const tempTask: any = {
+			filePath: task.filePath,
+			fileName: task.fileName,
+			lineNumber: task.lineNumber,
+		};
 
 		const { updateTaskProperties } = require('../../tasks/taskUpdater');
 		const updates: Record<string, Date> = {};
 		updates[this.startField] = newStart;
 
 		try {
-			await updateTaskProperties(this.app, originalTask, updates, this.plugin.settings.enabledTaskFormats);
-			await this.plugin.taskCache.updateFileCache(originalTask.filePath);
+			await updateTaskProperties(this.app, tempTask, updates, this.plugin.settings.enabledTaskFormats);
+			await this.plugin.taskCache.updateFileCache(task.filePath);
 		} catch (error) {
 			console.error('[SvgGanttRenderer] Error updating start date:', error);
 		}
@@ -1431,18 +1418,22 @@ export class SvgGanttRenderer {
 	 * 单独更新结束时间（右侧拖动）
 	 */
 	private async handleEndDateChange(task: FrappeTask, newEnd: Date): Promise<void> {
-		if (!this.plugin || !this.originalTasks?.length) return;
+		if (!this.plugin || !task.filePath) return;
 
-		const originalTask = this.findOriginalTask(task);
-		if (!originalTask) return;
+		// 从 FrappeTask 创建临时的 GanttTask 对象用于更新
+		const tempTask: any = {
+			filePath: task.filePath,
+			fileName: task.fileName,
+			lineNumber: task.lineNumber,
+		};
 
 		const { updateTaskProperties } = require('../../tasks/taskUpdater');
 		const updates: Record<string, Date> = {};
 		updates[this.endField] = newEnd;
 
 		try {
-			await updateTaskProperties(this.app, originalTask, updates, this.plugin.settings.enabledTaskFormats);
-			await this.plugin.taskCache.updateFileCache(originalTask.filePath);
+			await updateTaskProperties(this.app, tempTask, updates, this.plugin.settings.enabledTaskFormats);
+			await this.plugin.taskCache.updateFileCache(task.filePath);
 		} catch (error) {
 			console.error('[SvgGanttRenderer] Error updating end date:', error);
 		}

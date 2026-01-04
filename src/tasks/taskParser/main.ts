@@ -145,7 +145,9 @@ export function parseTasksFromListItems(
     }
 
     // 按行号排序返回
-    return tasks.sort((a, b) => a.lineNumber - b.lineNumber);
+    const sortedTasks = tasks.sort((a, b) => a.lineNumber - b.lineNumber);
+
+    return sortedTasks;
 }
 
 /**

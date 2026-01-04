@@ -21,6 +21,18 @@ export interface FrappeTask {
 	dependencies?: string[] | string;
 	/** 自定义CSS类名 */
 	custom_class?: string;
+
+	// ==================== 扩展字段（用于渲染） ====================
+	/** 是否已完成 */
+	completed?: boolean;
+	/** 是否已取消 */
+	cancelled?: boolean;
+	/** 文件路径（用于跳转） */
+	filePath?: string;
+	/** 文件名 */
+	fileName?: string;
+	/** 行号（用于跳转） */
+	lineNumber?: number;
 }
 
 /**
