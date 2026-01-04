@@ -1139,18 +1139,9 @@ export class SvgGanttRenderer {
 	private showPopup(task: FrappeTask, targetElement: Element, mousePosition?: MousePosition): void {
 		if (!this.plugin || !task.filePath) return;
 
-		// 从 FrappeTask 创建临时的 GanttTask 对象用于 tooltip
-		const tempTask: any = {
-			filePath: task.filePath,
-			fileName: task.fileName,
-			lineNumber: task.lineNumber,
-			description: task.name,
-			completed: task.completed,
-			cancelled: task.cancelled,
-		};
-
+		// 直接使用 FrappeTask（已包含完整任务信息）
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
-		tooltipManager.show(tempTask, targetElement as HTMLElement, mousePosition);
+		tooltipManager.show(task as any, targetElement as HTMLElement, mousePosition);
 	}
 
 	/**
