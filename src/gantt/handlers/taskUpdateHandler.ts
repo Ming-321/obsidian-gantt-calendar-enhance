@@ -4,8 +4,8 @@
  */
 
 import { App, Notice } from 'obsidian';
-import type { GanttTask } from '../../types';
-import type { FrappeTask, DateFieldType } from '../types';
+import type { GCTask } from '../../types';
+import type { GanttChartTask, DateFieldType } from '../types';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 
 /**
@@ -16,7 +16,7 @@ export type TaskUpdateCallback = (filePath: string) => void;
 /**
  * 任务更新处理器
  *
- * 负责处理从 Frappe Gantt 触发的任务更新事件
+ * 负责处理从 甘特图 触发的任务更新事件
  * 将更新同步回原始 Markdown 文件
  */
 export class TaskUpdateHandler {
@@ -33,7 +33,7 @@ export class TaskUpdateHandler {
 	/**
 	 * 处理日期变更（拖拽任务条）
 	 *
-	 * @param frappeTask - Frappe Gantt 任务对象
+	 * @param ganttTask - 甘特图 任务对象
 	 * @param newStart - 新的开始日期
 	 * @param newEnd - 新的结束日期
 	 * @param startField - 开始时间字段名
@@ -41,17 +41,17 @@ export class TaskUpdateHandler {
 	 * @param _allTasks - 所有任务列表（保留参数以保持兼容性，但不再使用）
 	 */
 	async handleDateChange(
-		frappeTask: FrappeTask,
+		ganttTask: GanttChartTask,
 		newStart: Date,
 		newEnd: Date,
 		startField: DateFieldType,
 		endField: DateFieldType,
-		_allTasks: GanttTask[]
+		_allTasks: GCTask[]
 	): Promise<void> {
 		try {
-			// 直接从 FrappeTask 获取任务信息
-			if (!frappeTask.filePath || frappeTask.lineNumber === undefined) {
-				console.error('[TaskUpdateHandler] Missing task information:', frappeTask);
+			// 直接从 GanttChartTask 获取任务信息
+			if (!ganttTask.filePath || ganttTask.lineNumber === undefined) {
+				console.error('[TaskUpdateHandler] Missing task information:', ganttTask);
 				new Notice('任务信息不完整');
 				return;
 			}
@@ -63,22 +63,22 @@ export class TaskUpdateHandler {
 				[endField]: newEnd,
 			};
 
-			// 直接使用 frappeTask（已包含完整任务信息）
+			// 直接使用 ganttTask（已包含完整任务信息）
 			await updateTaskProperties(
 				this.app,
-				frappeTask as any, // 类型断言：FrappeTask 实际包含完整任务信息
+				ganttTask as any, // 类型断言：GanttChartTask 实际包含完整任务信息
 				updates,
 				this.plugin.settings.enabledTaskFormats
 			);
 
 			// 静默更新缓存（不触发全局刷新）
-			await this.plugin.taskCache.updateFileCache(frappeTask.filePath, true, true);
+			await this.plugin.taskCache.updateFileCache(ganttTask.filePath, true, true);
 
 			// 显示通知
 			new Notice(`任务时间已更新: ${formatDate(newStart, 'yyyy-MM-dd')} - ${formatDate(newEnd, 'yyyy-MM-dd')}`);
 
 			// 通知视图进行增量更新
-			this.onTaskUpdated?.(frappeTask.filePath);
+			this.onTaskUpdated?.(ganttTask.filePath);
 
 		} catch (error) {
 			console.error('[TaskUpdateHandler] Error updating task:', error);
@@ -89,19 +89,19 @@ export class TaskUpdateHandler {
 	/**
 	 * 处理进度变更
 	 *
-	 * @param frappeTask - Frappe Gantt 任务对象
+	 * @param ganttTask - 甘特图 任务对象
 	 * @param progress - 新的进度值 (0-100)
 	 * @param _allTasks - 所有任务列表（保留参数以保持兼容性，但不再使用）
 	 */
 	async handleProgressChange(
-		frappeTask: FrappeTask,
+		ganttTask: GanttChartTask,
 		progress: number,
-		_allTasks: GanttTask[]
+		_allTasks: GCTask[]
 	): Promise<void> {
 		try {
-			// 直接从 FrappeTask 获取任务信息
-			if (!frappeTask.filePath || frappeTask.lineNumber === undefined) {
-				console.error('[TaskUpdateHandler] Missing task information:', frappeTask);
+			// 直接从 GanttChartTask 获取任务信息
+			if (!ganttTask.filePath || ganttTask.lineNumber === undefined) {
+				console.error('[TaskUpdateHandler] Missing task information:', ganttTask);
 				new Notice('任务信息不完整');
 				return;
 			}
@@ -110,21 +110,21 @@ export class TaskUpdateHandler {
 
 			// 使用 updateTaskCompletion，它会自动更新 completionDate 和 status
 			const { updateTaskCompletion } = await import('../../tasks/taskUpdater');
-			// 直接使用 frappeTask（已包含完整任务信息）
+			// 直接使用 ganttTask（已包含完整任务信息）
 			await updateTaskCompletion(
 				this.app,
-				frappeTask as any, // 类型断言：FrappeTask 实际包含完整任务信息
+				ganttTask as any, // 类型断言：GanttChartTask 实际包含完整任务信息
 				completed,
 				this.plugin.settings.enabledTaskFormats
 			);
 
 			// 静默更新缓存（不触发全局刷新）
-			await this.plugin.taskCache.updateFileCache(frappeTask.filePath, true, true);
+			await this.plugin.taskCache.updateFileCache(ganttTask.filePath, true, true);
 
 			new Notice(completed ? '任务已标记为完成' : '任务已标记为未完成');
 
 			// 通知视图进行增量更新
-			this.onTaskUpdated?.(frappeTask.filePath);
+			this.onTaskUpdated?.(ganttTask.filePath);
 
 		} catch (error) {
 			console.error('[TaskUpdateHandler] Error updating progress:', error);
@@ -135,22 +135,22 @@ export class TaskUpdateHandler {
 	/**
 	 * 处理任务点击事件
 	 *
-	 * @param frappeTask - 被点击的任务
+	 * @param ganttTask - 被点击的任务
 	 * @param _allTasks - 所有任务列表（保留参数以保持兼容性，但不再使用）
 	 */
-	handleTaskClick(frappeTask: FrappeTask, _allTasks: GanttTask[]): void {
-		// 直接从 FrappeTask 获取任务信息
-		if (!frappeTask.filePath || !frappeTask.fileName) {
-			console.error('[TaskUpdateHandler] Missing task information:', frappeTask);
+	handleTaskClick(ganttTask: GanttChartTask, _allTasks: GCTask[]): void {
+		// 直接从 GanttChartTask 获取任务信息
+		if (!ganttTask.filePath || !ganttTask.fileName) {
+			console.error('[TaskUpdateHandler] Missing task information:', ganttTask);
 			return;
 		}
 
 		// 打开文件并跳转到对应行
 		this.app.workspace.openLinkText(
-			frappeTask.fileName,
+			ganttTask.fileName,
 			'',
 			true,
-			{ state: { line: frappeTask.lineNumber } }
+			{ state: { line: ganttTask.lineNumber } }
 		);
 	}
 

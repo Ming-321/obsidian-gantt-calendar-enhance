@@ -3408,7 +3408,7 @@ Author: sugar
 }
 
 /* 甘特图根容器 */
-.frappe-gantt-root {
+.gc-gantt-view__root {
 	flex: 1 1 auto;
 	min-height: 500px;
 	min-width: 100%;
@@ -3774,7 +3774,7 @@ Author: sugar
 
 /* 响应式适配 */
 @media (max-width: 768px) {
-	.frappe-gantt-root {
+	.gc-gantt-view__root {
 		min-height: 300px;
 		padding: 8px;
 	}

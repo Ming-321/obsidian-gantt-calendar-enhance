@@ -4,7 +4,7 @@
  */
 
 import { App, Menu, setIcon } from 'obsidian';
-import type { GanttTask } from '../types';
+import type { GCTask } from '../types';
 import { createNoteFromTask } from './commands/createNoteFromTask';
 import { createNoteFromTaskAlias } from './commands/createNoteFromTaskAlias';
 import { openEditTaskModal } from './commands/editTask';
@@ -23,7 +23,7 @@ import { restoreTask } from './commands/restoreTask';
  */
 export function registerTaskContextMenu(
 	taskElement: HTMLElement,
-	task: GanttTask,
+	task: GCTask,
 	app: App,
 	enabledFormats: string[],
 	defaultNotePath: string,

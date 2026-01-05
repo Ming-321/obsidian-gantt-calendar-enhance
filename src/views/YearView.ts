@@ -1,6 +1,6 @@
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { generateMonthCalendar } from '../calendar/calendarGenerator';
-import type { GanttTask } from '../types';
+import type { GCTask } from '../types';
 
 /**
  * 年视图渲染器
@@ -12,7 +12,7 @@ export class YearViewRenderer extends BaseViewRenderer {
 		const year = currentDate.getFullYear();
 
 		// 预计算当年每日任务数量
-		let tasks: GanttTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
+		let tasks: GCTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
 		// 应用标签筛选
 		tasks = this.applyTagFilter(tasks);
 		const dateField = this.plugin.settings.dateFilterField || 'dueDate';

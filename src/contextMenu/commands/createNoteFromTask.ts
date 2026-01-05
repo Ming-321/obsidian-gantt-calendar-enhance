@@ -1,5 +1,5 @@
 import { App, Notice, normalizePath } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 import { updateTaskProperties } from '../../tasks/taskUpdater';
 
@@ -26,7 +26,7 @@ export interface NoteTemplateData {
 	/** 原任务描述（用于别名显示） */
 	originalDescription?: string;
 	/** 任务对象 */
-	task: GanttTask;
+	task: GCTask;
 	/** Markdown 链接 */
 	markdownLinks?: Array<{ text: string; url: string }>;
 	/** 裸 URL */
@@ -39,7 +39,7 @@ export interface NoteTemplateData {
  * 检查任务中是否已存在双链
  * @returns 如果存在双链且文件存在，返回文件路径；否则返回 null
  */
-export function checkExistingWikiLink(task: GanttTask, app: App): string | null {
+export function checkExistingWikiLink(task: GCTask, app: App): string | null {
 	const raw = task.content;
 	const wikiLinkMatch = raw.match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/);
 	if (wikiLinkMatch) {
@@ -57,7 +57,7 @@ export function checkExistingWikiLink(task: GanttTask, app: App): string | null 
  */
 export async function openExistingNote(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	linkTarget: string
 ): Promise<void> {
 	const dest = app.metadataCache.getFirstLinkpathDest(linkTarget, task.filePath);
@@ -176,7 +176,7 @@ export function generateNoteContent(data: NoteTemplateData): string {
  */
 export async function createNoteFromTaskCore(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	defaultPath: string,
 	fileName: string,
 	options: CreateNoteOptions,
@@ -242,7 +242,7 @@ export async function createNoteFromTaskCore(
  */
 export async function createNoteFromTask(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	defaultPath: string,
 	enabledFormats: string[] = ['tasks']
 ): Promise<void> {
@@ -268,7 +268,7 @@ export async function createNoteFromTask(
 /**
  * 使用已解析的 task.description 清理任务描述（用于文件名生成）
  */
-export function cleanTaskDescriptionFromTask(task: GanttTask): string {
+export function cleanTaskDescriptionFromTask(task: GCTask): string {
 	let text = task.description || '';
 	// 移除 wiki 链接语法，仅保留显示文本
 	text = text.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, ' $1 ');

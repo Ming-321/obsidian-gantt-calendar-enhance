@@ -3,7 +3,7 @@
  * @module tasks/taskSorter
  */
 
-import type { GanttTask, SortField, SortOrder, SortState } from '../types';
+import type { GCTask, SortField, SortOrder, SortState } from '../types';
 
 /**
  * 排序选项配置
@@ -46,7 +46,7 @@ function compareDates(a: Date | undefined, b: Date | undefined): number {
 /**
  * 各字段的比较函数
  */
-const comparators: Record<SortField, (a: GanttTask, b: GanttTask) => number> = {
+const comparators: Record<SortField, (a: GCTask, b: GCTask) => number> = {
 	priority: (a, b) => {
 		const aPriority = PRIORITY_WEIGHTS[a.priority || 'undefined'] ?? 0;
 		const bPriority = PRIORITY_WEIGHTS[b.priority || 'undefined'] ?? 0;
@@ -70,7 +70,7 @@ const comparators: Record<SortField, (a: GanttTask, b: GanttTask) => number> = {
  * @param state 排序状态
  * @returns 排序后的新数组（不修改原数组）
  */
-export function sortTasks(tasks: GanttTask[], state: SortState): GanttTask[] {
+export function sortTasks(tasks: GCTask[], state: SortState): GCTask[] {
 	const comparator = comparators[state.field];
 	if (!comparator) return tasks;
 

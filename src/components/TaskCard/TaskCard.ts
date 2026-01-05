@@ -1,7 +1,7 @@
 import type { TaskCardConfig, TaskCardProps, TaskCardRenderResult } from './TaskCardConfig';
 import { TaskCardRenderer } from './TaskCardRenderer';
 import { TaskCardClasses } from '../../utils/bem';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 
 /**
  * 任务卡片统一组件
@@ -71,7 +71,7 @@ export class TaskCardComponent {
 	/**
 	 * 应用状态修饰符
 	 */
-	private applyStateModifiers(card: HTMLElement, task: GanttTask): void {
+	private applyStateModifiers(card: HTMLElement, task: GCTask): void {
 		const statusClass = task.completed
 			? TaskCardClasses.modifiers.completed
 			: TaskCardClasses.modifiers.pending;
@@ -84,7 +84,7 @@ export class TaskCardComponent {
 	/**
 	 * 渲染子元素
 	 */
-	private renderChildren(card: HTMLElement, task: GanttTask, config: TaskCardConfig): void {
+	private renderChildren(card: HTMLElement, task: GCTask, config: TaskCardConfig): void {
 		// 复选框
 		if (config.showCheckbox) {
 			this.renderer.createTaskCheckbox(task, card);
@@ -124,7 +124,7 @@ export class TaskCardComponent {
 	/**
 	 * 应用交互功能
 	 */
-	private attachInteractions(card: HTMLElement, task: GanttTask): void {
+	private attachInteractions(card: HTMLElement, task: GCTask): void {
 		const { props } = this;
 		const config = props.config;
 

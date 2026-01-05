@@ -1,7 +1,7 @@
 import { TFile, MarkdownRenderer } from 'obsidian';
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
-import type { GanttTask, SortState } from '../types';
+import type { GCTask, SortState } from '../types';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
 import { TaskCardClasses, DayViewClasses, withModifiers } from '../utils/bem';
@@ -110,7 +110,7 @@ export class DayViewRenderer extends BaseViewRenderer {
 		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			let tasks: GCTask[] = this.plugin.taskCache.getAllTasks();
 			// 应用标签筛选
 			tasks = this.applyTagFilter(tasks);
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
@@ -151,7 +151,7 @@ export class DayViewRenderer extends BaseViewRenderer {
 	/**
 	 * 渲染日视图任务项（使用统一组件）
 	 */
-	private renderTaskItem(task: GanttTask, listContainer: HTMLElement, targetDate: Date): void {
+	private renderTaskItem(task: GCTask, listContainer: HTMLElement, targetDate: Date): void {
 		new TaskCardComponent({
 			task,
 			config: DayViewConfig,

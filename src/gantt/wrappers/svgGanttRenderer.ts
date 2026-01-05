@@ -1,6 +1,6 @@
 /**
  * SVG 甘特图渲染器
- * 自研实现，参考 Frappe Gantt 设计
+ * 自研实现，参考甘特图设计模式
  * 完全控制渲染、交互和样式
  *
  * 布局结构：
@@ -12,8 +12,8 @@
  * └────────────┴──────────────────────────────┘
  */
 
-import type { FrappeTask, FrappeGanttConfig, DateFieldType } from '../types';
-import type { GanttTask } from '../../types';
+import type { GanttChartTask, GanttChartConfig, DateFieldType } from '../types';
+import type { GCTask } from '../../types';
 import { GanttClasses } from '../../utils/bem';
 import { TooltipManager, type MousePosition } from '../../utils/tooltipManager';
 
@@ -41,8 +41,8 @@ export class SvgGanttRenderer {
 	private ganttSvg: SVGSVGElement | null = null;     // 甘特图主体
 	private cornerSvg: SVGSVGElement | null = null;    // 左上角空白
 
-	private config: FrappeGanttConfig;
-	private tasks: FrappeTask[] = [];
+	private config: GanttChartConfig;
+	private tasks: GanttChartTask[] = [];
 	private container: HTMLElement;
 	private plugin: any;
 	private app: any;  // Obsidian App 实例
@@ -72,16 +72,16 @@ export class SvgGanttRenderer {
 	private isResizing = false;
 
 	// 事件回调
-	private onDateChange?: (task: FrappeTask, start: Date, end: Date) => void;
-	private onProgressChange?: (task: FrappeTask, progress: number) => void;
+	private onDateChange?: (task: GanttChartTask, start: Date, end: Date) => void;
+	private onProgressChange?: (task: GanttChartTask, progress: number) => void;
 	private startField: DateFieldType = 'startDate';
 	private endField: DateFieldType = 'dueDate';
 
-	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, _originalTasks: GanttTask[] = [], app: any = null, startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
+	constructor(container: HTMLElement, config: GanttChartConfig, plugin: any, _originalTasks: GCTask[] = [], app: any = null, startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
 		this.container = container;
 		this.config = config;
 		this.plugin = plugin;
-		// _originalTasks 参数保留以保持向后兼容，但不再使用（FrappeTask 已包含所有必要信息）
+		// _originalTasks 参数保留以保持向后兼容，但不再使用（GanttChartTask 已包含所有必要信息）
 		this.app = app || plugin?.app;
 		this.startField = startField;
 		this.endField = endField;
@@ -97,7 +97,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 初始化渲染器
 	 */
-	init(tasks: FrappeTask[]): void {
+	init(tasks: GanttChartTask[]): void {
 		this.tasks = tasks;
 		this.render();
 	}
@@ -105,7 +105,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 刷新任务数据
 	 */
-	refresh(tasks: FrappeTask[]): void {
+	refresh(tasks: GanttChartTask[]): void {
 		this.tasks = tasks;
 		this.render();
 	}
@@ -114,7 +114,7 @@ export class SvgGanttRenderer {
 	 * 增量更新任务（不完整重建视图）
 	 * 只更新受影响的 DOM 元素，保持滚动位置
 	 */
-	updateTasks(newTasks: FrappeTask[]): void {
+	updateTasks(newTasks: GanttChartTask[]): void {
 		const oldTasks = this.tasks;
 		this.tasks = newTasks;
 
@@ -144,7 +144,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 检查任务是否发生变化
 	 */
-	private isTaskDifferent(old: FrappeTask, current: FrappeTask): boolean {
+	private isTaskDifferent(old: GanttChartTask, current: GanttChartTask): boolean {
 		return old.start !== current.start ||
 			   old.end !== current.end ||
 			   old.progress !== current.progress ||
@@ -156,7 +156,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 更新配置
 	 */
-	updateConfig(config: Partial<FrappeGanttConfig>): void {
+	updateConfig(config: Partial<GanttChartConfig>): void {
 		this.config = { ...this.config, ...config };
 
 		// 更新尺寸
@@ -171,8 +171,8 @@ export class SvgGanttRenderer {
 	 * 设置事件处理器
 	 */
 	setEventHandlers(handlers: {
-		onDateChange?: (task: FrappeTask, start: Date, end: Date) => void;
-		onProgressChange?: (task: FrappeTask, progress: number) => void;
+		onDateChange?: (task: GanttChartTask, start: Date, end: Date) => void;
+		onProgressChange?: (task: GanttChartTask, progress: number) => void;
 	}): void {
 		this.onDateChange = handlers.onDateChange;
 		this.onProgressChange = handlers.onProgressChange;
@@ -503,7 +503,7 @@ export class SvgGanttRenderer {
 			const y = index * this.rowHeight;
 			const taskNumber = index + 1;
 
-			// 直接从 FrappeTask 获取信息（不需要查找 originalTask）
+			// 直接从 GanttChartTask 获取信息（不需要查找 originalTask）
 			const isCompleted = task.completed || task.progress === 100;
 
 			// 行背景（偶数行添加背景色）
@@ -708,7 +708,7 @@ export class SvgGanttRenderer {
 	 * 创建任务复选框
 	 */
 	private createTaskCheckbox(
-		frappeTask: FrappeTask,
+		ganttTask: GanttChartTask,
 		isCompleted: boolean
 	): HTMLInputElement {
 		const checkbox = document.createElement('input');
@@ -737,7 +737,7 @@ export class SvgGanttRenderer {
 			// 通过 onProgressChange 回调更新任务
 			if (this.onProgressChange) {
 				try {
-					await this.onProgressChange(frappeTask, newCompletedState ? 100 : 0);
+					await this.onProgressChange(ganttTask, newCompletedState ? 100 : 0);
 				} catch (error) {
 					console.error('[SvgGanttRenderer] Error updating task completion:', error);
 					// 恢复复选框状态
@@ -752,7 +752,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 处理任务列表项点击事件 - 跳转到文件
 	 */
-	private handleTaskListItemClick(task: FrappeTask): void {
+	private handleTaskListItemClick(task: GanttChartTask): void {
 		if (!task.filePath || !task.lineNumber || !this.app) return;
 
 		// 使用 openFileInExistingLeaf 跳转到文件
@@ -1124,7 +1124,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 处理任务点击
 	 */
-	private handleTaskClick(task: FrappeTask): void {
+	private handleTaskClick(task: GanttChartTask): void {
 		if (this.config.on_click) {
 			this.config.on_click(task);
 		}
@@ -1132,14 +1132,14 @@ export class SvgGanttRenderer {
 
 	/**
 	 * 显示弹窗（使用全局 TooltipManager）
-	 * @param task - Frappe 任务
+	 * @param task - 甘特图任务
 	 * @param targetElement - 目标元素
 	 * @param mousePosition - 鼠标位置（可选）
 	 */
-	private showPopup(task: FrappeTask, targetElement: Element, mousePosition?: MousePosition): void {
+	private showPopup(task: GanttChartTask, targetElement: Element, mousePosition?: MousePosition): void {
 		if (!this.plugin || !task.filePath) return;
 
-		// 直接使用 FrappeTask（已包含完整任务信息）
+		// 直接使用 GanttChartTask（已包含完整任务信息）
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
 		tooltipManager.show(task as any, targetElement as HTMLElement, mousePosition);
 	}
@@ -1160,7 +1160,7 @@ export class SvgGanttRenderer {
 	private taskDragState = {
 		isDragging: false,
 		dragType: 'none' as 'none' | 'move' | 'resize-left' | 'resize-right',
-		task: null as FrappeTask | null,
+		task: null as GanttChartTask | null,
 		startX: 0,
 		originalStart: null as Date | null,
 		originalEnd: null as Date | null,
@@ -1182,7 +1182,7 @@ export class SvgGanttRenderer {
 		bar: SVGRectElement,
 		leftHandle: SVGRectElement,
 		rightHandle: SVGRectElement,
-		task: FrappeTask,
+		task: GanttChartTask,
 		minDate: Date
 	): void {
 		// 左手柄拖动 - 只修改开始时间
@@ -1210,7 +1210,7 @@ export class SvgGanttRenderer {
 	 * 开始拖动
 	 */
 	private startDragging(
-		task: FrappeTask,
+		task: GanttChartTask,
 		dragType: 'move' | 'resize-left' | 'resize-right',
 		startX: number,
 		minDate: Date,
@@ -1437,7 +1437,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 单独更新开始时间（左侧拖动）
 	 */
-	private async handleStartDateChange(task: FrappeTask, newStart: Date): Promise<void> {
+	private async handleStartDateChange(task: GanttChartTask, newStart: Date): Promise<void> {
 		if (!this.plugin || !task.filePath) return;
 
 		const { updateTaskProperties } = require('../../tasks/taskUpdater');
@@ -1456,7 +1456,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 单独更新结束时间（右侧拖动）
 	 */
-	private async handleEndDateChange(task: FrappeTask, newEnd: Date): Promise<void> {
+	private async handleEndDateChange(task: GanttChartTask, newEnd: Date): Promise<void> {
 		if (!this.plugin || !task.filePath) return;
 
 		const { updateTaskProperties } = require('../../tasks/taskUpdater');
@@ -1476,10 +1476,10 @@ export class SvgGanttRenderer {
 	 * 增量更新任务列表区域
 	 */
 	private updateTaskListIncremental(
-		added: FrappeTask[],
-		removed: FrappeTask[],
-		modified: FrappeTask[],
-		allTasks: FrappeTask[]
+		added: GanttChartTask[],
+		removed: GanttChartTask[],
+		modified: GanttChartTask[],
+		allTasks: GanttChartTask[]
 	): void {
 		const svg = this.taskListSvg;
 		if (!svg) return;
@@ -1520,10 +1520,10 @@ export class SvgGanttRenderer {
 	 * 增量更新甘特图区域
 	 */
 	private updateGanttAreaIncremental(
-		added: FrappeTask[],
-		removed: FrappeTask[],
-		modified: FrappeTask[],
-		allTasks: FrappeTask[]
+		added: GanttChartTask[],
+		removed: GanttChartTask[],
+		modified: GanttChartTask[],
+		allTasks: GanttChartTask[]
 	): void {
 		if (!this.ganttSvg) return;
 
@@ -1557,7 +1557,7 @@ export class SvgGanttRenderer {
 	/**
 	 * 更新单个任务条元素
 	 */
-	private updateTaskBarElement(barGroup: SVGGElement, task: FrappeTask): void {
+	private updateTaskBarElement(barGroup: SVGGElement, task: GanttChartTask): void {
 		const ns = 'http://www.w3.org/2000/svg';
 		const { minDate } = this.calculateDateRange();
 		const startDate = new Date(task.start);

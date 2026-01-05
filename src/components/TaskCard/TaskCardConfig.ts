@@ -1,4 +1,4 @@
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 
 /**
  * 视图修饰符类型
@@ -83,7 +83,7 @@ export interface TaskCardConfig {
  */
 export interface TaskCardProps {
 	/** 任务数据 */
-	task: GanttTask;
+	task: GCTask;
 
 	/** 配置 */
 	config: TaskCardConfig;
@@ -100,13 +100,13 @@ export interface TaskCardProps {
 	/** ===== 事件回调 ===== */
 
 	/** 完成状态切换回调 */
-	onToggleComplete?: (task: GanttTask, newStatus: boolean) => void;
+	onToggleComplete?: (task: GCTask, newStatus: boolean) => void;
 
 	/** 点击回调 */
-	onClick?: (task: GanttTask) => void;
+	onClick?: (task: GCTask) => void;
 
 	/** 拖拽放置回调 */
-	onDrop?: (task: GanttTask, targetDate?: Date) => void;
+	onDrop?: (task: GCTask, targetDate?: Date) => void;
 
 	/** 刷新回调（用于操作后刷新视图） */
 	onRefresh?: () => void;

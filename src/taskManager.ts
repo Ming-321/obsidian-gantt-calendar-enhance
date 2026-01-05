@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { GanttTask } from './types';
+import { GCTask } from './types';
 import { parseTasksFromListItems } from './tasks/taskParser';
 import { areTasksEqual } from './tasks/taskUtils';
 // 任务更新相关函数已迁移至 tasks/taskUpdater.ts，此处重新导出以保持向后兼容
@@ -25,7 +25,7 @@ export type TaskCacheUpdateListener = () => void;
  */
 export class TaskCacheManager {
 	private app: App;
-	private cache: Map<string, GanttTask[]> = new Map(); // 文件路径 -> 任务列表
+	private cache: Map<string, GCTask[]> = new Map(); // 文件路径 -> 任务列表
 	private globalTaskFilter: string = '';
 	private enabledFormats: string[] = ['tasks', 'dataview'];
 	private isInitialized: boolean = false;
@@ -165,9 +165,9 @@ export class TaskCacheManager {
 	/**
 	 * 获取所有任务（从缓存）
 	 */
-	getAllTasks(): GanttTask[] {
+	getAllTasks(): GCTask[] {
 		// 即使初始化未完成，也返回当前已解析的缓存，避免界面空白
-		const allTasks: GanttTask[] = [];
+		const allTasks: GCTask[] = [];
 
 		for (const [path, tasks] of this.cache.entries()) {
 			allTasks.push(...tasks);

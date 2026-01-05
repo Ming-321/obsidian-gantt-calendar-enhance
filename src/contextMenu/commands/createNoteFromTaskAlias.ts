@@ -1,5 +1,5 @@
 import { App, Modal, Setting } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import {
 	createNoteFromTaskCore,
 	checkExistingWikiLink,
@@ -15,7 +15,7 @@ import {
  */
 export async function createNoteFromTaskAlias(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	defaultPath: string,
 	enabledFormats: string[] = ['tasks']
 ): Promise<void> {
@@ -48,7 +48,7 @@ export async function createNoteFromTaskAlias(
 
 // ==================== 弹窗组件 ====================
 
-function promptForAlias(app: App, task: GanttTask): Promise<string | null> {
+function promptForAlias(app: App, task: GCTask): Promise<string | null> {
 	return new Promise((resolve) => {
 		const modal = new AliasInputModal(app, resolve, task);
 		modal.open();
@@ -57,9 +57,9 @@ function promptForAlias(app: App, task: GanttTask): Promise<string | null> {
 
 class AliasInputModal extends Modal {
 	private onSubmit: (alias: string | null) => void;
-	private task: GanttTask;
+	private task: GCTask;
 
-	constructor(app: App, onSubmit: (alias: string | null) => void, task: GanttTask) {
+	constructor(app: App, onSubmit: (alias: string | null) => void, task: GCTask) {
 		super(app);
 		this.onSubmit = onSubmit;
 		this.task = task;

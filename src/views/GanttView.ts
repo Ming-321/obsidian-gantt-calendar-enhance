@@ -1,19 +1,20 @@
 /**
- * 甘特图视图渲染器 (基于 Frappe Gantt)
+ * 甘特图视图渲染器 (基于 甘特图)
  *
- * 使用 Frappe Gantt 库实现专业的甘特图可视化
+ * 使用 甘特图 库实现专业的甘特图可视化
  */
 
 import { Notice } from 'obsidian';
 import { BaseViewRenderer } from './BaseViewRenderer';
-import type { GanttTask, GanttTimeGranularity, SortState, TagFilterState } from '../types';
+import type { GCTask, GanttTimeGranularity, SortState, TagFilterState } from '../types';
 import { DEFAULT_TAG_FILTER_STATE } from '../types';
 import { sortTasks } from '../tasks/taskSorter';
+import { GanttClasses } from '../utils/bem';
 import {
-	FrappeGanttWrapper,
+	GanttChartAdapter,
 	TaskUpdateHandler,
 	TaskDataAdapter,
-	type FrappeGanttConfig,
+	type GanttChartConfig,
 	type DateFieldType,
 	type TaskStatusFilter
 } from '../gantt';
@@ -21,7 +22,7 @@ import {
 /**
  * 甘特图视图渲染器
  *
- * 基于 Frappe Gantt 的重新实现
+ * 基于 甘特图 的重新实现
  */
 export class GanttViewRenderer extends BaseViewRenderer {
 	// 保存当前渲染容器的引用
@@ -34,18 +35,18 @@ export class GanttViewRenderer extends BaseViewRenderer {
 
 	// 视图模式
 	private timeGranularity: GanttTimeGranularity = 'day';
-	private frappeViewMode: FrappeGanttConfig['view_mode'] = 'day';
+	private ganttViewMode: GanttChartConfig['view_mode'] = 'day';
 
 	// 排序状态（默认按截止时间降序）
 	private sortState: SortState = { field: 'dueDate', order: 'desc' };
 
-	// Frappe Gantt 组件
-	private ganttWrapper: FrappeGanttWrapper | null = null;
+	// 甘特图 组件
+	private ganttWrapper: GanttChartAdapter | null = null;
 	private updateHandler: TaskUpdateHandler | null = null;
 
 	// 当前任务数据（用于事件处理）
-	private currentTasks: GanttTask[] = [];
-	private currentFrappeTasks: import('../gantt').FrappeTask[] = [];
+	private currentGlobalTasks: GCTask[] = [];
+	private currentGanttTasks: import('../gantt').GanttChartTask[] = [];
 
 	// Getter 方法（供工具栏调用）
 	public getStartField(): DateFieldType { return this.startField; }
@@ -69,9 +70,9 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	public getTimeGranularity(): GanttTimeGranularity { return this.timeGranularity; }
 	public setTimeGranularity(value: GanttTimeGranularity): void {
 		this.timeGranularity = value;
-		this.frappeViewMode = this.mapGranularityToViewMode(value);
+		this.ganttViewMode = this.mapGranularityToViewMode(value);
 		if (this.ganttWrapper) {
-			this.ganttWrapper.changeViewMode(this.frappeViewMode);
+			this.ganttWrapper.changeViewMode(this.ganttViewMode);
 		}
 		this.refresh();
 	}
@@ -137,37 +138,37 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	private async loadAndRenderGantt(root: HTMLElement): Promise<void> {
 		try {
 			// 1. 获取所有任务
-			const allTasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
-			this.currentTasks = allTasks;
+			const globalTasks: GCTask[] = this.plugin.taskCache.getAllTasks();
+			this.currentGlobalTasks = globalTasks;
 
 			// 2. 应用筛选条件
-			let filteredTasks = TaskDataAdapter.applyFilters(
-				allTasks,
+			let filteredGlobalTasks = TaskDataAdapter.applyFilters(
+				globalTasks,
 				this.statusFilter,
 				this.tagFilterState.selectedTags,
 				this.tagFilterState.operator
 			);
 
 			// 3. 应用排序
-			filteredTasks = sortTasks(filteredTasks, this.sortState);
+			filteredGlobalTasks = sortTasks(filteredGlobalTasks, this.sortState);
 
-			// 4. 转换为 Frappe Gantt 格式
-			const frappeTasks = TaskDataAdapter.toFrappeTasks(
-				filteredTasks,
+			// 4. 转换为 甘特图 格式
+			const ganttTasks = TaskDataAdapter.toGanttChartTasks(
+				filteredGlobalTasks,
 				this.startField,
 				this.endField
 			);
-			this.currentFrappeTasks = frappeTasks;
+			this.currentGanttTasks = ganttTasks;
 
 			// 5. 如果没有任务，显示提示
-			if (frappeTasks.length === 0) {
+			if (ganttTasks.length === 0) {
 				this.renderEmptyState(root);
 				return;
 			}
 
 			// 6. 创建甘特图容器
-			const ganttContainer = root.createDiv('gantt-chart-container');
-			const ganttRoot = ganttContainer.createDiv('frappe-gantt-root');
+			const ganttContainer = root.createDiv(GanttClasses.elements.container);
+			const ganttRoot = ganttContainer.createDiv(GanttClasses.elements.root);
 
 			// 7. 初始化更新处理器
 			if (!this.updateHandler) {
@@ -178,9 +179,9 @@ export class GanttViewRenderer extends BaseViewRenderer {
 				};
 			}
 
-			// 8. 配置 Frappe Gantt
-			const config: FrappeGanttConfig = {
-				view_mode: this.frappeViewMode,
+			// 8. 配置 甘特图
+			const config: GanttChartConfig = {
+				view_mode: this.ganttViewMode,
 				language: 'zh',
 				header_height: 50,
 				column_width: 40,
@@ -196,11 +197,11 @@ export class GanttViewRenderer extends BaseViewRenderer {
 				// tooltip 由全局 TooltipManager 统一管理
 			};
 
-			// 9. 初始化 Frappe Gantt 包装器（传递 plugin、原始任务列表和字段配置）
-			this.ganttWrapper = new FrappeGanttWrapper(ganttRoot, config, this.plugin, filteredTasks, this.startField, this.endField);
+			// 9. 初始化 甘特图 包装器（传递 plugin、原始任务列表和字段配置）
+			this.ganttWrapper = new GanttChartAdapter(ganttRoot, config, this.plugin, filteredGlobalTasks, this.startField, this.endField);
 
 			// 10. 渲染甘特图
-			await this.ganttWrapper.init(frappeTasks);
+			await this.ganttWrapper.init(ganttTasks);
 
 			// 11. 滚动到今天
 			if (this.ganttWrapper) {
@@ -208,7 +209,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			}
 
 			// 12. 创建控制面板（可选）
-			this.renderControlPanel(root, frappeTasks.length);
+			this.renderControlPanel(root, ganttTasks.length);
 
 		} catch (error) {
 			console.error('[GanttViewRenderer] Error rendering gantt:', error);
@@ -283,9 +284,9 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	/**
 	 * 处理任务点击事件
 	 */
-	private handleTaskClick(frappeTask: import('../gantt').FrappeTask): void {
+	private handleTaskClick(ganttTask: import('../gantt').GanttChartTask): void {
 		if (this.updateHandler) {
-			this.updateHandler.handleTaskClick(frappeTask, this.currentTasks);
+			this.updateHandler.handleTaskClick(ganttTask, this.currentGlobalTasks);
 		}
 	}
 
@@ -293,7 +294,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	 * 处理日期变更事件（拖拽）
 	 */
 	private async handleDateChange(
-		frappeTask: import('../gantt').FrappeTask,
+		ganttTask: import('../gantt').GanttChartTask,
 		start: Date,
 		end: Date
 	): Promise<void> {
@@ -306,12 +307,12 @@ export class GanttViewRenderer extends BaseViewRenderer {
 		}
 
 		await this.updateHandler.handleDateChange(
-			frappeTask,
+			ganttTask,
 			start,
 			end,
 			this.startField,
 			this.endField,
-			this.currentTasks
+			this.currentGlobalTasks
 		);
 	}
 
@@ -319,23 +320,23 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	 * 处理进度变更事件
 	 */
 	private async handleProgressChange(
-		frappeTask: import('../gantt').FrappeTask,
+		ganttTask: import('../gantt').GanttChartTask,
 		progress: number
 	): Promise<void> {
 		if (!this.updateHandler) return;
 
 		await this.updateHandler.handleProgressChange(
-			frappeTask,
+			ganttTask,
 			progress,
-			this.currentTasks
+			this.currentGlobalTasks
 		);
 	}
 
 	/**
-	 * 映射时间颗粒度到 Frappe Gantt 视图模式
+	 * 映射时间颗粒度到 甘特图 视图模式
 	 */
-	private mapGranularityToViewMode(granularity: GanttTimeGranularity): FrappeGanttConfig['view_mode'] {
-		const modeMap: Record<GanttTimeGranularity, FrappeGanttConfig['view_mode']> = {
+	private mapGranularityToViewMode(granularity: GanttTimeGranularity): GanttChartConfig['view_mode'] {
+		const modeMap: Record<GanttTimeGranularity, GanttChartConfig['view_mode']> = {
 			'day': 'day',
 			'week': 'week',
 			'month': 'month'
@@ -350,35 +351,35 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	private incrementallyUpdate(filePath: string): void {
 		try {
 			// 1. 更新内部任务数据
-			const allTasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
-			const oldFrappeTasks = this.currentFrappeTasks;
-			this.currentTasks = allTasks;
+			const globalTasks: GCTask[] = this.plugin.taskCache.getAllTasks();
+			const oldGanttTasks = this.currentGanttTasks;
+			this.currentGlobalTasks = globalTasks;
 
 			// 2. 应用筛选和排序
-			let filteredTasks = TaskDataAdapter.applyFilters(
-				allTasks,
+			let filteredGlobalTasks = TaskDataAdapter.applyFilters(
+				globalTasks,
 				this.statusFilter,
 				this.tagFilterState.selectedTags,
 				this.tagFilterState.operator
 			);
-			filteredTasks = sortTasks(filteredTasks, this.sortState);
+			filteredGlobalTasks = sortTasks(filteredGlobalTasks, this.sortState);
 
-			// 3. 转换为 FrappeTask
-			const frappeTasks = TaskDataAdapter.toFrappeTasks(
-				filteredTasks,
+			// 3. 转换为 GanttChartTask
+			const ganttTasks = TaskDataAdapter.toGanttChartTasks(
+				filteredGlobalTasks,
 				this.startField,
 				this.endField
 			);
-			this.currentFrappeTasks = frappeTasks;
+			this.currentGanttTasks = ganttTasks;
 
 			// 4. 判断更新策略
-			if (this.shouldFullRefresh(oldFrappeTasks, frappeTasks)) {
+			if (this.shouldFullRefresh(oldGanttTasks, ganttTasks)) {
 				// 排序变化或任务数量变化大，执行完整刷新
 				this.refresh();
 			} else {
 				// 只更新视觉，保持滚动位置
 				if (this.ganttWrapper) {
-					this.ganttWrapper.updateTasks(frappeTasks);
+					this.ganttWrapper.updateTasks(ganttTasks);
 				}
 			}
 		} catch (error) {
@@ -391,7 +392,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	/**
 	 * 判断是否需要完整刷新
 	 */
-	private shouldFullRefresh(oldTasks: import('../gantt').FrappeTask[], newTasks: import('../gantt').FrappeTask[]): boolean {
+	private shouldFullRefresh(oldTasks: import('../gantt').GanttChartTask[], newTasks: import('../gantt').GanttChartTask[]): boolean {
 		// 任务数量变化超过阈值，完整刷新
 		if (Math.abs(oldTasks.length - newTasks.length) > 5) {
 			return true;

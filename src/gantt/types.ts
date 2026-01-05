@@ -1,14 +1,17 @@
 /**
- * Frappe Gantt 集成相关类型定义
+ * 甘特图相关类型定义
+ *
+ * 使用自研的 SVG 渲染引擎实现甘特图可视化
  */
 
 import type { TaskStatusType } from '../tasks/taskStatus';
 
 /**
- * Frappe Gantt 任务格式
- * @see https://github.com/frappe/gantt
+ * 甘特图任务格式
+ *
+ * 专门用于甘特图渲染的任务数据结构，包含 SVG 渲染所需的字段
  */
-export interface FrappeTask {
+export interface GanttChartTask {
 	/** 唯一标识符 */
 	id: string;
 	/** 任务名称 */
@@ -65,16 +68,16 @@ export interface FrappeTask {
 }
 
 /**
- * Frappe Gantt 视图模式
+ * 甘特图视图模式
  */
-export type FrappeViewMode = 'day' | 'week' | 'month' | 'quarter_day' | 'half_day';
+export type GanttViewMode = 'day' | 'week' | 'month' | 'quarter_day' | 'half_day';
 
 /**
- * Frappe Gantt 配置选项
+ * 甘特图配置选项
  */
-export interface FrappeGanttConfig {
+export interface GanttChartConfig {
 	/** 视图模式 */
-	view_mode: FrappeViewMode;
+	view_mode: GanttViewMode;
 	/** 语言代码 */
 	language: string;
 	/** 头部高度 (px) */
@@ -94,23 +97,23 @@ export interface FrappeGanttConfig {
 	/** 日期格式 */
 	date_format?: string;
 	/** 自定义弹窗HTML函数 */
-	custom_popup_html?: (task: FrappeTask) => string;
+	custom_popup_html?: (task: GanttChartTask) => string;
 	/** 点击任务回调 */
-	on_click?: (task: FrappeTask) => void;
+	on_click?: (task: GanttChartTask) => void;
 	/** 日期变更回调 */
-	on_date_change?: (task: FrappeTask, start: Date, end: Date) => void;
+	on_date_change?: (task: GanttChartTask, start: Date, end: Date) => void;
 	/** 进度变更回调 */
-	on_progress_change?: (task: FrappeTask, progress: number) => void;
+	on_progress_change?: (task: GanttChartTask, progress: number) => void;
 }
 
 /**
- * Frappe Gantt 弹窗配置
+ * 甘特图 Tooltip 配置
  */
-export interface FrappePopupConfig {
+export interface GanttTooltipConfig {
 	/** 是否显示弹窗 */
 	enabled: boolean;
 	/** 自定义弹窗渲染函数 */
-	renderer?: (task: FrappeTask) => HTMLElement | string;
+	renderer?: (task: GanttChartTask) => HTMLElement | string;
 }
 
 /**
@@ -142,19 +145,7 @@ export interface GanttViewState {
 	/** 时间颗粒度 */
 	timeGranularity: 'day' | 'week' | 'month';
 	/** 当前视图模式 */
-	viewMode: FrappeViewMode;
-}
-
-/**
- * Frappe Gantt 实例接口
- */
-export interface IFrappeGantt {
-	/** 刷新任务数据 */
-	refresh(tasks: FrappeTask[], config?: Partial<FrappeGanttConfig>): void;
-	/** 当前任务列表 */
-	tasks: FrappeTask[];
-	/** 更新视图模式 */
-	change_view_mode(mode: FrappeViewMode): void;
+	viewMode: GanttViewMode;
 }
 
 /**

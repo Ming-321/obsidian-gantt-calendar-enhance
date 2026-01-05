@@ -2,7 +2,7 @@ import { Notice } from 'obsidian';
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { getWeekOfDate } from '../dateUtils/dateUtilsIndex';
 import { updateTaskDateField } from '../tasks/taskUpdater';
-import type { GanttTask, SortState } from '../types';
+import type { GCTask, SortState } from '../types';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
 import { TaskCardComponent, WeekViewConfig } from '../components/TaskCard';
@@ -89,7 +89,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
 			// 查找源任务
 			const allTasks = this.plugin.taskCache.getAllTasks();
-			const sourceTask = allTasks.find((t: GanttTask) => t.filePath === filePath && t.lineNumber === lineNumber);
+			const sourceTask = allTasks.find((t: GCTask) => t.filePath === filePath && t.lineNumber === lineNumber);
 			if (!sourceTask) {
 				console.error('[WeekView] Source task not found:', taskId);
 				return;
@@ -121,7 +121,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		columnContainer.empty();
 
 		try {
-			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			let tasks: GCTask[] = this.plugin.taskCache.getAllTasks();
 			// 应用标签筛选
 			tasks = this.applyTagFilter(tasks);
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
@@ -159,7 +159,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 	/**
 	 * 渲染周视图任务项（使用统一组件）
 	 */
-	private renderTaskItem(task: GanttTask, container: HTMLElement, targetDate: Date): void {
+	private renderTaskItem(task: GCTask, container: HTMLElement, targetDate: Date): void {
 		new TaskCardComponent({
 			task,
 			config: WeekViewConfig,

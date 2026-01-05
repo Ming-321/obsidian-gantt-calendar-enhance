@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { GanttTask } from '../types';
+import { GCTask } from '../types';
 import { serializeTask, TaskUpdates } from './taskSerializer';
 
 
@@ -7,7 +7,7 @@ import { serializeTask, TaskUpdates } from './taskSerializer';
  * 确定任务使用的格式
  */
 function determineTaskFormat(
-	task: GanttTask,
+	task: GCTask,
 	taskLine: string,
 	enabledFormats: string[]
 ): 'dataview' | 'tasks' {
@@ -33,7 +33,7 @@ function determineTaskFormat(
 /**
  * 读取任务行并返回文件内容和行索引
  */
-async function readTaskLine(app: App, task: GanttTask): Promise<{ file: TFile; content: string; lines: string[]; taskLineIndex: number }> {
+async function readTaskLine(app: App, task: GCTask): Promise<{ file: TFile; content: string; lines: string[]; taskLineIndex: number }> {
 	const file = app.vault.getAbstractFileByPath(task.filePath);
 	if (!(file instanceof TFile)) {
 		throw new Error(`File not found: ${task.filePath}`);
@@ -67,7 +67,7 @@ async function readTaskLine(app: App, task: GanttTask): Promise<{ file: TFile; c
  */
 export async function updateTaskCompletion(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	completed: boolean,
 	enabledFormats: string[]
 ): Promise<void> {
@@ -104,7 +104,7 @@ export async function updateTaskCompletion(
  */
 export async function updateTaskDateField(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	dateFieldName: string,
 	newDate: Date,
 	enabledFormats: string[]
@@ -122,7 +122,7 @@ export async function updateTaskDateField(
  */
 export async function updateTaskProperties(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	updates: TaskUpdates,
 	enabledFormats: string[]
 ): Promise<void> {

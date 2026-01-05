@@ -1,10 +1,10 @@
 /**
  * 任务数据适配器
- * 将插件的 GanttTask 格式转换为 Frappe Gantt 格式
+ * 将插件的 GCTask 格式转换为 甘特图格式
  */
 
-import type { GanttTask } from '../../types';
-import type { FrappeTask, DateFieldType } from '../types';
+import type { GCTask } from '../../types';
+import type { GanttChartTask, DateFieldType } from '../types';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 
 /**
@@ -12,20 +12,20 @@ import { formatDate } from '../../dateUtils/dateUtilsIndex';
  */
 export class TaskDataAdapter {
 	/**
-	 * 转换单个任务为 Frappe Gantt 格式
+	 * 转换单个任务为 甘特图格式
 	 *
 	 * @param task - 原始任务对象
 	 * @param startField - 开始时间字段
 	 * @param endField - 结束时间字段
 	 * @param index - 任务索引（用于生成唯一ID）
-	 * @returns Frappe Gantt 任务对象，如果缺少必要字段则返回 null
+	 * @returns 甘特图任务对象，如果缺少必要字段则返回 null
 	 */
-	static toFrappeTask(
-		task: GanttTask,
+	static toGanttChartTask(
+		task: GCTask,
 		startField: DateFieldType,
 		endField: DateFieldType,
 		index: number
-	): FrappeTask | null {
+	): GanttChartTask | null {
 		const startDate = (task as any)[startField] as Date | undefined;
 		const endDate = (task as any)[endField] as Date | undefined;
 
@@ -79,16 +79,16 @@ export class TaskDataAdapter {
 	 * @param tasks - 原始任务列表
 	 * @param startField - 开始时间字段
 	 * @param endField - 结束时间字段
-	 * @returns Frappe Gantt 任务数组
+	 * @returns 甘特图任务数组
 	 */
-	static toFrappeTasks(
-		tasks: GanttTask[],
+	static toGanttChartTasks(
+		tasks: GCTask[],
 		startField: DateFieldType,
 		endField: DateFieldType
-	): FrappeTask[] {
+	): GanttChartTask[] {
 		return tasks
-			.map((task, index) => this.toFrappeTask(task, startField, endField, index))
-			.filter((t): t is FrappeTask => t !== null);
+			.map((task, index) => this.toGanttChartTask(task, startField, endField, index))
+			.filter((t): t is GanttChartTask => t !== null);
 	}
 
 	/**
@@ -100,7 +100,7 @@ export class TaskDataAdapter {
 	 * @param index - 任务索引
 	 * @returns 唯一任务ID
 	 */
-	private static generateTaskId(task: GanttTask, index: number): string {
+	private static generateTaskId(task: GCTask, index: number): string {
 		// 移除文件扩展名并替换特殊字符
 		const sanitizedName = task.fileName.replace(/\.md$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
 		return `${sanitizedName}-${task.lineNumber}-${index}`;
@@ -125,7 +125,7 @@ export class TaskDataAdapter {
 	 * @param task - 任务对象
 	 * @returns 进度百分比 (0-100)
 	 */
-	private static calculateProgress(task: GanttTask): number {
+	private static calculateProgress(task: GCTask): number {
 		if (task.completed) return 100;
 		if (task.cancelled) return 0;
 
@@ -139,7 +139,7 @@ export class TaskDataAdapter {
 	 * @param task - 任务对象
 	 * @returns CSS类名
 	 */
-	private static getCustomClass(task: GanttTask): string {
+	private static getCustomClass(task: GCTask): string {
 		const classes: string[] = [];
 
 		// 完成状态
@@ -185,11 +185,11 @@ export class TaskDataAdapter {
 	 * @returns 筛选后的任务列表
 	 */
 	static applyFilters(
-		tasks: GanttTask[],
+		tasks: GCTask[],
 		statusFilter: 'all' | 'completed' | 'uncompleted' = 'all',
 		selectedTags: string[] = [],
 		tagOperator: 'AND' | 'OR' = 'OR'
-	): GanttTask[] {
+	): GCTask[] {
 		let filtered = tasks;
 
 		// 状态筛选

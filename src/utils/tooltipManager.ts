@@ -1,4 +1,4 @@
-import type { GanttTask } from '../types';
+import type { GCTask } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 
 interface TooltipConfig {
@@ -29,7 +29,7 @@ export class TooltipManager {
 	private static instance: TooltipManager | null = null;
 	private tooltip: HTMLElement | null = null;
 	private currentCard: HTMLElement | null = null;
-	private currentTask: GanttTask | null = null;
+	private currentTask: GCTask | null = null;
 	private mousePosition: MousePosition | null = null;  // 鼠标位置（用于跟随鼠标）
 
 	private showTimeout: number | null = null;
@@ -95,7 +95,7 @@ export class TooltipManager {
 	 * @param card - 触发元素
 	 * @param mousePosition - 鼠标位置（可选，用于跟随鼠标）
 	 */
-	show(task: GanttTask, card: HTMLElement, mousePosition?: MousePosition): void {
+	show(task: GCTask, card: HTMLElement, mousePosition?: MousePosition): void {
 		// 取消隐藏定时器
 		if (this.hideTimeout) {
 			window.clearTimeout(this.hideTimeout);
@@ -131,7 +131,7 @@ export class TooltipManager {
 	/**
 	 * 内部显示逻辑
 	 */
-	private showInternal(task: GanttTask, card: HTMLElement): void {
+	private showInternal(task: GCTask, card: HTMLElement): void {
 		const tooltip = this.ensureTooltip();
 
 		// 更新内容（复用现有元素）
@@ -148,7 +148,7 @@ export class TooltipManager {
 	/**
 	 * 更新 tooltip 内容
 	 */
-	private updateContent(task: GanttTask): void {
+	private updateContent(task: GCTask): void {
 		if (!this.cachedElements.description) return;
 
 		// 更新描述

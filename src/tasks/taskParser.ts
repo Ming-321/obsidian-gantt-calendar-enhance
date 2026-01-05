@@ -9,7 +9,7 @@
  */
 
 import { TFile, ListItemCache } from 'obsidian';
-import { GanttTask } from '../types';
+import { GCTask } from '../types';
 import { RegularExpressions } from '../utils/RegularExpressions';
 
 // 导入新模块的实现
@@ -42,7 +42,7 @@ export function parseTasksFromListItems(
     listItems: ListItemCache[],
     enabledFormats: string[],
     globalTaskFilter: string
-): GanttTask[] {
+): GCTask[] {
     return newParseTasksFromListItems(
         file,
         lines,
@@ -67,7 +67,7 @@ export function parseTasksFromListItems(
  * @deprecated 请使用 taskParser 模块中的 parseTasksPriority 和 parseTasksDates 函数
  * @see {@link ./taskParser/step4.ts} 中的新实现
  */
-export function parseTasksFormat(content: string, task: GanttTask): boolean {
+export function parseTasksFormat(content: string, task: GCTask): boolean {
     // 解析优先级
     const priorityRegex = RegularExpressions.Tasks.priorityRegex;
     priorityRegex.lastIndex = 0;
@@ -138,7 +138,7 @@ function parseTasksDateField(content: string, field: string): Date | undefined {
  * @deprecated 请使用 taskParser 模块中的 parseDataviewPriority 和 parseDataviewDates 函数
  * @see {@link ./taskParser/step4.ts} 中的新实现
  */
-export function parseDataviewFormat(content: string, task: GanttTask): boolean {
+export function parseDataviewFormat(content: string, task: GCTask): boolean {
     // 解析优先级
     const priorityRegex = RegularExpressions.Dataview.priorityRegex;
     priorityRegex.lastIndex = 0;

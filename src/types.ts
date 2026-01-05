@@ -68,9 +68,9 @@ export interface CalendarMonth {
 }
 
 /**
- * 甘特图任务数据结构
+ * 全局任务数据结构 (GC = GanttCalendar)
  *
- * 表示从 Markdown 文件中解析出的任务信息。
+ * 表示从 Markdown 文件中解析出的任务信息，所有视图通用的任务格式。
  * 支持两种格式：Tasks 插件的 emoji 格式和 Dataview 插件的 field 格式。
  *
  * 格式示例：
@@ -92,7 +92,7 @@ export interface CalendarMonth {
  * - ✅ = completionDate (完成日期)
  * - ❌ = cancelledDate (取消日期)
  */
-export interface GanttTask {
+export interface GCTask {
 	filePath: string;              // 任务所在文件的完整路径
 	fileName: string;              // 任务所在文件名
 	lineNumber: number;            // 任务在文件中的行号

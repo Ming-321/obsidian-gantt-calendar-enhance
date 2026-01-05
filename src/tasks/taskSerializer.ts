@@ -1,5 +1,5 @@
 import { App } from 'obsidian';
-import { GanttTask } from '../types';
+import { GCTask } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { TaskStatusType, getStatusBySymbol, DEFAULT_TASK_STATUSES } from './taskStatus';
 
@@ -98,7 +98,7 @@ function getPriorityEmoji(priority: 'highest' | 'high' | 'medium' | 'low' | 'low
  */
 export function serializeTask(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	updates: TaskUpdates,
 	format: 'tasks' | 'dataview'
 ): string {

@@ -7,13 +7,13 @@
  *
  * 适用于甘特任务、任务缓存等场景。
  */
-import { GanttTask } from '../types';
+import { GCTask } from '../types';
 
 export function dateValue(d?: Date): number | undefined {
 	return d ? d.getTime() : undefined;
 }
 
-export function areTasksEqual(a: GanttTask[], b: GanttTask[]): boolean {
+export function areTasksEqual(a: GCTask[], b: GCTask[]): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		const ta = a[i];

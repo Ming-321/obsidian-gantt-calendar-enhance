@@ -13,14 +13,14 @@
  *   - 支持通过 enabledFormats 参数灵活切换解析格式。
  */
 import { App } from 'obsidian';
-import { GanttTask } from '../types';
+import { GCTask } from '../types';
 import { parseTasksFromListItems } from './taskParser';
 
 /**
  * 从笔记库中搜索所有符合全局筛选条件的任务
  */
-export async function searchTasks(app: App, globalTaskFilter: string, enabledFormats?: string[]): Promise<GanttTask[]> {
-	const tasks: GanttTask[] = [];
+export async function searchTasks(app: App, globalTaskFilter: string, enabledFormats?: string[]): Promise<GCTask[]> {
+	const tasks: GCTask[] = [];
 	const markdownFiles = app.vault.getMarkdownFiles();
 	const formats = enabledFormats || ['tasks', 'dataview'];
 

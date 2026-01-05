@@ -1,12 +1,12 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import { updateTaskProperties } from '../../tasks/taskUpdater';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 
 
 export function openEditTaskModal(
   app: App,
-  task: GanttTask,
+  task: GCTask,
   enabledFormats: string[],
   onSuccess: () => void,
   allowEditContent?: boolean
@@ -16,7 +16,7 @@ export function openEditTaskModal(
 }
 
 class EditTaskModal extends Modal {
-  private task: GanttTask;
+  private task: GCTask;
   private enabledFormats: string[];
   private onSuccess: () => void;
   private allowEditContent: boolean;
@@ -32,7 +32,7 @@ class EditTaskModal extends Modal {
   private completionDate: Date | null | undefined;
   private content: string | undefined;
 
-  constructor(app: App, task: GanttTask, enabledFormats: string[], onSuccess: () => void, allowEditContent?: boolean) {
+  constructor(app: App, task: GCTask, enabledFormats: string[], onSuccess: () => void, allowEditContent?: boolean) {
     super(app);
     this.task = task;
     this.enabledFormats = enabledFormats;

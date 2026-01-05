@@ -1,26 +1,27 @@
 /**
- * Frappe Gantt 包装类
+ * 甘特图适配器类
  * 管理 SVG 甘特图实例的生命周期、渲染和事件处理
  */
 
 import { SvgGanttRenderer } from './svgGanttRenderer';
-import type { FrappeTask, FrappeGanttConfig, IFrappeGantt, DateFieldType } from '../types';
-import type { GanttTask } from '../../types';
+import type { GanttChartTask, GanttChartConfig, DateFieldType } from '../types';
+import type { GCTask } from '../../types';
+import { GanttClasses } from '../../utils/bem';
 
 /**
- * Frappe Gantt 包装类
+ * 甘特图适配器类
  *
  * 负责初始化、更新和销毁甘特图实例
  * 处理所有与甘特图的交互
  */
-export class FrappeGanttWrapper {
+export class GanttChartAdapter {
 	private renderer: SvgGanttRenderer | null = null;
 	private container: HTMLElement;
-	private config: FrappeGanttConfig;
+	private config: GanttChartConfig;
 	private isInitialized = false;
 	private plugin: any;
 	private app: any;  // Obsidian App 实例
-	private originalTasks: GanttTask[] = [];
+	private originalTasks: GCTask[] = [];
 	private startField: DateFieldType = 'startDate';
 	private endField: DateFieldType = 'dueDate';
 
@@ -34,7 +35,7 @@ export class FrappeGanttWrapper {
 	 * @param startField - 开始时间字段
 	 * @param endField - 结束时间字段
 	 */
-	constructor(container: HTMLElement, config: FrappeGanttConfig, plugin: any, originalTasks: GanttTask[] = [], startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
+	constructor(container: HTMLElement, config: GanttChartConfig, plugin: any, originalTasks: GCTask[] = [], startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
 		this.container = container;
 		this.plugin = plugin;
 		this.app = plugin?.app;
@@ -60,7 +61,7 @@ export class FrappeGanttWrapper {
 	 *
 	 * @param tasks - 初始任务列表
 	 */
-	async init(tasks: FrappeTask[] = []): Promise<void> {
+	async init(tasks: GanttChartTask[] = []): Promise<void> {
 		if (this.isInitialized) {
 			this.destroy();
 		}
@@ -88,7 +89,7 @@ export class FrappeGanttWrapper {
 
 			this.isInitialized = true;
 		} catch (error) {
-			console.error('[FrappeGanttWrapper] Failed to initialize:', error);
+			console.error('[GanttChartAdapter] Failed to initialize:', error);
 			throw error;
 		}
 	}
@@ -98,7 +99,7 @@ export class FrappeGanttWrapper {
 	 *
 	 * @param newConfig - 新的配置选项
 	 */
-	updateConfig(newConfig: Partial<FrappeGanttConfig>): void {
+	updateConfig(newConfig: Partial<GanttChartConfig>): void {
 		this.config = { ...this.config, ...newConfig };
 
 		if (this.renderer) {
@@ -111,7 +112,7 @@ export class FrappeGanttWrapper {
 	 *
 	 * @param mode - 新的视图模式
 	 */
-	changeViewMode(mode: FrappeGanttConfig['view_mode']): void {
+	changeViewMode(mode: GanttChartConfig['view_mode']): void {
 		if (this.renderer) {
 			this.renderer.updateConfig({ view_mode: mode });
 		}
@@ -130,9 +131,9 @@ export class FrappeGanttWrapper {
 	/**
 	 * 增量更新任务（不完整重建视图）
 	 */
-	updateTasks(frappeTasks: FrappeTask[]): void {
+	updateTasks(ganttTasks: GanttChartTask[]): void {
 		if (this.renderer) {
-			this.renderer.updateTasks(frappeTasks);
+			this.renderer.updateTasks(ganttTasks);
 		}
 	}
 
@@ -141,7 +142,7 @@ export class FrappeGanttWrapper {
 	 *
 	 * @returns 当前任务列表
 	 */
-	getTasks(): FrappeTask[] {
+	getTasks(): GanttChartTask[] {
 		// 返回配置中的任务（由外部维护）
 		return [];
 	}
@@ -155,7 +156,7 @@ export class FrappeGanttWrapper {
 			this.renderer = null;
 		}
 		this.container.empty();
-		this.container.removeClass('frappe-gantt-container');
+		this.container.removeClass(GanttClasses.elements.container);
 		this.isInitialized = false;
 	}
 
@@ -169,7 +170,7 @@ export class FrappeGanttWrapper {
 	/**
 	 * 获取当前配置
 	 */
-	getConfig(): FrappeGanttConfig {
+	getConfig(): GanttChartConfig {
 		return { ...this.config };
 	}
 

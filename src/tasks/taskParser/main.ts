@@ -9,7 +9,7 @@
  */
 
 import { TFile, ListItemCache } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import type { TaskFormatType } from '../taskSerializerSymbols';
 
 // 导入各步骤的解析函数
@@ -54,8 +54,8 @@ export function parseTasksFromListItems(
     listItems: ListItemCache[],
     enabledFormats: TaskFormatType[],
     globalTaskFilter?: string
-): GanttTask[] {
-    const tasks: GanttTask[] = [];
+): GCTask[] {
+    const tasks: GCTask[] = [];
 
     for (const item of listItems) {
         const lineNumber = item.position.start.line;
@@ -84,7 +84,7 @@ export function parseTasksFromListItems(
         const format = detectedFormat === 'mixed' ? 'tasks' : detectedFormat;
 
         // ==================== 第四步：解析属性 ====================
-        const task: GanttTask = {
+        const task: GCTask = {
             filePath: file.path,
             fileName: file.basename,
             lineNumber: lineNumber + 1, // 转换为 1-based 行号
@@ -175,7 +175,7 @@ export function parseTasksFromFile(
     listItems: ListItemCache[],
     enabledFormats: TaskFormatType[],
     globalTaskFilter?: string
-): GanttTask[] {
+): GCTask[] {
     const lines = fileContent.split('\n');
     return parseTasksFromListItems(file, lines, listItems, enabledFormats, globalTaskFilter);
 }
@@ -214,7 +214,7 @@ export function parseTasksFromLines(
     listItems: ListItemCache[],
     enabledFormats: TaskFormatType[],
     globalTaskFilter?: string
-): GanttTask[] {
+): GCTask[] {
     // 创建一个模拟的 TFile 对象
     const mockFile = {
         path: filePath,
@@ -256,7 +256,7 @@ export function parseSingleTaskLine(
     lineNumber?: number,
     enabledFormats: TaskFormatType[] = ['tasks', 'dataview'],
     globalTaskFilter?: string
-): GanttTask | null {
+): GCTask | null {
     const taskMatch = parseTaskLine(line);
     if (!taskMatch) return null;
 
@@ -272,7 +272,7 @@ export function parseSingleTaskLine(
     const detectedFormat = detectFormat(contentWithoutFilter, enabledFormats);
     const format = detectedFormat === 'mixed' ? 'tasks' : detectedFormat;
 
-    const task: GanttTask = {
+    const task: GCTask = {
         filePath: filePath || '',
         fileName: fileName || '',
         lineNumber: lineNumber || 0,

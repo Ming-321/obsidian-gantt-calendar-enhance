@@ -1,5 +1,5 @@
 import { App, Notice } from 'obsidian';
-import type { GanttTask } from '../types';
+import type { GCTask } from '../types';
 import { DEFAULT_TAG_FILTER_STATE, type TagFilterState } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { openFileInExistingLeaf } from '../utils/fileOpener';
@@ -78,7 +78,7 @@ export abstract class BaseViewRenderer {
 	 * 获取任务状态颜色配置
 	 * 从插件设置中读取状态颜色，如果未配置则使用默认值
 	 */
-	protected getStatusColors(task: GanttTask): { bg: string; text: string } | null {
+	protected getStatusColors(task: GCTask): { bg: string; text: string } | null {
 		if (!task.status) return null;
 
 		const taskStatuses = this.plugin?.settings?.taskStatuses || DEFAULT_TASK_STATUSES;
@@ -88,7 +88,7 @@ export abstract class BaseViewRenderer {
 	/**
 	 * 应用状态颜色到任务元素
 	 */
-	protected applyStatusColors(task: GanttTask, element: HTMLElement): void {
+	protected applyStatusColors(task: GCTask, element: HTMLElement): void {
 		const colors = this.getStatusColors(task);
 		if (colors) {
 			element.style.setProperty('--task-bg-color', colors.bg);
@@ -145,7 +145,7 @@ export abstract class BaseViewRenderer {
 	 * @param tasks 原始任务列表
 	 * @returns 筛选后的任务列表
 	 */
-	protected applyTagFilter(tasks: GanttTask[]): GanttTask[] {
+	protected applyTagFilter(tasks: GCTask[]): GCTask[] {
 		const { selectedTags, operator } = this.tagFilterState;
 
 		// 无筛选条件，返回全部
@@ -184,7 +184,7 @@ export abstract class BaseViewRenderer {
 	/**
 	 * 渲染任务复选框（复用逻辑）
 	 */
-	protected createTaskCheckbox(task: GanttTask, taskItem: HTMLElement): HTMLInputElement {
+	protected createTaskCheckbox(task: GCTask, taskItem: HTMLElement): HTMLInputElement {
 		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
 		checkbox.checked = task.completed;
 		checkbox.disabled = false;
@@ -221,7 +221,7 @@ export abstract class BaseViewRenderer {
 	 * 创建任务悬浮提示
 	 */
 	protected createTaskTooltip(
-		task: GanttTask,
+		task: GCTask,
 		taskItem: HTMLElement,
 		cleaned: string
 	): void {
@@ -377,7 +377,7 @@ export abstract class BaseViewRenderer {
 	/**
 	 * 打开任务所在文件
 	 */
-	protected async openTaskFile(task: GanttTask): Promise<void> {
+	protected async openTaskFile(task: GCTask): Promise<void> {
 		await openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
 	}
 
@@ -492,7 +492,7 @@ export abstract class BaseViewRenderer {
 	 * @param task - 任务对象
 	 * @param container - 容器元素
 	 */
-	protected renderTaskTags(task: GanttTask, container: HTMLElement): void {
+	protected renderTaskTags(task: GCTask, container: HTMLElement): void {
 		if (!task.tags || task.tags.length === 0) {
 			return;
 		}

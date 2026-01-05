@@ -1,7 +1,7 @@
 /**
  * 任务格式符号映射配置
  *
- * 作为中间层，将 GanttTask 属性映射到 Tasks 或 Dataview 格式的具体字段和正则匹配项。
+ * 作为中间层，将 GCTask 属性映射到 Tasks 或 Dataview 格式的具体字段和正则匹配项。
  * 提供 formatDetection、parsePriority、parseDates 等解析功能的统一接口。
  *
  * @fileoverview 任务格式符号映射和正则表达式配置
@@ -21,13 +21,13 @@ export type TaskFormatType = 'tasks' | 'dataview';
 
 /**
  * 优先级级别
- * 对应 GanttTask.priority 属性的五种级别
+ * 对应 GCTask.priority 属性的五种级别
  */
 export type PriorityLevel = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
 
 /**
  * 日期字段类型
- * 对应 GanttTask 中的日期属性
+ * 对应 GCTask 中的日期属性
  */
 export type DateFieldType =
     | 'createdDate'
@@ -41,7 +41,7 @@ export type DateFieldType =
 
 /**
  * 符号映射接口
- * 定义 GanttTask 属性到具体格式符号的映射关系
+ * 定义 GCTask 属性到具体格式符号的映射关系
  */
 export interface TaskSymbolMapping {
     /** 优先级符号映射 */

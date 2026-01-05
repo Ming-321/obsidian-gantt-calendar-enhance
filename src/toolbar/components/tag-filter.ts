@@ -3,7 +3,7 @@
  * @module toolbar/components/tag-filter
  */
 
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import type { TagFilterState } from '../../types';
 import { ToolbarComponentClasses } from '../../utils/bem';
 
@@ -16,7 +16,7 @@ export interface TagFilterOptions {
 	/** 标签筛选状态变化回调 */
 	onTagFilterChange: (newState: TagFilterState) => void;
 	/** 获取所有任务（用于提取标签） */
-	getAllTasks: () => GanttTask[];
+	getAllTasks: () => GCTask[];
 }
 
 /**
@@ -24,7 +24,7 @@ export interface TagFilterOptions {
  * @param tasks 任务列表
  * @returns 标签名称 -> 数量的映射
  */
-function extractAllTags(tasks: GanttTask[]): Map<string, number> {
+function extractAllTags(tasks: GCTask[]): Map<string, number> {
 	const tagCounts = new Map<string, number>();
 
 	for (const task of tasks) {

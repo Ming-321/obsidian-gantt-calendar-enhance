@@ -1,6 +1,6 @@
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { generateMonthCalendar } from '../calendar/calendarGenerator';
-import type { GanttTask } from '../types';
+import type { GCTask } from '../types';
 import { TaskCardComponent, MonthViewConfig } from '../components/TaskCard';
 
 /**
@@ -85,7 +85,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
 		container.empty();
 
 		try {
-			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			let tasks: GCTask[] = this.plugin.taskCache.getAllTasks();
 			// 应用标签筛选
 			tasks = this.applyTagFilter(tasks);
 			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
@@ -127,7 +127,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
 	/**
 	 * 渲染月视图任务项（使用统一组件）
 	 */
-	private renderTaskItem(task: GanttTask, container: HTMLElement): void {
+	private renderTaskItem(task: GCTask, container: HTMLElement): void {
 		new TaskCardComponent({
 			task,
 			config: MonthViewConfig,

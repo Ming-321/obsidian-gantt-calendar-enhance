@@ -1,7 +1,7 @@
 /**
- * Frappe Gantt 集成模块
+ * 甘特图模块
  *
- * 导出所有 Frappe Gantt 相关的类型、类和工具函数
+ * 导出所有甘特图相关的类型、类和工具函数
  */
 
 // 类型定义
@@ -10,8 +10,8 @@ export * from './types';
 // 数据适配器
 export { TaskDataAdapter } from './adapters/taskDataAdapter';
 
-// Frappe Gantt 包装器和 SVG 渲染器
-export { FrappeGanttWrapper, SvgGanttRenderer } from './wrappers/frappeGanttWrapper';
+// 甘特图适配器和 SVG 渲染器
+export { GanttChartAdapter, SvgGanttRenderer } from './wrappers/ganttChartAdapter';
 
 // 任务更新处理器
 export { TaskUpdateHandler } from './handlers/taskUpdateHandler';

@@ -1,6 +1,6 @@
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { isToday, isThisWeek, isThisMonth } from '../dateUtils/dateUtilsIndex';
-import type { GanttTask, SortState } from '../types';
+import type { GCTask, SortState } from '../types';
 import { registerTaskContextMenu } from '../contextMenu/contextMenuIndex';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
@@ -104,7 +104,7 @@ export class TaskViewRenderer extends BaseViewRenderer {
 		listContainer.createEl('div', { text: '加载中...', cls: 'gantt-task-empty' });
 
 		try {
-			let tasks: GanttTask[] = this.plugin.taskCache.getAllTasks();
+			let tasks: GCTask[] = this.plugin.taskCache.getAllTasks();
 
 			// 应用完成状态筛选
 			if (this.taskFilter === 'completed') {
@@ -170,7 +170,7 @@ export class TaskViewRenderer extends BaseViewRenderer {
 	/**
 	 * 渲染任务项（使用统一组件）
 	 */
-	private renderTaskItem(task: GanttTask, listContainer: HTMLElement): void {
+	private renderTaskItem(task: GCTask, listContainer: HTMLElement): void {
 		new TaskCardComponent({
 			task,
 			config: TaskViewConfig,

@@ -1,5 +1,5 @@
 import { App, Notice, TFile } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 
 /**
  * 删除任务
@@ -10,7 +10,7 @@ import type { GanttTask } from '../../types';
  */
 export async function deleteTask(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	onRefresh: () => void
 ): Promise<void> {
 	try {

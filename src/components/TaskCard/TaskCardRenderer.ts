@@ -1,5 +1,5 @@
 import { App } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import type { TaskCardConfig, TimeFieldConfig } from './TaskCardConfig';
 import { TaskCardClasses, TimeBadgeClasses, TagClasses } from '../../utils/bem';
 import { registerTaskContextMenu } from '../../contextMenu/contextMenuIndex';
@@ -61,7 +61,7 @@ export class TaskCardRenderer {
 	/**
 	 * 获取任务状态颜色配置
 	 */
-	getStatusColors(task: GanttTask): { bg: string; text: string } | null {
+	getStatusColors(task: GCTask): { bg: string; text: string } | null {
 		if (!task.status) return null;
 		const taskStatuses = this.plugin?.settings?.taskStatuses || DEFAULT_TASK_STATUSES;
 		// 简化的颜色获取逻辑
@@ -71,7 +71,7 @@ export class TaskCardRenderer {
 	/**
 	 * 应用状态颜色到任务元素
 	 */
-	applyStatusColors(task: GanttTask, element: HTMLElement): void {
+	applyStatusColors(task: GCTask, element: HTMLElement): void {
 		const colors = this.getStatusColors(task);
 		if (colors) {
 			element.style.setProperty('--task-bg-color', colors.bg);
@@ -83,7 +83,7 @@ export class TaskCardRenderer {
 	/**
 	 * 创建任务复选框
 	 */
-	createTaskCheckbox(task: GanttTask, taskItem: HTMLElement): HTMLInputElement {
+	createTaskCheckbox(task: GCTask, taskItem: HTMLElement): HTMLInputElement {
 		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
 		checkbox.checked = task.completed;
 		checkbox.disabled = false;
@@ -117,7 +117,7 @@ export class TaskCardRenderer {
 	/**
 	 * 渲染任务描述
 	 */
-	renderDescription(card: HTMLElement, task: GanttTask, config: TaskCardConfig): void {
+	renderDescription(card: HTMLElement, task: GCTask, config: TaskCardConfig): void {
 		if (!config.showDescription) return;
 
 		const cleaned = task.description;
@@ -221,7 +221,7 @@ export class TaskCardRenderer {
 	/**
 	 * 渲染任务标签
 	 */
-	renderTaskTags(task: GanttTask, container: HTMLElement): void {
+	renderTaskTags(task: GCTask, container: HTMLElement): void {
 		if (!task.tags || task.tags.length === 0) {
 			return;
 		}
@@ -251,7 +251,7 @@ export class TaskCardRenderer {
 	/**
 	 * 渲染优先级
 	 */
-	renderPriority(card: HTMLElement, task: GanttTask): void {
+	renderPriority(card: HTMLElement, task: GCTask): void {
 		if (!task.priority) return;
 
 		const priorityIcon = this.getPriorityIcon(task.priority);
@@ -266,7 +266,7 @@ export class TaskCardRenderer {
 	/**
 	 * 渲染时间字段
 	 */
-	renderTimeFields(card: HTMLElement, task: GanttTask, config?: TimeFieldConfig): void {
+	renderTimeFields(card: HTMLElement, task: GCTask, config?: TimeFieldConfig): void {
 		if (!config) return;
 
 		const container = card.createDiv(TaskCardClasses.elements.times);
@@ -312,7 +312,7 @@ export class TaskCardRenderer {
 	/**
 	 * 渲染文件位置
 	 */
-	renderFileLocation(card: HTMLElement, task: GanttTask): void {
+	renderFileLocation(card: HTMLElement, task: GCTask): void {
 		card.createEl('span', {
 			text: `${task.fileName}:${task.lineNumber}`,
 			cls: TaskCardClasses.elements.file
@@ -322,7 +322,7 @@ export class TaskCardRenderer {
 	/**
 	 * 渲染警告图标
 	 */
-	renderWarning(card: HTMLElement, task: GanttTask): void {
+	renderWarning(card: HTMLElement, task: GCTask): void {
 		if (!task.warning) return;
 
 		card.createEl('span', {
@@ -335,14 +335,14 @@ export class TaskCardRenderer {
 	/**
 	 * 打开任务所在文件
 	 */
-	async openTaskFile(task: GanttTask): Promise<void> {
+	async openTaskFile(task: GCTask): Promise<void> {
 		await openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
 	}
 
 	/**
 	 * 附加悬浮提示（使用 TooltipManager 单例复用）
 	 */
-	attachTooltip(card: HTMLElement, task: GanttTask): void {
+	attachTooltip(card: HTMLElement, task: GCTask): void {
 		// 获取 TooltipManager 单例
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
 
@@ -358,7 +358,7 @@ export class TaskCardRenderer {
 	/**
 	 * 附加拖拽行为
 	 */
-	attachDragBehavior(card: HTMLElement, task: GanttTask, targetDate?: Date): void {
+	attachDragBehavior(card: HTMLElement, task: GCTask, targetDate?: Date): void {
 		card.draggable = true;
 		card.setAttribute('data-task-id', `${task.filePath}:${task.lineNumber}`);
 
@@ -384,7 +384,7 @@ export class TaskCardRenderer {
 	 */
 	attachContextMenu(
 		card: HTMLElement,
-		task: GanttTask,
+		task: GCTask,
 		onRefresh?: () => void
 	): void {
 		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];

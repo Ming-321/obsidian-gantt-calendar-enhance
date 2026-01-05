@@ -1,5 +1,5 @@
 import { App, Notice } from 'obsidian';
-import type { GanttTask } from '../../types';
+import type { GCTask } from '../../types';
 import { updateTaskProperties } from '../../tasks/taskUpdater';
 
 /**
@@ -13,7 +13,7 @@ import { updateTaskProperties } from '../../tasks/taskUpdater';
  */
 export async function cancelTask(
 	app: App,
-	task: GanttTask,
+	task: GCTask,
 	enabledFormats: string[],
 	onRefresh: () => void
 ): Promise<void> {
