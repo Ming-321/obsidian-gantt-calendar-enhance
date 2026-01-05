@@ -139,7 +139,6 @@ Author: sugar
 	position: relative;
 }
 
-.gantt-view-body,
 .gc-gantt-view__body {
 	flex: 1 1 auto;
 	min-height: 0;
@@ -148,7 +147,6 @@ Author: sugar
 	overflow: hidden;
 }
 
-.gantt-view-task-list,
 .gc-gantt-view__task-list {
 	flex: 1 1 auto;
 	overflow-y: auto;
@@ -163,12 +161,10 @@ Author: sugar
 	-ms-overflow-style: none;
 }
 
-.gantt-view-task-list::-webkit-scrollbar,
 .gc-gantt-view__task-list::-webkit-scrollbar {
 	display: none;
 }
 
-.gantt-view-time,
 .gc-gantt-view__time {
 	flex: 1 1 auto;
 	min-width: 0;
@@ -178,7 +174,6 @@ Author: sugar
 	overflow: hidden;
 }
 
-.gantt-bars-grid,
 .gc-gantt-view__bars-grid {
 	display: grid;
 	grid-auto-rows: 40px;
@@ -2047,305 +2042,6 @@ Author: sugar
 	color: var(--text-normal);
 }
 
-/* 6.7 Task View Components */
-.gantt-task-view-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.gantt-task-view-header h2 {
-	margin: 0;
-	font-size: 18px;
-}
-
-.gantt-task-view-actions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.gantt-task-view-actions button {
-	padding: 6px 12px;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	border-radius: 6px;
-	cursor: pointer;
-	transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.gantt-task-view-actions button:hover {
-	background-color: var(--background-modifier-hover);
-	border-color: var(--interactive-normal);
-}
-
-.gantt-task-filter-info {
-	font-size: 12px;
-	color: var(--text-muted);
-}
-
-.gantt-task-filter-buttons {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 0;
-	border: none;
-	margin: 0;
-}
-
-.gantt-filter-btn {
-	padding: 4px 12px;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-modifier-hover);
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 12px;
-	color: var(--text-muted);
-	transition: all 0.15s ease;
-}
-
-.gantt-filter-btn:hover {
-	background-color: var(--background-modifier-border);
-	color: var(--text-normal);
-}
-
-.gantt-filter-btn.active {
-	background-color: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-	color: white;
-}
-
-.calendar-task-view .task-view-list {
-	margin: 0;
-}
-
-.gantt-task-empty {
-	padding: 16px;
-	color: var(--text-muted);
-	text-align: center;
-}
-
-/* 6.8 Gantt View Components */
-.gantt-view-tasks {
-	flex: 0 0 300px;
-	display: flex;
-	flex-direction: column;
-	min-height: 0;
-	overflow: hidden;
-}
-
-.gantt-view-resizer {
-	flex: 0 0 4px;
-	cursor: col-resize;
-	background-color: var(--background-modifier-border);
-	position: relative;
-	transition: background-color 0.15s ease;
-}
-
-.gantt-view-resizer:hover {
-	background-color: var(--interactive-accent);
-}
-
-.gantt-view-resizer::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: -2px;
-	right: -2px;
-}
-
-.gantt-view-tasks-header {
-	flex: 0 0 auto;
-	height: 34px;
-	padding: 8px 12px;
-	font-weight: 600;
-	font-size: 13px;
-	color: var(--text-normal);
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	margin-bottom: 4px;
-	display: flex;
-	align-items: center;
-}
-
-.gantt-view-timeline {
-	flex: 0 0 auto;
-	background-color: var(--background-primary);
-	z-index: 10;
-	margin-bottom: 4px;
-}
-
-.gantt-timeline-scroll {
-	overflow-x: auto;
-	overflow-y: hidden;
-	padding-right: 12px;
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-}
-
-.gantt-timeline-scroll::-webkit-scrollbar {
-	display: none;
-}
-
-.gantt-timeline-row {
-	display: grid;
-	grid-template-columns: repeat(var(--gantt-total-units, 30), minmax(100px, 1fr));
-	gap: 2px;
-	min-width: fit-content;
-}
-
-.gantt-date-cell {
-	text-align: center;
-	font-size: 11px;
-	color: var(--text-muted);
-	height: 34px;
-	padding: 0 4px;
-	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 3px;
-	white-space: nowrap;
-	min-width: 100px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.gantt-view-bars {
-	flex: 1 1 auto;
-	min-height: 0;
-	overflow-y: auto;
-	overflow-x: hidden;
-	padding-right: 4px;
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-}
-
-.gantt-view-bars::-webkit-scrollbar {
-	display: none;
-}
-
-.gantt-bars-scroll {
-	overflow-x: auto;
-	overflow-y: hidden;
-	min-height: fit-content;
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-}
-
-.gantt-bars-scroll::-webkit-scrollbar {
-	display: none;
-}
-
-.gantt-bar-row {
-	position: relative;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	display: grid;
-	grid-template-columns: repeat(var(--gantt-total-units, 30), minmax(100px, 1fr));
-	gap: 2px;
-	min-width: fit-content;
-	align-items: center;
-}
-
-.gantt-today-overlay {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	pointer-events: none;
-	z-index: 20;
-}
-
-.gantt-today-line {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	width: 2px;
-	background: #e74c3c;
-	box-shadow: 0 0 0 1px rgba(231, 76, 60, 0.35);
-}
-
-.gantt-bar {
-	height: 20px;
-	border-radius: 10px;
-	background-color: var(--interactive-accent);
-	opacity: 0.9;
-	margin: 0 1px;
-}
-
-/* 兼容旧样式（保留以防其他地方引用） */
-.gantt-body-scroll {
-	display: grid;
-	grid-template-columns: 300px 1fr;
-	grid-auto-rows: minmax(40px, auto);
-	column-gap: 8px;
-	row-gap: 6px;
-	overflow: auto;
-	height: 100%;
-	min-height: 0;
-	padding-right: 12px;
-	position: relative;
-}
-
-.gantt-body-task-cell {
-	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	padding: 8px;
-	cursor: pointer;
-	position: sticky;
-	left: 0;
-	z-index: 5;
-}
-
-.gantt-body-lane-cell {
-	position: relative;
-}
-
-.gantt-body-lane {
-	position: relative;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	min-height: 28px;
-	width: 100%;
-	min-width: calc(var(--gantt-total-units, 30) * 100px);
-}
-
-/* Task description links */
-.gantt-task-link {
-	color: var(--link-color);
-	text-decoration: none;
-	cursor: pointer;
-	word-break: break-word;
-	padding: 0 2px;
-	border-radius: 2px;
-	transition: background-color 0.15s ease;
-}
-
-.gantt-task-link:hover {
-	background-color: var(--background-modifier-hover);
-	text-decoration: underline;
-}
-
-.gantt-task-link.obsidian-link {
-	color: var(--link-color);
-}
-
-.gantt-task-link.markdown-link {
-	color: var(--link-color);
-}
-
-.gantt-task-link.url-link {
-	color: var(--link-external-color, #0969da);
-	font-family: monospace;
-	font-size: 12px;
-}
-
 /* Priority badge inline */
 /* BEM命名: gc-task-card__priority, gc-task-card__priority-badge */
 .gantt-task-priority-inline,
@@ -2781,19 +2477,13 @@ Author: sugar
 }
 
 /* Gantt View */
-.gantt-view-task-list .calendar-task-card--gantt.completed,
-.gantt-view-task-list .gc-task-card--gantt.gc-task-card--completed {
+.gc-task-card--gantt.gc-task-card--completed {
 	opacity: 0.7;
 	border-left-color: var(--task-completed-color);
 }
 
-.gantt-view-task-list .calendar-task-card--gantt.pending,
-.gantt-view-task-list .gc-task-card--gantt.gc-task-card--pending {
+.gc-task-card--gantt.gc-task-card--pending {
 	border-left-color: var(--task-pending-color);
-}
-
-.gantt-bar.completed {
-	background-color: #52c41a;
 }
 
 /* 7.2 Interactive States (hover, active) */
@@ -2838,8 +2528,7 @@ Author: sugar
 /* 7.3 Custom Status Colors (from Settings) */
 /* 任务卡片背景色和文字颜色 */
 .calendar-task-card.task-with-status,
-.gc-task-card.task-with-status,
-.gantt-bar.task-with-status {
+.gc-task-card.task-with-status {
 	background-color: var(--task-bg-color, var(--background-secondary));
 	color: var(--task-text-color, var(--text-normal));
 }
@@ -2860,15 +2549,6 @@ Author: sugar
 .calendar-task-card.task-with-status.completed,
 .gc-task-card.task-with-status.gc-task-card--completed {
 	opacity: 0.7;
-}
-
-/* 甘特条状态颜色 */
-.gantt-bar.task-with-status {
-	background-color: var(--task-bg-color, var(--interactive-accent));
-}
-
-.gantt-bar.task-with-status.completed {
-	opacity: 0.8;
 }
 
 /* 7.4 Festival Themes */
@@ -3000,8 +2680,7 @@ Author: sugar
 .calendar-month-tasks .calendar-task-card--month.completed .calendar-task-card-text,
 .calendar-month-tasks .gc-task-card--month.gc-task-card--completed .gc-task-card__text,
 .gc-view--task .gc-task-card--task.gc-task-card--completed .gc-task-card__text,
-.gantt-view-task-list .calendar-task-card--gantt.completed .calendar-task-card-text,
-.gantt-view-task-list .gc-task-card--gantt.gc-task-card--completed .gc-task-card__text {
+.gc-task-card--gantt.gc-task-card--completed .gc-task-card__text {
 	text-decoration: line-through;
 	color: var(--text-muted);
 }
@@ -3397,7 +3076,7 @@ Author: sugar
    ============================================ */
 
 /* 甘特图容器 */
-.gantt-chart-container {
+.gc-gantt-view__container {
 	flex: 1 1 auto;
 	min-height: 0;
 	display: flex;
@@ -3413,7 +3092,7 @@ Author: sugar
 	min-height: 500px;
 	min-width: 100%;
 	position: relative;
-	overflow: hidden;
+	overflow: visible;
 	background-color: var(--background-primary);
 	border-radius: 8px;
 	padding: 8px;
@@ -3440,6 +3119,7 @@ Author: sugar
 	height: 100%;
 	gap: 0;
 	overflow: hidden;
+	min-height: 0;
 }
 
 /* 左上角空白区域 */
@@ -3448,6 +3128,8 @@ Author: sugar
 	overflow: hidden;
 	border-right: 1px solid var(--background-modifier-border);
 	border-bottom: 1px solid var(--background-modifier-border);
+	min-height: 0;
+	min-width: 0;
 }
 
 .gc-gantt-view__corner-svg {
@@ -3461,6 +3143,8 @@ Author: sugar
 	overflow-y: hidden;
 	border-bottom: 1px solid var(--background-modifier-border);
 	background-color: var(--background-secondary);
+	min-height: 0;
+	min-width: 0;
 	/* 隐藏滚动条但保留滚动功能 */
 	scrollbar-width: none; /* Firefox */
 	-ms-overflow-style: none; /* IE 10+ */
@@ -3481,6 +3165,7 @@ Author: sugar
 	overflow-y: auto;
 	border-right: 1px solid var(--background-modifier-border);
 	background-color: var(--background-primary);
+	min-height: 0;
 	/* 隐藏滚动条但保留滚动功能 */
 	scrollbar-width: none; /* Firefox */
 	-ms-overflow-style: none; /* IE 10+ */
@@ -3499,6 +3184,7 @@ Author: sugar
 	grid-area: chart;
 	overflow: auto;
 	background-color: var(--background-primary);
+	min-height: 0;
 }
 
 .gc-gantt-view__chart-container::-webkit-scrollbar {
