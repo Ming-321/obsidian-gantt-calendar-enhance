@@ -577,6 +577,7 @@ export class SvgGanttRenderer {
 			// 设置点击事件用于跳转（阻止链接点击触发）
 			textContainer.addEventListener('click', (e) => {
 				if ((e.target as HTMLElement).tagName !== 'A') {
+					e.stopPropagation(); // 阻止事件冒泡
 					this.handleTaskListItemClick(task);
 				}
 			});
@@ -1086,8 +1087,9 @@ export class SvgGanttRenderer {
 			this.setupTaskBarDragging(barGroup as SVGGElement, bar as SVGRectElement, leftHandle as SVGRectElement, rightHandle as SVGRectElement, task, minDate);
 
 			// 添加点击和悬停事件（如果刚结束拖动，不执行点击）
-			bar.addEventListener('click', () => {
+			bar.addEventListener('click', (e) => {
 				if (this.taskDragState.justFinishedDragging) return;
+				e.stopPropagation(); // 阻止事件冒泡
 				this.handleTaskClick(task);
 			});
 			bar.addEventListener('mouseenter', (event: MouseEvent) => {

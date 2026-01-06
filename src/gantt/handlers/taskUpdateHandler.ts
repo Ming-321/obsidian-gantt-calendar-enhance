@@ -145,13 +145,9 @@ export class TaskUpdateHandler {
 			return;
 		}
 
-		// 打开文件并跳转到对应行
-		this.app.workspace.openLinkText(
-			ganttTask.fileName,
-			'',
-			true,
-			{ state: { line: ganttTask.lineNumber } }
-		);
+		// 使用 openFileInExistingLeaf 避免重复打开标签页
+		const { openFileInExistingLeaf } = require('../../utils/fileOpener');
+		openFileInExistingLeaf(this.app, ganttTask.filePath, ganttTask.lineNumber);
 	}
 
 	/**
