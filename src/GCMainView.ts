@@ -34,6 +34,8 @@ export class GCMainView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: any) {
 		super(leaf);
 		this.plugin = plugin;
+		// 使用设置中的默认视图
+		this.viewType = plugin.settings.defaultView || 'year';
 		// 存储 calendarView 引用到 plugin,供子渲染器访问
 		this.plugin.calendarView = this;
 

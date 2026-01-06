@@ -20,7 +20,7 @@ npm run build           # 生产构建（运行 tsc + esbuild）
 
 ### 入口点
 - `main.ts` - 插件生命周期（onload/onunload），注册视图、命令和事件监听器
-- `CalendarView.ts` - 主视图容器，管理所有子视图
+- `GCMainView.ts` - 主视图容器，管理所有子视图
 
 ### 视图系统
 插件使用基类模式构建视图：

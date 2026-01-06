@@ -28,6 +28,11 @@ export interface GanttCalendarSettings {
 	taskStatuses: TaskStatus[]; // 任务状态配置（包含颜色）
 	taskSortField: SortField; // 任务排序字段
 	taskSortOrder: SortOrder; // 任务排序顺序
+	defaultView: 'day' | 'week' | 'month' | 'year' | 'task' | 'gantt'; // 默认视图
+	newTaskHeading?: string; // 新任务插入的标题（留空则添加到文件末尾）
+	enableTemplaterForDailyNote: boolean; // 是否启用 Templater 集成
+	templaterTemplatePath: string; // Templater 模板路径
+	defaultTaskPriority: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal'; // 默认任务优先级
 }
 
 /**

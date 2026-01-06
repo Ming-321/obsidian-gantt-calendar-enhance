@@ -27,6 +27,11 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	taskStatuses: DEFAULT_TASK_STATUSES, // 默认任务状态配置
 	taskSortField: 'dueDate', // 默认排序字段：截止日期
 	taskSortOrder: 'asc', // 默认排序顺序：升序
+	defaultView: 'month', // 默认视图：月视图
+	newTaskHeading: undefined, // 默认添加到文件末尾
+	enableTemplaterForDailyNote: false, // 默认不使用 Templater
+	templaterTemplatePath: '', // 默认模板路径
+	defaultTaskPriority: 'medium', // 默认中等优先级
 };
 
 /**

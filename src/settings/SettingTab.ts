@@ -1,12 +1,12 @@
 import { App, PluginSettingTab } from 'obsidian';
 import type GanttCalendarPlugin from '../../main';
+import { GeneralSettingsBuilder } from './builders/GeneralSettingsBuilder';
+import { TaskSettingsBuilder } from './builders/TaskSettingsBuilder';
 import { TaskViewSettingsBuilder } from './builders/TaskViewSettingsBuilder';
-import { TaskStatusSettingsBuilder } from './builders/TaskStatusSettingsBuilder';
 import { CalendarViewSettingsBuilder } from './builders/CalendarViewSettingsBuilder';
 import { DayViewSettingsBuilder } from './builders/DayViewSettingsBuilder';
 import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
 import { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
-import { FestivalColorBuilder } from './builders/FestivalColorBuilder';
 import type { BuilderConfig } from './types';
 
 /**
@@ -26,6 +26,20 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		// ===== 通用设置 =====
+		const generalBuilder = new GeneralSettingsBuilder({
+			containerEl,
+			plugin: this.plugin
+		});
+		generalBuilder.render();
+
+		// ===== 任务设置 =====
+		const taskSettingsBuilder = new TaskSettingsBuilder({
+			containerEl,
+			plugin: this.plugin
+		});
+		taskSettingsBuilder.render();
+
 		// ===== 任务视图设置 =====
 		const taskViewBuilder = new TaskViewSettingsBuilder({
 			containerEl,
@@ -33,26 +47,12 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		});
 		taskViewBuilder.render();
 
-		// ===== 任务状态设置 =====
-		const taskStatusBuilder = new TaskStatusSettingsBuilder({
-			containerEl,
-			plugin: this.plugin
-		});
-		taskStatusBuilder.render();
-
 		// ===== 日历视图设置 =====
 		const calendarViewBuilder = new CalendarViewSettingsBuilder({
 			containerEl,
 			plugin: this.plugin
 		});
 		calendarViewBuilder.render();
-
-		// ===== 节日颜色设置 =====
-		const festivalColorBuilder = new FestivalColorBuilder({
-			containerEl,
-			plugin: this.plugin
-		});
-		festivalColorBuilder.render();
 
 		// ===== 日视图设置 =====
 		const dayViewBuilder = new DayViewSettingsBuilder({
