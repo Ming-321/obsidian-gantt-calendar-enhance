@@ -2,9 +2,12 @@
 
 <div align="center" style="padding: 20px; border: 2px solid #8b5cf6; border-radius: 12px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%); margin: 20px 0;">
 
-📅 一个强大的 Obsidian 任务管理和日历插件 ✨
-集成日历视图与任务列表 📋 支持农历节日 🏮 任务热力图 🔥
-Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
+📅 一个强大的 Obsidian 任务管理和日历插件 
+- ✨ 集成日历视图与任务列表 
+- 🏮 支持农历节日 
+- 🔥 任务热力图 
+- 📝 Daily Note 联动  
+- 🔗 兼容 Tasks 和 Dataview 双格式 
 
 </div>
 
@@ -13,10 +16,15 @@ Daily Note 联动 📝 兼容 Tasks 和 Dataview 双格式 🔗
 ## ✨ 功能特性
 
 🗓️ **多视图日历** - 任务视图/日历视图(年月周日)/甘特图三大视图自由切换，支持农历节日节气显示
+
 ✅ **智能任务管理** - 全局筛选、优先级标记、6种时间属性、实时缓存更新
+
 📊 **数据可视化** - 任务热力图、数量统计、8种配色方案
+
 🔗 **双格式兼容** - 完美支持 Tasks 插件（emoji）与 Dataview 插件（字段）格式
+
 📝 **Daily Note 集成** - 日视图支持显示当天笔记，水平/垂直布局可选
+
 🎨 **高度可定制** - 节日颜色、热力图配色、任务显示数量等全面配置
 
 
