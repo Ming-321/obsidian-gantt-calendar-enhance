@@ -11,8 +11,8 @@ import { TaskCardComponent, WeekViewConfig } from '../components/TaskCard';
  * 周视图渲染器
  */
 export class WeekViewRenderer extends BaseViewRenderer {
-	// 排序状态
-	private sortState: SortState = DEFAULT_SORT_STATE;
+	// 排序状态 - 默认优先级降序
+	private sortState: SortState = { field: 'priority', order: 'desc' };
 
 	public getSortState(): SortState {
 		return this.sortState;
