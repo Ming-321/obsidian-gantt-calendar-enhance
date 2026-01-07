@@ -280,22 +280,21 @@ export class GCMainView extends ItemView {
 	}
 
 	private getDateRangeText(): string {
+		const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 		switch (this.viewType) {
 			case 'year':
 				return this.currentDate.getFullYear().toString();
 			case 'month':
-				return formatMonth(
-					this.currentDate.getFullYear(),
-					this.currentDate.getMonth() + 1
-				);
+				return monthAbbreviations[this.currentDate.getMonth()];
 			case 'week': {
 				const week = getWeekOfDate(this.currentDate, undefined, !!(this.plugin?.settings?.startOnMonday));
-				const start = formatDate(week.startDate);
-				const end = formatDate(week.endDate);
-				return `Week ${week.weekNumber} (${start} - ${end})`;
+				const start = formatDate(week.startDate, 'MM/dd');
+				const end = formatDate(week.endDate, 'MM/dd');
+				return `W${week.weekNumber}(${start}-${end})`;
 			}
 			case 'day':
-				return formatDate(this.currentDate, 'yyyy-MM-dd ddd');
+				return formatDate(this.currentDate, 'MM/dd');
 			case 'task':
 				return '任务视图';
             case 'gantt':

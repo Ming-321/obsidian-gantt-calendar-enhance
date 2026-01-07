@@ -1,9 +1,8 @@
 import type { CalendarViewType } from '../types';
-import { solarToLunar, getShortLunarText } from '../lunar/lunar';
 
 /**
  * 工具栏中间区域 - 信息展示区
- * 负责显示日期范围、标题、农历等信息
+ * 负责显示日期范围、标题等信息
  */
 export class ToolbarCenter {
 	/**
@@ -24,17 +23,6 @@ export class ToolbarCenter {
 
 		const dateDisplay = container.createEl('span');
 		dateDisplay.addClass('calendar-date-display');
-
-		// 日视图特殊处理：显示农历和节日
-		if (currentViewType === 'day') {
-			const lunar = solarToLunar(currentDate);
-			const lunarText = getShortLunarText(currentDate);
-			let displayText = dateRangeText;
-			if (lunarText) displayText += ` • ${lunarText}`;
-			if (lunar.festival) displayText += ` • ${lunar.festival}`;
-			dateDisplay.setText(displayText);
-		} else {
-			dateDisplay.setText(dateRangeText);
-		}
+		dateDisplay.setText(dateRangeText);
 	}
 }
