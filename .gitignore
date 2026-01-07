@@ -25,5 +25,9 @@ Snipaste*
 PixPin*
 *.bak
 REFACTOR_COMMANDS.md
-.claude
 ref
+
+
+
+
+.claude/settings.local.json
