@@ -1,15 +1,86 @@
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { generateMonthCalendar } from '../calendar/calendarGenerator';
 import type { GCTask } from '../types';
+import { YearViewClasses } from '../utils/bem';
+import { YearViewLayoutManager } from '../utils/yearViewLayout';
+
+/**
+ * 年视图布局类型
+ */
+type YearViewLayout = '4x3' | '3x4' | '2x6' | '1x12';
 
 /**
  * 年视图渲染器
  */
 export class YearViewRenderer extends BaseViewRenderer {
 	private yearContainer: HTMLElement | null = null;
+	private monthsGrid: HTMLElement | null = null;
+	private resizeObserver: ResizeObserver | null = null;
+	private currentLayout: YearViewLayout = '4x3';
+
+	/**
+	 * 根据容器宽度计算布局模式（使用动态CSS值读取）
+	 */
+	private calculateLayout(width: number): YearViewLayout {
+		if (!this.yearContainer) return '4x3';
+		return YearViewLayoutManager.calculateOptimalLayout(width, this.yearContainer);
+	}
+
+	/**
+	 * 应用布局模式到网格容器
+	 */
+	private applyLayout(layout: YearViewLayout): void {
+		if (!this.monthsGrid) return;
+
+		this.currentLayout = layout;
+		const { columns, rows } = YearViewLayoutManager.getLayoutDimensions(layout);
+
+		this.monthsGrid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+		this.monthsGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+	}
+
+	/**
+	 * 设置响应式布局监听
+	 */
+	private setupResponsiveLayout(): void {
+		if (!this.monthsGrid) return;
+
+		// 清除缓存以确保使用最新的CSS值
+		YearViewLayoutManager.clearCache();
+
+		const initialWidth = this.monthsGrid.offsetWidth;
+		this.currentLayout = this.calculateLayout(initialWidth);
+		this.applyLayout(this.currentLayout);
+
+		// 设置 ResizeObserver 监听容器宽度变化
+		this.resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const width = entry.contentRect.width;
+				const layout = this.calculateLayout(width);
+				if (layout !== this.currentLayout) {
+					this.applyLayout(layout);
+				}
+			}
+		});
+
+		this.resizeObserver.observe(this.monthsGrid);
+	}
+
+	/**
+	 * 清理响应式布局监听
+	 */
+	private cleanupResponsiveLayout(): void {
+		if (this.resizeObserver) {
+			this.resizeObserver.disconnect();
+			this.resizeObserver = null;
+		}
+	}
 
 	render(container: HTMLElement, currentDate: Date): void {
 		const year = currentDate.getFullYear();
+
+		// 清理旧的 ResizeObserver
+		this.cleanupResponsiveLayout();
 
 		// 预计算当年每日任务数量
 		let tasks: GCTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
@@ -19,7 +90,7 @@ export class YearViewRenderer extends BaseViewRenderer {
 		const countsMap: Map<string, number> = new Map();
 		const startDate = new Date(year, 0, 1);
 		const endDate = new Date(year, 11, 31);
-		
+
 		for (const t of tasks) {
 			const d = (t as any)[dateField] as Date | undefined;
 			if (!d) continue;
@@ -32,31 +103,35 @@ export class YearViewRenderer extends BaseViewRenderer {
 		this.yearContainer = yearContainer;
 
 		const monthsGrid = yearContainer.createDiv('gc-year-view__months');
+		this.monthsGrid = monthsGrid;
 
 		for (let month = 1; month <= 12; month++) {
 			const monthData = generateMonthCalendar(year, month, !!(this.plugin?.settings?.startOnMonday));
-			const monthDiv = monthsGrid.createDiv('calendar-month-card');
+			const monthDiv = monthsGrid.createDiv(YearViewClasses.elements.monthCard);
+
+			// 始终显示农历
+			monthDiv.addClass('gc-year-view__month-card--show-lunar');
 
 			// 月份标题
-			const monthHeader = monthDiv.createDiv('calendar-month-header');
+			const monthHeader = monthDiv.createDiv(YearViewClasses.elements.monthHeader);
 			const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
 			monthHeader.createEl('h3', { text: monthNames[month - 1] });
 
 			// 星期标签
-			const weekdaysDiv = monthDiv.createDiv('calendar-weekdays');
+			const weekdaysDiv = monthDiv.createDiv(YearViewClasses.elements.weekdays);
 			const startOnMonday = !!(this.plugin?.settings?.startOnMonday);
 			const labelsSunFirst = ['日', '一', '二', '三', '四', '五', '六'];
 			const labelsMonFirst = ['一', '二', '三', '四', '五', '六', '日'];
 			(startOnMonday ? labelsMonFirst : labelsSunFirst).forEach((day) => {
-				weekdaysDiv.createEl('div', { text: day, cls: 'calendar-weekday' });
+				weekdaysDiv.createEl('div', { text: day, cls: YearViewClasses.elements.weekday });
 			});
 
 			// 日期网格
-			const daysDiv = monthDiv.createDiv('calendar-days-grid');
+			const daysDiv = monthDiv.createDiv(YearViewClasses.elements.daysGrid);
 			monthData.days.forEach((day) => {
 				const dayEl = daysDiv.createEl('div');
-				dayEl.addClass('calendar-day');
-				
+				dayEl.addClass(YearViewClasses.elements.day);
+
 				// 热力图：根据任务数量设置背景
 				const dayKey = `${day.date.getFullYear()}-${(day.date.getMonth() + 1).toString().padStart(2, '0')}-${day.date.getDate().toString().padStart(2, '0')}`;
 				const count = countsMap.get(dayKey) || 0;
@@ -67,11 +142,11 @@ export class YearViewRenderer extends BaseViewRenderer {
 				}
 
 				const dateNum = dayEl.createEl('div', { text: day.day.toString() });
-				dateNum.addClass('calendar-day-number');
+				dateNum.addClass(YearViewClasses.elements.dayNumber);
 
 				if (day.lunarText) {
 					const lunarEl = dayEl.createEl('div', { text: day.lunarText });
-					lunarEl.addClass('calendar-lunar-text');
+					lunarEl.addClass(YearViewClasses.elements.lunarText);
 					if (day.festival || day.festivalType) {
 						lunarEl.addClass('festival');
 						if (day.festivalType) {
@@ -83,7 +158,7 @@ export class YearViewRenderer extends BaseViewRenderer {
 				// 显示任务数量
 				if (this.plugin.settings.yearShowTaskCount && count > 0) {
 					const countEl = dayEl.createEl('div', { text: `${count}` });
-					countEl.addClass('calendar-day-task-count');
+					countEl.addClass(YearViewClasses.elements.taskCount);
 				}
 
 				if (!day.isCurrentMonth) {
@@ -100,46 +175,18 @@ export class YearViewRenderer extends BaseViewRenderer {
 					}
 				};
 			});
-
-			// 延迟检查是否显示农历
-			setTimeout(() => {
-				this.updateYearCardDisplay(monthDiv);
-			}, 100);
 		}
+
+		// 设置响应式布局
+		this.setupResponsiveLayout();
 	}
 
 	/**
-	 * 根据卡片大小更新农历显示
-	 */
-	public updateYearCardDisplay(monthDiv: HTMLElement): void {
-		const daysGrid = monthDiv.querySelector('.calendar-days-grid') as HTMLElement;
-		if (!daysGrid) return;
-
-		const dayElements = daysGrid.querySelectorAll('.calendar-day');
-		if (dayElements.length === 0) return;
-
-		const firstDay = dayElements[0] as HTMLElement;
-		const dayRect = firstDay.getBoundingClientRect();
-
-		// 单元格足够大时显示农历
-		const showLunar = dayRect.width > 35 && dayRect.height > 45;
-
-		if (showLunar) {
-			monthDiv.addClass('show-lunar');
-		} else {
-			monthDiv.removeClass('show-lunar');
-		}
-	}
-
-	/**
-	 * 更新所有月卡片显示
+	 * 更新所有月卡片显示（农历始终显示，此方法保留用于字号更新）
 	 */
 	public updateAllMonthCards(): void {
 		if (!this.yearContainer) return;
-		const monthCards = this.yearContainer.querySelectorAll('.calendar-month-card');
-		monthCards.forEach((card) => {
-			this.updateYearCardDisplay(card as HTMLElement);
-		});
+		// 农历始终显示，此方法可用于触发其他更新
 	}
 
 	/**
@@ -147,7 +194,7 @@ export class YearViewRenderer extends BaseViewRenderer {
 	 */
 	public applyLunarFontSize(container: HTMLElement): void {
 		const lunarFontSize = this.plugin.settings.yearLunarFontSize || 10;
-		const lunarTexts = container.querySelectorAll('.calendar-lunar-text');
+		const lunarTexts = container.querySelectorAll(`.${YearViewClasses.elements.lunarText}`);
 		lunarTexts.forEach((text: Element) => {
 			(text as HTMLElement).style.fontSize = `${lunarFontSize}px`;
 		});

@@ -23,6 +23,8 @@ export const BLOCKS = {
 	VIEW: 'view',
 	/** 日视图 */
 	DAY_VIEW: 'day-view',
+	/** 年视图 */
+	YEAR_VIEW: 'year-view',
 	/** 甘特图 */
 	GANTT: 'gantt-view',
 
@@ -384,6 +386,32 @@ export const CreateTaskButtonClasses = {
 	block: bem(BLOCKS.CREATE_TASK_BUTTON),
 	modifiers: {
 		toolbar: bem(BLOCKS.CREATE_TASK_BUTTON, undefined, 'toolbar'),
+	},
+};
+
+/**
+ * 年视图类名常量
+ */
+export const YearViewClasses = {
+	block: bem(BLOCKS.YEAR_VIEW),
+
+	/** Elements */
+	elements: {
+		months: bem(BLOCKS.YEAR_VIEW, 'months'),
+		monthCard: bem(BLOCKS.YEAR_VIEW, 'month-card'),
+		monthHeader: bem(BLOCKS.YEAR_VIEW, 'month-header'),
+		weekdays: bem(BLOCKS.YEAR_VIEW, 'weekdays'),
+		weekday: bem(BLOCKS.YEAR_VIEW, 'weekday'),
+		daysGrid: bem(BLOCKS.YEAR_VIEW, 'days-grid'),
+		day: bem(BLOCKS.YEAR_VIEW, 'day'),
+		dayNumber: bem(BLOCKS.YEAR_VIEW, 'day-number'),
+		lunarText: bem(BLOCKS.YEAR_VIEW, 'lunar-text'),
+		taskCount: bem(BLOCKS.YEAR_VIEW, 'task-count'),
+	},
+
+	/** Modifiers */
+	modifiers: {
+		showLunar: bem(BLOCKS.YEAR_VIEW, undefined, 'show-lunar'),
 	},
 };
 
