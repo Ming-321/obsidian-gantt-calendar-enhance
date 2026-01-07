@@ -98,17 +98,31 @@ export function registerTaskContextMenu(
 		// 分隔线
 		menu.addSeparator();
 
-		// 第二组：任务延期（1天、3天、7天）
+		// 第二组：任务延期（1天、3天、7天）和设置截止日期
 		const postponeOptions = [
 			{ days: 1, label: '延期 1 天' },
 			{ days: 3, label: '延期 3 天' },
 			{ days: 7, label: '延期 7 天' },
 		];
 
+		const setDueDateOptions = [
+			{ days: 1, label: '延期到明天' },
+			{ days: 3, label: '延期到3天后' },
+			{ days: 7, label: '延期到7天后' },
+		];
+
 		postponeOptions.forEach(option => {
 			menu.addItem((item) => {
 				item.setTitle(option.label).setIcon('calendar-clock').onClick(() => {
-					postponeTask(app, task, option.days, enabledFormats, onRefresh);
+					postponeTask(app, task, option.days, enabledFormats, onRefresh, false);
+				});
+			});
+		});
+
+		setDueDateOptions.forEach(option => {
+			menu.addItem((item) => {
+				item.setTitle(option.label).setIcon('calendar-check').onClick(() => {
+					postponeTask(app, task, option.days, enabledFormats, onRefresh, true);
 				});
 			});
 		});
