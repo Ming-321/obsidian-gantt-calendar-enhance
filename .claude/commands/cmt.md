@@ -1,6 +1,6 @@
 ---
 description: commit代码并生成commit信息
-allowed-tools: Bash(git add:*), Bash(git status:*),Bash(git commit:*)
+allowed-tools: Bash(git add:*), Bash(git status:*),Bash(git commit:*),Bash(git diff:*)
 ---
 
 请提交当前代码,根据当前的代码变动情况,生成不带作者信息和claude code生成标记的commit信息.

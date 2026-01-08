@@ -106,10 +106,19 @@ export class TooltipManager {
 		// 保存鼠标位置
 		this.mousePosition = mousePosition || null;
 
-		// 如果是同一个任务，只更新位置
+		// 如果是同一个任务，检查tooltip是否已显示
 		if (this.currentTask === task && this.currentCard === card) {
-			this.updatePosition(card);
-			return;
+			// 检查tooltip是否可见（修复bug: 同一任务重复悬停不显示）
+			const isVisible = this.tooltip &&
+							 this.tooltip.classList.contains('gc-task-tooltip--visible') &&
+							 this.tooltip.style.opacity !== '0';
+
+			if (isVisible) {
+				// tooltip已显示，只更新位置
+				this.updatePosition(card);
+				return;
+			}
+			// 如果tooltip不可见，继续执行显示逻辑
 		}
 
 		// 保存当前状态
