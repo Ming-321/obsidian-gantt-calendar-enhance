@@ -1,13 +1,19 @@
 import { App, TFile } from 'obsidian';
 import { GCTask } from './types';
-import { parseTasksFromListItems } from './tasks/taskParser';
-import { areTasksEqual } from './tasks/taskUtils';
+
 // 任务更新相关函数已迁移至 tasks/taskUpdater.ts，此处重新导出以保持向后兼容
 export {
 	updateTaskCompletion,
 	updateTaskDateField,
 	updateTaskProperties,
 } from './tasks/taskUpdater';
+
+// 导入新的数据层架构
+import { EventBus } from './data-layer/EventBus';
+import { TaskRepository } from './data-layer/TaskRepository';
+import { MarkdownDataSource } from './data-layer/MarkdownDataSource';
+import type { NormalizedTask } from './data-layer/types';
+import { DataSourceConfig } from './data-layer/types';
 
 // 任务解析与搜索相关功能已迁移至 src/tasks/ 目录
 
@@ -17,15 +23,29 @@ export type TaskCacheUpdateListener = () => void;
 /**
  * 任务缓存管理器 - 全局单例，用于提升性能
  *
+ * 【重构说明】
+ * 本类现在作为新数据层架构的门面（Facade Pattern），内部使用：
+ * - EventBus: 事件总线
+ * - TaskRepository: 任务仓库
+ * - MarkdownDataSource: Markdown 数据源
+ *
  * 核心功能：
  * 1. 初始化时扫描整个笔记库，缓存所有任务
  * 2. 监听文件变化，增量更新受影响文件的任务
  * 3. 提供快速的任务查询接口，避免重复扫描
  * 4. 当任务缓存更新时，通知所有订阅的监听器
+ *
+ * 架构说明：
+ * - 文件监听：由 MarkdownDataSource 内部处理
+ * - 任务存储：由 TaskRepository 管理
+ * - 事件通知：通过 EventBus 分发
+ * - 格式转换：NormalizedTask → GCTask（向后兼容）
  */
 export class TaskCacheManager {
 	private app: App;
-	private cache: Map<string, GCTask[]> = new Map(); // 文件路径 -> 任务列表
+	private eventBus: EventBus;
+	private repository: TaskRepository;
+	private markdownSource: MarkdownDataSource;
 	private globalTaskFilter: string = '';
 	private enabledFormats: string[] = ['tasks', 'dataview'];
 	private isInitialized: boolean = false;
@@ -34,6 +54,36 @@ export class TaskCacheManager {
 
 	constructor(app: App) {
 		this.app = app;
+		this.eventBus = new EventBus();
+		this.repository = new TaskRepository(this.eventBus);
+
+		// 创建 Markdown 数据源配置
+		const config: DataSourceConfig = {
+			enabled: true,
+			syncDirection: 'import-only',
+			autoSync: true,
+			conflictResolution: 'local-win',
+			globalFilter: '',
+			enabledFormats: ['tasks', 'dataview']
+		};
+
+		this.markdownSource = new MarkdownDataSource(app, this.eventBus, config);
+
+		// 注册数据源
+		this.repository.registerDataSource(this.markdownSource);
+
+		// 监听数据层事件，转发到旧接口
+		this.setupEventForwarding();
+	}
+
+	/**
+	 * 设置事件转发（从新架构到旧接口）
+	 */
+	private setupEventForwarding(): void {
+		// 监听任务创建、更新、删除事件，通知旧接口的监听器
+		this.eventBus.on('task:created', () => this.notifyListeners());
+		this.eventBus.on('task:updated', () => this.notifyListeners());
+		this.eventBus.on('task:deleted', () => this.notifyListeners());
 	}
 
 	/**
@@ -45,14 +95,31 @@ export class TaskCacheManager {
 			return;
 		}
 
+		console.log('[TaskCache] ===== Starting initialization =====');
+		console.log('[TaskCache] Config:', {
+			globalTaskFilter,
+			enabledFormats,
+			retryCount
+		});
+
 		this.isInitializing = true;
 		this.globalTaskFilter = (globalTaskFilter || '').trim();
 		this.enabledFormats = enabledFormats || ['tasks', 'dataview'];
 
-		this.cache.clear();
-		let markdownFiles = this.app.vault.getMarkdownFiles();
+		// 更新数据源配置
+		const config: DataSourceConfig = {
+			enabled: true,
+			syncDirection: 'import-only',
+			autoSync: true,
+			conflictResolution: 'local-win',
+			globalFilter: this.globalTaskFilter,
+			enabledFormats: this.enabledFormats
+		};
 
 		// 如果首次扫描找不到文件，可能 vault 尚未初始化，等待后重试
+		const markdownFiles = this.app.vault.getMarkdownFiles();
+		console.log('[TaskCache] Vault has', markdownFiles.length, 'markdown files');
+
 		if (markdownFiles.length === 0 && retryCount < 3) {
 			console.log(`[TaskCache] Vault not ready (${markdownFiles.length} files found), retrying in 500ms...`);
 			this.isInitializing = false;
@@ -65,29 +132,10 @@ export class TaskCacheManager {
 		console.time(timerLabel);
 		console.log('[TaskCache] Starting initial scan...');
 
-		// 批量处理文件，避免阻塞UI
-		const batchSize = 50;
-		let scannedFiles = 0;
-		let filesWithTasks = 0;
-		let totalTasks = 0;
-		for (let i = 0; i < markdownFiles.length; i += batchSize) {
-			const batch = markdownFiles.slice(i, i + batchSize);
-			const batchResults = await Promise.all(batch.map(async (file) => {
-				const info = await this.updateFileCache(file, true, true);
-				return info;
-			}));
-			batchResults.forEach(info => {
-				if (!info) return;
-				scannedFiles += 1;
-				if (info.taskCount > 0) filesWithTasks += 1;
-				totalTasks += info.taskCount;
-			});
+		// 初始化 Markdown 数据源（会扫描所有文件并通知仓库）
+		await this.markdownSource.initialize(config);
 
-			// 让出主线程，避免卡顿
-			if (i % 200 === 0) {
-				await new Promise(resolve => setTimeout(resolve, 0));
-			}
-		}
+		console.log('[TaskCache] MarkdownDataSource initialized');
 
 		this.isInitialized = true;
 		this.isInitializing = false;
@@ -95,83 +143,25 @@ export class TaskCacheManager {
 		// 完成批量扫描后统一通知，避免在初始化阶段触发大量视图重渲染
 		this.notifyListeners();
 
-		const cachedTasks = Array.from(this.cache.values()).reduce((sum, tasks) => sum + tasks.length, 0);
+		const stats = this.repository.getStats();
 		console.timeEnd(timerLabel);
 		console.log('[TaskCache] Init summary', {
 			totalFiles: markdownFiles.length,
-			scannedFiles,
-			filesWithTasks,
-			tasksFound: totalTasks,
-			cachedTasks,
+			tasksFound: stats.totalTasks,
+			dataSources: stats.dataSources
 		});
-	}
-
-	/**
-	 * 更新单个文件的缓存
-	 */
-	async updateFileCache(file: TFile, silent?: boolean, suppressNotify?: boolean): Promise<{ taskCount: number } | null> {
-		try {
-			const fileCache = this.app.metadataCache.getFileCache(file);
-			const listItems = fileCache?.listItems;
-
-			// 如果没有列表项，移除缓存并仅在有变动时通知
-			if (!listItems || listItems.length === 0) {
-				if (this.cache.has(file.path)) {
-					this.cache.delete(file.path);
-					if (!suppressNotify) {
-						this.notifyListeners();
-					}
-				}
-				return { taskCount: 0 };
-			}
-
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
-			const tasks = parseTasksFromListItems(file, lines, listItems, this.enabledFormats, this.globalTaskFilter);
-
-			const prev = this.cache.get(file.path) || [];
-			if (areTasksEqual(prev, tasks)) {
-				// 无变化不通知
-				return { taskCount: tasks.length };
-			}
-
-			if (tasks.length > 0) {
-				this.cache.set(file.path, tasks);
-			} else {
-				this.cache.delete(file.path);
-			}
-
-			if (!silent) {
-				console.log('[TaskCache] Updated file', file.path, { taskCount: tasks.length });
-			}
-			if (!suppressNotify) {
-				this.notifyListeners();
-			}
-			return { taskCount: tasks.length };
-		} catch (error) {
-			console.error(`[TaskCache] Error updating cache for ${file.path}:`, error);
-			this.cache.delete(file.path);
-			return { taskCount: 0 };
-		}
-	}
-
-	/**
-	 * 移除文件的缓存
-	 */
-	removeFileCache(filePath: string): void {
-		this.cache.delete(filePath);
+		console.log('[TaskCache] ===== Initialization complete =====');
 	}
 
 	/**
 	 * 获取所有任务（从缓存）
 	 */
 	getAllTasks(): GCTask[] {
-		// 即使初始化未完成，也返回当前已解析的缓存，避免界面空白
-		const allTasks: GCTask[] = [];
+		// 从新架构获取任务
+		const normalizedTasks = this.repository.getAllTasks();
 
-		for (const [path, tasks] of this.cache.entries()) {
-			allTasks.push(...tasks);
-		}
+		// 转换为 GCTask 格式
+		const allTasks = normalizedTasks.map(task => this.normalizedToGCTask(task));
 
 		// 检查是否有重复的任务（相同的文件和行号）
 		const taskKeyMap = new Map<string, number>();
@@ -201,6 +191,31 @@ export class TaskCacheManager {
 	}
 
 	/**
+	 * 将 NormalizedTask 转换为 GCTask
+	 */
+	private normalizedToGCTask(normalized: NormalizedTask): GCTask {
+		return {
+			filePath: normalized.filePath || '',
+			fileName: normalized.filePath?.split('/').pop() || '',
+			lineNumber: normalized.lineNumber,
+			content: normalized.description || '',
+			description: normalized.title,
+			completed: normalized.status === 'completed',
+			cancelled: normalized.status === 'cancelled',
+			status: normalized.status,
+			priority: normalized.priority,
+			tags: normalized.tags,
+			createdDate: normalized.dates.created,
+			startDate: normalized.dates.start,
+			scheduledDate: normalized.dates.scheduled,
+			dueDate: normalized.dates.due,
+			completionDate: normalized.dates.completed,
+			cancelledDate: normalized.dates.cancelled,
+			format: normalized.syncInfo?.externalId ? undefined : (normalized.metadata?.format as any)
+		} as GCTask;
+	}
+
+	/**
 	 * 更新配置并重新初始化
 	 */
 	async updateSettings(globalTaskFilter: string, enabledFormats?: string[]): Promise<void> {
@@ -219,11 +234,11 @@ export class TaskCacheManager {
 	 * 获取缓存状态
 	 */
 	getStatus(): { initialized: boolean; fileCount: number; taskCount: number } {
-		const taskCount = Array.from(this.cache.values()).reduce((sum, tasks) => sum + tasks.length, 0);
+		const stats = this.repository.getStats();
 		return {
 			initialized: this.isInitialized,
-			fileCount: this.cache.size,
-			taskCount
+			fileCount: stats.totalFiles,
+			taskCount: stats.totalTasks
 		};
 	}
 
@@ -231,7 +246,7 @@ export class TaskCacheManager {
 	 * 清空缓存
 	 */
 	clear(): void {
-		this.cache.clear();
+		this.repository.clear();
 		this.isInitialized = false;
 		console.log('[TaskCache] Cache cleared');
 	}

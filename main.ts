@@ -31,40 +31,8 @@ export default class GanttCalendarPlugin extends Plugin {
             }, 800);  // 布局就绪后再延迟 800ms，避免 vault 未就绪
         });
 
-        // Register file change listeners for cache updates
-        this.registerEvent(
-            this.app.vault.on('modify', (file) => {
-                if (file instanceof TFile && file.extension === 'md') {
-                    this.taskCache.updateFileCache(file);
-                }
-            })
-        );
-        
-        this.registerEvent(
-            this.app.vault.on('delete', (file) => {
-                if (file instanceof TFile && file.extension === 'md') {
-                    this.taskCache.removeFileCache(file.path);
-                }
-            })
-        );
-        
-        this.registerEvent(
-            this.app.vault.on('rename', (file, oldPath) => {
-                if (file instanceof TFile && file.extension === 'md') {
-                    this.taskCache.removeFileCache(oldPath);
-                    this.taskCache.updateFileCache(file);
-                }
-            })
-        );
-
-        // Listen to metadata changes (faster signal than full file reads)
-        this.registerEvent(
-            this.app.metadataCache.on('changed', (file) => {
-                if (file instanceof TFile && file.extension === 'md') {
-                    this.taskCache.updateFileCache(file);
-                }
-            })
-        );
+        // 文件变化监听器已迁移到 MarkdownDataSource 内部处理
+        // 不再需要在这里手动注册监听器
 
         // Register the calendar view
         this.registerView(GC_VIEW_ID, (leaf) => new GCMainView(leaf, this));
