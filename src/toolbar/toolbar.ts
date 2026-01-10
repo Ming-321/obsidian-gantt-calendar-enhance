@@ -80,6 +80,7 @@ export class Toolbar {
                 rightContainer,
                 config.ganttRenderer,
                 config.onRefresh,
+                config.onRender,
                 config.plugin
             );
 		} else {
@@ -91,6 +92,7 @@ export class Toolbar {
 				config.onNext,
 				config.onViewSwitch,
 				config.onRefresh,
+				config.onRender,
 				config.plugin
 			);
 		}
@@ -123,5 +125,6 @@ export interface ToolbarConfig {
 	onToday: () => void;
 	onNext: () => void;
 	onFilterChange: () => void;
-	onRefresh: () => Promise<void>;
+	onRender: () => void;  // 仅重新渲染视图
+	onRefresh: () => Promise<void>;  // 重新扫描文件并渲染
 }

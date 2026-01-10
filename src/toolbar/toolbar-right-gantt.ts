@@ -27,6 +27,7 @@ export class ToolbarRightGantt {
 		container: HTMLElement,
 		ganttRenderer: GanttViewRenderer,
 		onRefresh: () => Promise<void>,
+		onRender: () => void = () => {},
 		plugin?: any
 	): void {
 		container.empty();
@@ -64,7 +65,7 @@ export class ToolbarRightGantt {
 		// 状态筛选
 		renderStatusFilter(container, ganttRenderer.getStatusFilter(), async (v) => {
 			ganttRenderer.setStatusFilter(v);
-			await onRefresh();
+			onRender();  // 状态筛选只触发视图渲染
 		});
 
 		// ===== 右侧：共有按钮（统一顺序） =====
@@ -72,9 +73,9 @@ export class ToolbarRightGantt {
 		// 排序按钮
 		renderSortButton(container, {
 			getCurrentState: () => ganttRenderer.getSortState(),
-			onSortChange: async (newState) => {
+			onSortChange: (newState) => {
 				ganttRenderer.setSortState(newState);
-				await onRefresh();
+				onRender();  // 排序只触发视图渲染
 			}
 		});
 
@@ -84,7 +85,7 @@ export class ToolbarRightGantt {
 				getCurrentState: () => ganttRenderer.getTagFilterState(),
 				onTagFilterChange: (newState) => {
 					ganttRenderer.setTagFilterState(newState);
-					onRefresh();
+					onRender();  // 标签筛选只触发视图渲染
 				},
 				getAllTasks: () => plugin.taskCache.getAllTasks()
 			});

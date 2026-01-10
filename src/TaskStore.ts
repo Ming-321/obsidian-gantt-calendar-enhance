@@ -29,8 +29,9 @@ export type TaskStoreUpdateListener = () => void;
  *
  * 【性能优化】
  * - 直接使用 GCTask 作为内部格式，无格式转换
- * - 内置结果缓存，避免重复排序
+ * - 内置结果缓存，避免重复查询
  * - 防抖通知机制，合并连续更新
+ * - 不在存储层排序，视图层按需排序即可
  */
 export class TaskStore {
 	private app: App;
@@ -179,20 +180,13 @@ export class TaskStore {
 			this.checkDuplicates(allTasks);
 		}
 
-		const sorted = allTasks.sort((a, b) => {
-			if (a.fileName !== b.fileName) {
-				return a.fileName.localeCompare(b.fileName);
-			}
-			return a.lineNumber - b.lineNumber;
-		});
-
-		this.cachedTasks = sorted;
+		this.cachedTasks = allTasks;
 		this.cacheValid = true;
 
 		const elapsed = performance.now() - startTime;
-		console.log(`[TaskStore] Cache rebuilt in ${elapsed.toFixed(2)}ms (${sorted.length} tasks)`);
+		console.log(`[TaskStore] Cache rebuilt in ${elapsed.toFixed(2)}ms (${allTasks.length} tasks)`);
 
-		return sorted;
+		return allTasks;
 	}
 
 	/**

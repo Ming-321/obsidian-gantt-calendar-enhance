@@ -36,7 +36,8 @@ export class ToolbarRightCalendar {
 	 * @param onToday 今天回调
 	 * @param onNext 下一期回调
 	 * @param onViewSwitch 视图切换回调
-	 * @param onRefresh 刷新回调
+	 * @param onRefresh 刷新回调（重新扫描文件）
+	 * @param onRender 渲染回调（仅重新渲染视图）
 	 * @param plugin 插件实例
 	 */
 	render(
@@ -47,6 +48,7 @@ export class ToolbarRightCalendar {
 		onNext: () => void,
 		onViewSwitch: (type: CalendarViewType) => void,
 		onRefresh: () => Promise<void>,
+		onRender: () => void = () => {},
 		plugin?: any
 	): void {
 		container.empty();
@@ -55,14 +57,14 @@ export class ToolbarRightCalendar {
 		// ===== 左侧：筛选和排序按钮 =====
 
 		// 排序按钮（仅在日视图和周视图显示）
-		if ((currentViewType === 'day' || currentViewType === 'week') && onRefresh) {
+		if (currentViewType === 'day' || currentViewType === 'week') {
 			const getRenderer = () => currentViewType === 'day' ? this.dayRenderer : this.weekRenderer;
 			if (getRenderer()) {
 				renderSortButton(container, {
 					getCurrentState: () => getRenderer()?.getSortState() || { field: 'dueDate', order: 'asc' },
-					onSortChange: async (newState) => {
+					onSortChange: (newState) => {
 						getRenderer()?.setSortState(newState);
-						await onRefresh();
+						onRender();  // 排序只触发视图渲染，不刷新缓存
 					}
 				});
 			}
@@ -81,7 +83,7 @@ export class ToolbarRightCalendar {
 				getCurrentState: () => getRenderer()?.getTagFilterState() || { selectedTags: [], operator: 'OR' },
 				onTagFilterChange: (newState) => {
 					getRenderer()?.setTagFilterState(newState);
-					onRefresh();
+					onRender();  // 标签筛选只触发视图渲染，不刷新缓存
 				},
 				getAllTasks: () => plugin.taskCache.getAllTasks()
 			});
