@@ -199,17 +199,23 @@ export class TaskDataAdapter {
 			filtered = filtered.filter(t => !t.completed);
 		}
 
-		// 标签筛选
+		// 标签筛选（大小写不敏感匹配）
 		if (selectedTags.length > 0) {
+			// 将选中的标签转换为小写，用于大小写不敏感匹配
+			const selectedTagsLower = selectedTags.map(tag => tag.toLowerCase());
+
 			filtered = filtered.filter(task => {
 				if (!task.tags || task.tags.length === 0) {
 					return false;
 				}
 
+				// 将任务标签转换为小写用于匹配
+				const taskTagsLower = task.tags.map(tag => tag.toLowerCase());
+
 				if (tagOperator === 'AND') {
-					return selectedTags.every(tag => task.tags!.includes(tag));
+					return selectedTagsLower.every(tag => taskTagsLower.includes(tag));
 				} else {
-					return selectedTags.some(tag => task.tags!.includes(tag));
+					return selectedTagsLower.some(tag => taskTagsLower.includes(tag));
 				}
 			});
 		}

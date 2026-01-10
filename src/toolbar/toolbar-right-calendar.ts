@@ -7,6 +7,8 @@ import { renderCreateTaskButton } from './components/create-task-button';
 import type { CalendarViewType } from '../types';
 import type { DayViewRenderer } from '../views/DayView';
 import type { WeekViewRenderer } from '../views/WeekView';
+import type { MonthViewRenderer } from '../views/MonthView';
+import type { YearViewRenderer } from '../views/YearView';
 
 /**
  * 工具栏右侧区域 - 日历视图功能区
@@ -18,14 +20,23 @@ import type { WeekViewRenderer } from '../views/WeekView';
 export class ToolbarRightCalendar {
 	private dayRenderer?: DayViewRenderer;
 	private weekRenderer?: WeekViewRenderer;
+	private monthRenderer?: MonthViewRenderer;
+	private yearRenderer?: YearViewRenderer;
 	private viewSwitcherInstance?: { updateActive: (view: string) => void; cleanup: () => void };
 
 	/**
 	 * 设置渲染器引用
 	 */
-	setRenderers(dayRenderer: DayViewRenderer, weekRenderer: WeekViewRenderer): void {
+	setRenderers(
+		dayRenderer: DayViewRenderer,
+		weekRenderer: WeekViewRenderer,
+		monthRenderer: MonthViewRenderer,
+		yearRenderer: YearViewRenderer
+	): void {
 		this.dayRenderer = dayRenderer;
 		this.weekRenderer = weekRenderer;
+		this.monthRenderer = monthRenderer;
+		this.yearRenderer = yearRenderer;
 	}
 
 	/**
@@ -75,8 +86,9 @@ export class ToolbarRightCalendar {
 			const getRenderer = () => {
 				if (currentViewType === 'day') return this.dayRenderer;
 				if (currentViewType === 'week') return this.weekRenderer;
-				// 对于 month 和 year 视图，使用 dayRenderer 作为默认
-				return this.dayRenderer;
+				if (currentViewType === 'month') return this.monthRenderer;
+				if (currentViewType === 'year') return this.yearRenderer;
+				return undefined;
 			};
 
 			renderTagFilterButton(container, {

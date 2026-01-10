@@ -69,8 +69,13 @@ export class GCMainView extends ItemView {
 		if (this.plugin?.taskCache?.whenReady) {
 			await this.plugin.taskCache.whenReady();
 		}
-		// 设置日历视图渲染器引用（用于排序功能）
-		this.toolbar.setCalendarRenderers(this.dayRenderer, this.weekRenderer);
+		// 设置日历视图渲染器引用（用于排序和筛选功能）
+		this.toolbar.setCalendarRenderers(
+			this.dayRenderer,
+			this.weekRenderer,
+			this.monthRenderer,
+			this.yearRenderer
+		);
 		this.render();
 		this.setupResizeObserver();
 

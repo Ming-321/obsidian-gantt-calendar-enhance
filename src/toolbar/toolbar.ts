@@ -3,6 +3,8 @@ import type { TaskViewRenderer } from '../views/TaskView';
 import type { GanttViewRenderer } from '../views/GanttView';
 import type { DayViewRenderer } from '../views/DayView';
 import type { WeekViewRenderer } from '../views/WeekView';
+import type { MonthViewRenderer } from '../views/MonthView';
+import type { YearViewRenderer } from '../views/YearView';
 import { ToolbarLeft } from './toolbar-left';
 import { ToolbarCenter } from './toolbar-center';
 import { ToolbarRightCalendar } from './toolbar-right-calendar';
@@ -29,10 +31,15 @@ export class Toolbar {
 	}
 
 	/**
-	 * 设置日历视图渲染器引用（用于排序功能）
+	 * 设置日历视图渲染器引用（用于排序和筛选功能）
 	 */
-	setCalendarRenderers(dayRenderer: DayViewRenderer, weekRenderer: WeekViewRenderer): void {
-		this.rightCalendarSection.setRenderers(dayRenderer, weekRenderer);
+	setCalendarRenderers(
+		dayRenderer: DayViewRenderer,
+		weekRenderer: WeekViewRenderer,
+		monthRenderer: MonthViewRenderer,
+		yearRenderer: YearViewRenderer
+	): void {
+		this.rightCalendarSection.setRenderers(dayRenderer, weekRenderer, monthRenderer, yearRenderer);
 	}
 
 	/**

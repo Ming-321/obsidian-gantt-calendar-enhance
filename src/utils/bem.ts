@@ -154,19 +154,26 @@ export const TooltipClasses = {
 
 /**
  * 标签类名常量
+ * 统一管理所有标签胶囊的样式类名
  */
 export const TagClasses = {
+	/** Block 基础类名 */
 	block: bem(BLOCKS.TAG),
 
-	/** 颜色修饰符 (0-5) */
-	colors: [0, 1, 2, 3, 4, 5].map(i => bem(BLOCKS.TAG, undefined, `color-${i}`)),
+	/** Elements */
+	elements: {
+		label: bem(BLOCKS.TAG, 'label'),
+		suffix: bem(BLOCKS.TAG, 'suffix'),
+	},
 
-	/** 上下文修饰符 */
-	modifiers: {
-		tooltip: bem(BLOCKS.TAG, undefined, 'tooltip'),
+	/** States（状态修饰符） */
+	states: {
 		selectable: bem(BLOCKS.TAG, undefined, 'selectable'),
 		selected: bem(BLOCKS.TAG, undefined, 'selected'),
 	},
+
+	/** 颜色修饰符 (0-5) */
+	colors: [0, 1, 2, 3, 4, 5].map(i => bem(BLOCKS.TAG, undefined, `color-${i}`)),
 };
 
 /**

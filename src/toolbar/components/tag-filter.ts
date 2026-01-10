@@ -6,6 +6,7 @@
 import type { GCTask } from '../../types';
 import type { TagFilterState } from '../../types';
 import { ToolbarComponentClasses } from '../../utils/bem';
+import { TagPill } from '../../components/tagPill';
 
 /**
  * 标签筛选器配置选项
@@ -22,35 +23,32 @@ export interface TagFilterOptions {
 /**
  * 提取所有任务中的唯一标签及其数量
  * @param tasks 任务列表
- * @returns 标签名称 -> 数量的映射
+ * @returns 标签名称 -> 数量的映射（保留原始大小写）
  */
 function extractAllTags(tasks: GCTask[]): Map<string, number> {
 	const tagCounts = new Map<string, number>();
+	const originalTagMap = new Map<string, string>(); // 小写 -> 原始标签名
 
 	for (const task of tasks) {
 		if (!task.tags || task.tags.length === 0) continue;
 
 		for (const tag of task.tags) {
 			const normalized = tag.toLowerCase().trim();
+			// 只在第一次遇到时存储原始标签名
+			if (!originalTagMap.has(normalized)) {
+				originalTagMap.set(normalized, tag);
+			}
 			tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
 		}
 	}
 
-	return tagCounts;
-}
+	// 转换为原始标签名 -> 数量的映射
+	const result = new Map<string, number>();
+	originalTagMap.forEach((originalTag, normalized) => {
+		result.set(originalTag, tagCounts.get(normalized)!);
+	});
 
-/**
- * 获取标签颜色索引（复用 BaseViewRenderer 逻辑）
- * @param tag 标签名称
- * @returns 颜色索引（0-5）
- */
-function getTagColorIndex(tag: string): number {
-	let hash = 0;
-	for (let i = 0; i < tag.length; i++) {
-		hash = ((hash << 5) - hash) + tag.charCodeAt(i);
-		hash = hash & hash; // Convert to 32bit integer
-	}
-	return Math.abs(hash) % 6;
+	return result;
 }
 
 /**
@@ -205,53 +203,46 @@ export function renderTagFilterButton(
 		// 渲染标签项（胶囊样式）
 		for (const [tag, count] of sortedTags) {
 			const isSelected = state.selectedTags.includes(tag);
-			const colorIndex = getTagColorIndex(tag);
 
-			const tagItem = grid.createEl('div', {
-				cls: `${classes.tagItem} tag-color-${colorIndex}`,
-				attr: {
-					'data-tag': tag,
+			// 使用 TagPill 组件创建标签
+			const tagItem = TagPill.create({
+				label: tag,
+				showHash: true,
+				selectable: true,
+				selected: isSelected,
+				suffix: String(count),
+				onClick: (e, tag, selected) => {
+					e.stopPropagation();
+					// 获取最新状态
+					const currentState = getCurrentState();
+					const newSelected = [...currentState.selectedTags];
+					const idx = newSelected.indexOf(tag);
+
+					if (idx >= 0) {
+						newSelected.splice(idx, 1);
+					} else {
+						newSelected.push(tag);
+					}
+
+					onTagFilterChange({ ...currentState, selectedTags: newSelected });
+
+					// 更新按钮状态
+					updateButtonState();
+				},
+				ariaAttrs: {
 					role: 'button',
 					'aria-pressed': String(isSelected)
 				}
 			});
+
+			// 添加额外的 grid 布局样式
+			tagItem.addClasses([classes.tagItem]);
 			if (isSelected) tagItem.addClass(classes.tagItemSelected);
 
 			// 存储引用以便后续更新
 			tagItemElements.set(tag, tagItem);
 
-			// 胶囊样式：标签名称和数量在同一行
-			tagItem.innerHTML = `<span class="${classes.tagName}">#${tag}</span><span class="${classes.tagCount}">${count}</span>`;
-
-			// 点击切换选中状态（不重新渲染窗格）
-			tagItem.addEventListener('click', (e) => {
-				e.stopPropagation();
-				// 获取最新状态
-				const currentState = getCurrentState();
-				const newSelected = [...currentState.selectedTags];
-				const idx = newSelected.indexOf(tag);
-
-				if (idx >= 0) {
-					newSelected.splice(idx, 1);
-				} else {
-					newSelected.push(tag);
-				}
-
-				onTagFilterChange({ ...currentState, selectedTags: newSelected });
-
-				// 更新按钮状态
-				updateButtonState();
-
-				// 只更新当前标签项的选中状态，不重新渲染整个窗格
-				const nowSelected = newSelected.includes(tag);
-				if (nowSelected) {
-					tagItem.addClass(classes.tagItemSelected);
-					tagItem.setAttribute('aria-pressed', 'true');
-				} else {
-					tagItem.removeClass(classes.tagItemSelected);
-					tagItem.setAttribute('aria-pressed', 'false');
-				}
-			});
+			grid.appendChild(tagItem);
 		}
 	};
 

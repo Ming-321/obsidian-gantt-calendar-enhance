@@ -1,7 +1,7 @@
 import { App } from 'obsidian';
 import type { GCTask } from '../../types';
 import type { TaskCardConfig, TimeFieldConfig } from './TaskCardConfig';
-import { TaskCardClasses, TimeBadgeClasses, TagClasses } from '../../utils/bem';
+import { TaskCardClasses, TimeBadgeClasses } from '../../utils/bem';
 import { registerTaskContextMenu } from '../../contextMenu/contextMenuIndex';
 import { openFileInExistingLeaf } from '../../utils/fileOpener';
 import { updateTaskCompletion } from '../../tasks/taskUpdater';
@@ -10,6 +10,7 @@ import { RegularExpressions } from '../../utils/RegularExpressions';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 import { TooltipManager } from '../../utils/tooltipManager';
 import { Logger } from '../../utils/logger';
+import { TagPill } from '../tagPill';
 
 /**
  * 任务卡片渲染器
@@ -230,24 +231,10 @@ export class TaskCardRenderer {
 
 		const tagsContainer = container.createDiv('gc-task-card__tags');
 
-		task.tags.forEach(tag => {
-			const tagEl = tagsContainer.createEl('span', {
-				text: `#${tag}`,
-				cls: 'gc-tag'
-			});
-
-			const colorIndex = this.getStringHashCode(tag) % 6;
-			tagEl.addClass(`gc-tag--color-${colorIndex}`);
+		// 使用 TagPill 组件创建标签
+		TagPill.createMultiple(task.tags, tagsContainer, {
+			showHash: true,
 		});
-	}
-
-	private getStringHashCode(str: string): number {
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = ((hash << 5) - hash) + str.charCodeAt(i);
-			hash = hash & hash;
-		}
-		return Math.abs(hash);
 	}
 
 	/**

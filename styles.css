@@ -1093,31 +1093,6 @@ Author: sugar
 	color: white;
 }
 
-/* 标签颜色变体 */
-.gc-toolbar__tag-filter-tag-item.tag-color-0 .gc-toolbar__tag-filter-tag-name {
-	color: #3884ff;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-1 .gc-toolbar__tag-filter-tag-name {
-	color: #22c55e;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-2 .gc-toolbar__tag-filter-tag-name {
-	color: #f97316;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-3 .gc-toolbar__tag-filter-tag-name {
-	color: #eab308;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-4 .gc-toolbar__tag-filter-tag-name {
-	color: #a855f7;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-5 .gc-toolbar__tag-filter-tag-name {
-	color: #ec4899;
-}
-
 .gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-name {
 	color: white !important;
 }
@@ -1235,68 +1210,106 @@ Author: sugar
 	margin-left: 4px;
 }
 
-/* Tag badge - 标签样式 */
-.gantt-tag-badge,
+/* ========================================
+   Tag 组件统一样式
+   BEM: gc-tag
+   ======================================== */
+
+/* Block 基础样式 */
 .gc-tag {
 	display: inline-flex;
 	align-items: center;
+	gap: 4px;
 	font-size: 11px;
-	padding: 2px 8px;
+	font-weight: 500;
+	padding: 3px 8px;
 	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
 	border-radius: 12px;
 	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
 	flex-shrink: 0;
 	white-space: nowrap;
-	font-weight: 500;
 	transition: all 0.2s ease;
 	cursor: default;
+	user-select: none;
 }
 
-.gantt-tag-badge:hover,
+/* Hover 状态 */
 .gc-tag:hover {
 	background-color: var(--background-modifier-hover);
-	transform: translateY(-1px);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 标签颜色变体（6种颜色，基于hash自动分配） */
-.gantt-tag-badge.tag-color-0,
+/* 可选状态 */
+.gc-tag--selectable {
+	cursor: pointer;
+}
+
+.gc-tag--selectable:active {
+	transform: scale(0.96);
+}
+
+/* 选中状态 */
+.gc-tag--selected {
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.gc-tag--selected .gc-tag__label {
+	color: var(--text-on-accent);
+}
+
+.gc-tag--selected .gc-tag__suffix {
+	background-color: rgba(255, 255, 255, 0.25);
+	color: var(--text-on-accent);
+}
+
+/* Elements */
+.gc-tag__label {
+	line-height: 1.2;
+}
+
+.gc-tag__suffix {
+	font-size: 9px;
+	color: var(--text-muted);
+	background-color: var(--background-modifier-border);
+	padding: 1px 4px;
+	border-radius: 6px;
+	font-weight: 500;
+	line-height: 1;
+}
+
+/* 颜色变体（6种颜色，基于hash自动分配） */
 .gc-tag--color-0 {
 	background-color: rgba(56, 132, 255, 0.1);
 	border-color: rgba(56, 132, 255, 0.2);
 	color: #3884ff;
 }
 
-.gantt-tag-badge.tag-color-1,
 .gc-tag--color-1 {
 	background-color: rgba(34, 197, 94, 0.1);
 	border-color: rgba(34, 197, 94, 0.2);
 	color: #22c55e;
 }
 
-.gantt-tag-badge.tag-color-2,
 .gc-tag--color-2 {
 	background-color: rgba(249, 115, 22, 0.1);
 	border-color: rgba(249, 115, 22, 0.2);
 	color: #f97316;
 }
 
-.gantt-tag-badge.tag-color-3,
 .gc-tag--color-3 {
 	background-color: rgba(234, 179, 8, 0.1);
 	border-color: rgba(234, 179, 8, 0.2);
 	color: #eab308;
 }
 
-.gantt-tag-badge.tag-color-4,
 .gc-tag--color-4 {
 	background-color: rgba(168, 85, 247, 0.1);
 	border-color: rgba(168, 85, 247, 0.2);
 	color: #a855f7;
 }
 
-.gantt-tag-badge.tag-color-5,
 .gc-tag--color-5 {
 	background-color: rgba(236, 72, 153, 0.1);
 	border-color: rgba(236, 72, 153, 0.2);
@@ -1317,23 +1330,10 @@ Author: sugar
 	border-radius: 4px;
 }
 
-.tooltip-tag-badge,
-.gc-tag.gc-tag--tooltip {
-	display: inline-flex;
-	align-items: center;
-	font-size: 12px;
-	padding: 3px 10px;
-	background-color: var(--background-primary);
-	border-radius: 4px;
-	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-}
-
 /* ==================== 响应式设计 ==================== */
 
 /* 小屏幕适配 */
 @media (max-width: 768px) {
-	.gantt-tag-badge,
 	.gc-tag {
 		font-size: 10px;
 		padding: 1px 6px;
@@ -3099,40 +3099,6 @@ Author: sugar
 .tag-filter-tag-item.selected .tag-filter-tag-count {
 	background: rgba(255, 255, 255, 0.25);
 	color: white;
-}
-
-/* ============================================
-   标签颜色变体（复用现有6种颜色）
-   ============================================ */
-
-/* 蓝色 */
-.tag-filter-tag-item.tag-color-0 .tag-filter-tag-name {
-	color: #3884ff;
-}
-
-/* 绿色 */
-.tag-filter-tag-item.tag-color-1 .tag-filter-tag-name {
-	color: #22c55e;
-}
-
-/* 橙色 */
-.tag-filter-tag-item.tag-color-2 .tag-filter-tag-name {
-	color: #f97316;
-}
-
-/* 黄色 */
-.tag-filter-tag-item.tag-color-3 .tag-filter-tag-name {
-	color: #eab308;
-}
-
-/* 紫色 */
-.tag-filter-tag-item.tag-color-4 .tag-filter-tag-name {
-	color: #a855f7;
-}
-
-/* 粉色 */
-.tag-filter-tag-item.tag-color-5 .tag-filter-tag-name {
-	color: #ec4899;
 }
 
 /* 选中状态下覆盖颜色为白色 */

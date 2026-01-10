@@ -138,20 +138,26 @@ export abstract class BaseViewRenderer {
 			return tasks;
 		}
 
+		// 将选中的标签转换为小写，用于大小写不敏感匹配
+		const selectedTagsLower = selectedTags.map(tag => tag.toLowerCase());
+
 		return tasks.filter(task => {
 			// 任务没有标签
 			if (!task.tags || task.tags.length === 0) {
 				return false;
 			}
 
+			// 将任务标签转换为小写用于匹配
+			const taskTagsLower = task.tags.map(tag => tag.toLowerCase());
+
 			// AND 模式：任务必须包含所有选中标签
 			if (operator === 'AND') {
-				return selectedTags.every(tag => task.tags!.includes(tag));
+				return selectedTagsLower.every(tag => taskTagsLower.includes(tag));
 			}
 
 			// OR 模式：任务包含任一选中标签即可
 			if (operator === 'OR') {
-				return selectedTags.some(tag => task.tags!.includes(tag));
+				return selectedTagsLower.some(tag => taskTagsLower.includes(tag));
 			}
 
 			return false;

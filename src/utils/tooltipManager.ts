@@ -1,5 +1,6 @@
 import type { GCTask } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
+import { TagPill } from '../components/tagPill';
 
 interface TooltipConfig {
 	showDelay?: number;
@@ -214,9 +215,19 @@ export class TooltipManager {
 		// 更新标签
 		if (this.cachedElements.tags) {
 			if (task.tags && task.tags.length > 0) {
-				const tagsHtml = task.tags.map(tag =>
-					`<span class="gc-tag gc-tag--tooltip">#${this.escapeHtml(tag)}</span>`
-				).join('');
+				// 使用 TagPill 组件创建标签元素
+				const tempDiv = document.createElement('div');
+				tempDiv.style.display = 'flex';
+				tempDiv.style.flexDirection = 'row';
+				tempDiv.style.alignItems = 'center';
+				tempDiv.style.gap = '6px';
+				tempDiv.style.flexWrap = 'wrap';
+
+				TagPill.createMultiple(task.tags, tempDiv, {
+					showHash: true,
+				});
+
+				const tagsHtml = tempDiv.innerHTML;
 				this.cachedElements.tags.innerHTML = `<span class="gc-task-tooltip__label">标签：</span>${tagsHtml}`;
 				this.cachedElements.tags.style.display = '';
 			} else {
