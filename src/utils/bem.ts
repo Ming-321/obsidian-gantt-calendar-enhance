@@ -23,6 +23,8 @@ export const BLOCKS = {
 	VIEW: 'view',
 	/** 日视图 */
 	DAY_VIEW: 'day-view',
+	/** 周视图 */
+	WEEK_VIEW: 'week-view',
 	/** 月视图 */
 	MONTH_VIEW: 'month-view',
 	/** 年视图 */
@@ -454,6 +456,32 @@ export const MonthViewClasses = {
 		festivalSolar: bem(BLOCKS.MONTH_VIEW, 'lunar-text', 'festival-solar'),
 		festivalLunar: bem(BLOCKS.MONTH_VIEW, 'lunar-text', 'festival-lunar'),
 		festivalSolarTerm: bem(BLOCKS.MONTH_VIEW, 'lunar-text', 'festival-solar-term'),
+	},
+};
+
+/**
+ * 周视图类名常量
+ */
+export const WeekViewClasses = {
+	block: bem(BLOCKS.WEEK_VIEW),
+
+	/** Elements */
+	elements: {
+		grid: bem(BLOCKS.WEEK_VIEW, 'grid'),
+		headerRow: bem(BLOCKS.WEEK_VIEW, 'header-row'),
+		headerCell: bem(BLOCKS.WEEK_VIEW, 'header-cell'),
+		dayName: bem(BLOCKS.WEEK_VIEW, 'day-name'),
+		dayNumber: bem(BLOCKS.WEEK_VIEW, 'day-number'),
+		lunarText: bem(BLOCKS.WEEK_VIEW, 'lunar-text'),
+		tasksGrid: bem(BLOCKS.WEEK_VIEW, 'tasks-grid'),
+		tasksColumn: bem(BLOCKS.WEEK_VIEW, 'tasks-column'),
+		empty: bem(BLOCKS.WEEK_VIEW, 'empty'),
+	},
+
+	/** Modifiers */
+	modifiers: {
+		today: bem(BLOCKS.WEEK_VIEW, 'header-cell', 'today'),
+		tasksColumnToday: bem(BLOCKS.WEEK_VIEW, 'tasks-column', 'today'),
 	},
 };
 

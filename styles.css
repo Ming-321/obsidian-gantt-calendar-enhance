@@ -70,7 +70,8 @@ Author: sugar
 }
 
 /* Calendar Grid Layouts */
-.calendar-week-grid {
+.calendar-week-grid,
+.gc-week-view__grid {
 	display: flex;
 	flex-direction: column;
 	gap: 0;
@@ -81,7 +82,8 @@ Author: sugar
 	position: relative;
 }
 
-.calendar-week-header-row {
+.calendar-week-header-row,
+.gc-week-view__header-row {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
 	gap: 0;
@@ -91,7 +93,8 @@ Author: sugar
 	top: 0;
 }
 
-.calendar-week-tasks-grid {
+.calendar-week-tasks-grid,
+.gc-week-view__tasks-grid {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
 	gap: 0;
@@ -1634,7 +1637,8 @@ Author: sugar
 	min-height: min-content;
 }
 
-.calendar-week-tasks-column {
+.calendar-week-tasks-column,
+.gc-week-view__tasks-column {
 	border-right: 1px solid var(--background-modifier-border);
 	padding: 8px;
 	overflow-y: auto;
@@ -1645,11 +1649,13 @@ Author: sugar
 	background-color: var(--background-primary);
 }
 
-.calendar-week-tasks-column:last-child {
+.calendar-week-tasks-column:last-child,
+.gc-week-view__tasks-column:last-child {
 	border-right: none;
 }
 
-.calendar-day-header-cell {
+.calendar-day-header-cell,
+.gc-week-view__header-cell {
 	padding: 12px 8px;
 	text-align: center;
 	border-right: 1px solid var(--background-modifier-border);
@@ -1664,23 +1670,27 @@ Author: sugar
 	z-index: 4;
 }
 
-.calendar-day-header-cell:last-child {
+.calendar-day-header-cell:last-child,
+.gc-week-view__header-cell:last-child {
 	border-right: none;
 }
 
-.calendar-day-header-cell .day-name {
+.calendar-day-header-cell .day-name,
+.gc-week-view__day-name {
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--text-muted);
 }
 
-.calendar-day-header-cell .day-number {
+.calendar-day-header-cell .day-number,
+.gc-week-view__day-number {
 	font-size: 18px;
 	font-weight: 700;
 	color: var(--text-normal);
 }
 
-.calendar-day-header-cell .day-lunar {
+.calendar-day-header-cell .day-lunar,
+.gc-week-view__lunar-text {
 	font-size: 10px;
 	color: var(--text-muted);
 }
@@ -1796,7 +1806,8 @@ Author: sugar
 	font-family: var(--font-monospace);
 }
 
-.calendar-week-task-empty {
+.calendar-week-task-empty,
+.gc-week-view__empty {
 	padding: 16px 8px;
 	text-align: center;
 	color: var(--text-muted);
@@ -2523,13 +2534,15 @@ Author: sugar
 
 /* Week View */
 .calendar-week-tasks-grid .calendar-task-card--week.completed,
-.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--completed {
+.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--completed,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed {
 	opacity: 0.6;
 	border-left-color: var(--task-completed-color);
 }
 
 .calendar-week-tasks-grid .calendar-task-card--week.pending,
-.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--pending {
+.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--pending,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--pending {
 	border-left-color: var(--task-pending-color);
 }
 
@@ -2751,11 +2764,13 @@ Author: sugar
 	color: white;
 }
 
-.calendar-day-header-cell.today {
+.calendar-day-header-cell.today,
+.gc-week-view__header-cell--today {
 	background-color: rgba(255, 107, 107, 0.1);
 }
 
-.calendar-day-header-cell.today .day-number {
+.calendar-day-header-cell.today .day-number,
+.gc-week-view__header-cell--today .gc-week-view__day-number {
 	color: #ff6b6b;
 }
 
@@ -2763,7 +2778,8 @@ Author: sugar
 	background-color: rgba(255, 107, 107, 0.05);
 }
 
-.calendar-week-tasks-column.today {
+.calendar-week-tasks-column.today,
+.gc-week-view__tasks-column--today {
 	background-color: rgba(255, 107, 107, 0.03);
 }
 
@@ -2773,6 +2789,7 @@ Author: sugar
 .gc-day-view__task-list .gc-task-card--day.gc-task-card--completed .gc-task-card__text,
 .calendar-week-tasks-grid .calendar-task-card--week.completed .calendar-task-card-text,
 .calendar-week-tasks-grid .gc-task-card--week.gc-task-card--completed .gc-task-card__text,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed .gc-task-card__text,
 .gc-month-view__tasks .gc-task-card--month.gc-task-card--completed .gc-task-card__text,
 .gc-view--task .gc-task-card--task.gc-task-card--completed .gc-task-card__text,
 .gc-task-card--gantt.gc-task-card--completed .gc-task-card__text {
