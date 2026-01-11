@@ -17,7 +17,7 @@ import {
 	TaskDataAdapter,
 	type GanttChartConfig,
 	type DateFieldType,
-	type TaskStatusFilter,
+	
 	TimeGranularity
 } from '../gantt';
 
@@ -30,8 +30,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	// 保存当前渲染容器的引用
 	private currentContainer: HTMLElement | null = null;
 
-	// 任务状态筛选状态（甘特图默认只显示未完成任务）
-	protected taskFilter: 'all' | 'completed' | 'uncompleted' = 'uncompleted';
+
 
 	// 时间字段配置
 	private startField: DateFieldType = 'startDate';
@@ -65,11 +64,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 		this.refresh();
 	}
 
-	public getStatusFilter(): TaskStatusFilter { return this.getTaskFilter(); }
-	public setStatusFilter(value: TaskStatusFilter): void {
-		this.setTaskFilter(value);
-		this.refresh();
-	}
+
 
 	public getTimeGranularity(): GanttTimeGranularity { return this.timeGranularity; }
 	public setTimeGranularity(value: GanttTimeGranularity): void {
@@ -144,11 +139,11 @@ export class GanttViewRenderer extends BaseViewRenderer {
 
 			// 2. 应用筛选条件
 			let filteredGlobalTasks = TaskDataAdapter.applyFilters(
-				globalTasks,
-				this.getTaskFilter(),
-				this.tagFilterState.selectedTags,
-				this.tagFilterState.operator
-			);
+			globalTasks,
+			this.getStatusFilterState(),
+			this.tagFilterState.selectedTags,
+			this.tagFilterState.operator
+		);
 
 			// 3. 应用排序
 			filteredGlobalTasks = sortTasks(filteredGlobalTasks, this.sortState);
@@ -239,8 +234,9 @@ export class GanttViewRenderer extends BaseViewRenderer {
 		});
 
 		const reasons: string[] = [];
-		if (this.getTaskFilter() !== 'all') {
-			reasons.push(`当前筛选: ${this.getTaskFilter() === 'completed' ? '已完成' : '未完成'}`);
+		const state = this.getStatusFilterState();
+		if (state.selectedStatuses.length > 0) {
+			reasons.push(`当前筛选: ${state.selectedStatuses.length} 个状态`);
 		}
 		if (this.tagFilterState.selectedTags.length > 0) {
 			reasons.push(`标签筛选: ${this.tagFilterState.selectedTags.join(', ')}`);
@@ -371,11 +367,11 @@ export class GanttViewRenderer extends BaseViewRenderer {
 
 			// 2. 应用筛选和排序
 			let filteredGlobalTasks = TaskDataAdapter.applyFilters(
-				globalTasks,
-				this.getTaskFilter(),
-				this.tagFilterState.selectedTags,
-				this.tagFilterState.operator
-			);
+			globalTasks,
+			this.getStatusFilterState(),
+			this.tagFilterState.selectedTags,
+			this.tagFilterState.operator
+		);
 			filteredGlobalTasks = sortTasks(filteredGlobalTasks, this.sortState);
 
 			// 3. 转换为 GanttChartTask

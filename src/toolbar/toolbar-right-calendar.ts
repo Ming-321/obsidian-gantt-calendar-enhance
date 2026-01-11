@@ -4,7 +4,7 @@ import { renderRefreshButton } from './components/refresh-button';
 import { renderSortButton } from './components/sort-button';
 import { renderTagFilterButton } from './components/tag-filter';
 import { renderCreateTaskButton } from './components/create-task-button';
-import { renderStatusFilter } from './components/status-filter';
+import { renderStatusFilterButton } from './components/status-filter';
 import type { CalendarViewType } from '../types';
 import type { DayViewRenderer } from '../views/DayView';
 import type { WeekViewRenderer } from '../views/WeekView';
@@ -74,9 +74,15 @@ export class ToolbarRightCalendar {
 		if (currentViewType === 'week' || currentViewType === 'month') {
 			const renderer = currentViewType === 'week' ? this.weekRenderer : this.monthRenderer;
 			if (renderer) {
-				renderStatusFilter(container, renderer.getTaskFilter() || 'all', (value) => {
-					renderer.setTaskFilter(value);
-					onRender();
+				renderStatusFilterButton(container, {
+					getCurrentState: () => renderer.getStatusFilterState(),
+					onStatusFilterChange: (state) => {
+						renderer.setStatusFilterState(state);
+						onRender();
+					},
+					getAvailableStatuses: () => {
+						return plugin?.settings?.taskStatuses || [];
+					}
 				});
 			}
 		}

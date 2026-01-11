@@ -32,7 +32,7 @@ export {
 // === 功能组件（移动后导出） ===
 export { renderRefreshButton } from './refresh-button';
 export { renderSortButton, type SortButtonOptions } from './sort-button';
-export { renderStatusFilter } from './status-filter';
+export { renderStatusFilterButton, type StatusFilterButtonOptions } from './status-filter';
 export { renderTagFilterButton, type TagFilterOptions } from './tag-filter';
 export { renderTimeGranularity, type TimeGranularityOptions as LegacyTimeGranularityOptions } from './time-granularity';
 

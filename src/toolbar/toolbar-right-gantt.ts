@@ -1,5 +1,5 @@
 import type { GanttViewRenderer } from '../views/GanttView';
-import { renderStatusFilter } from './components/status-filter';
+import { renderStatusFilterButton } from './components/status-filter';
 import { renderRefreshButton } from './components/refresh-button';
 import { renderTimeGranularity } from './components/time-granularity';
 import { renderSortButton } from './components/sort-button';
@@ -63,9 +63,15 @@ export class ToolbarRightGantt {
 		});
 
 		// 状态筛选
-		renderStatusFilter(container, ganttRenderer.getStatusFilter(), async (v) => {
-			ganttRenderer.setStatusFilter(v);
-			onRender();  // 状态筛选只触发视图渲染
+		renderStatusFilterButton(container, {
+			getCurrentState: () => ganttRenderer.getStatusFilterState(),
+			onStatusFilterChange: (state) => {
+				ganttRenderer.setStatusFilterState(state);
+				onRender();
+			},
+			getAvailableStatuses: () => {
+				return plugin?.settings?.taskStatuses || [];
+			}
 		});
 
 		// ===== 右侧：共有按钮（统一顺序） =====

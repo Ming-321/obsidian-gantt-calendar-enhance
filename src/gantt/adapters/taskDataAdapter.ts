@@ -5,6 +5,7 @@
 
 import type { GCTask } from '../../types';
 import type { GanttChartTask, DateFieldType } from '../types';
+import type { StatusFilterState } from '../../types';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 
 /**
@@ -186,17 +187,18 @@ export class TaskDataAdapter {
 	 */
 	static applyFilters(
 		tasks: GCTask[],
-		statusFilter: 'all' | 'completed' | 'uncompleted' = 'all',
+		statusFilter: StatusFilterState,
 		selectedTags: string[] = [],
 		tagOperator: 'AND' | 'OR' = 'OR'
 	): GCTask[] {
 		let filtered = tasks;
 
-		// 状态筛选
-		if (statusFilter === 'completed') {
-			filtered = filtered.filter(t => t.completed);
-		} else if (statusFilter === 'uncompleted') {
-			filtered = filtered.filter(t => !t.completed);
+		// 状态筛选（支持多选）
+		if (statusFilter.selectedStatuses.length > 0) {
+			filtered = filtered.filter(task => {
+				const taskStatus = task.status || TaskDataAdapter.getInferredStatus(task);
+				return statusFilter.selectedStatuses.includes(taskStatus);
+			});
 		}
 
 		// 标签筛选（大小写不敏感匹配）
@@ -256,5 +258,14 @@ export class TaskDataAdapter {
 		}
 
 		return adjusted;
+	}
+
+	/**
+	 * 推断任务状态（当任务没有明确的 status 字段时）
+	 */
+	private static getInferredStatus(task: GCTask): string {
+		if (task.completed) return 'done';
+		if (task.cancelled) return 'canceled';
+		return 'todo';
 	}
 }

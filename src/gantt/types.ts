@@ -5,6 +5,7 @@
  */
 
 import type { TaskStatusType } from '../tasks/taskStatus';
+import type { StatusFilterState } from '../types';
 
 /**
  * 甘特图任务格式
@@ -130,11 +131,6 @@ export type DateFieldType =
 	| 'cancelledDate';
 
 /**
- * 任务状态筛选类型
- */
-export type TaskStatusFilter = 'all' | 'completed' | 'uncompleted';
-
-/**
  * 甘特图视图状态
  */
 export interface GanttViewState {
@@ -143,7 +139,7 @@ export interface GanttViewState {
 	/** 结束时间字段 */
 	endField: DateFieldType;
 	/** 状态筛选 */
-	statusFilter: TaskStatusFilter;
+	statusFilter: StatusFilterState;
 	/** 时间颗粒度 */
 	timeGranularity: 'day' | 'week' | 'month';
 	/** 当前视图模式 */

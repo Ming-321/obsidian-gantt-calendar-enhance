@@ -1,6 +1,6 @@
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import type { TaskViewRenderer } from '../views/TaskView';
-import { renderStatusFilter } from './components/status-filter';
+import { renderStatusFilterButton } from './components/status-filter';
 import { renderRefreshButton } from './components/refresh-button';
 import { renderSortButton } from './components/sort-button';
 import { renderTagFilterButton } from './components/tag-filter';
@@ -47,9 +47,15 @@ export class ToolbarRightTask {
 		// ===== 左侧：任务视图私有按钮 =====
 
 		// 状态筛选
-		renderStatusFilter(container, taskRenderer.getTaskFilter(), (value) => {
-			taskRenderer.setTaskFilter(value);
-			onFilterChange();
+		renderStatusFilterButton(container, {
+			getCurrentState: () => taskRenderer.getStatusFilterState(),
+			onStatusFilterChange: (state) => {
+				taskRenderer.setStatusFilterState(state);
+				onFilterChange();
+			},
+			getAvailableStatuses: () => {
+				return plugin?.settings?.taskStatuses || [];
+			}
 		});
 
 		// 字段筛选

@@ -171,3 +171,16 @@ export const DEFAULT_TAG_FILTER_STATE: TagFilterState = {
 	selectedTags: [],
 	operator: 'OR'
 };
+
+/**
+ * 任务状态筛选状态
+ */
+export interface StatusFilterState {
+	/** 选中的状态 key 列表（空数组表示显示所有） */
+	selectedStatuses: string[];
+}
+
+/** 默认状态筛选状态（默认只显示待办任务） */
+export const DEFAULT_STATUS_FILTER_STATE: StatusFilterState = {
+	selectedStatuses: ['todo']
+};

@@ -1,6 +1,6 @@
 import { App, Notice } from 'obsidian';
 import type { GCTask } from '../types';
-import { DEFAULT_TAG_FILTER_STATE, type TagFilterState } from '../types';
+import { DEFAULT_TAG_FILTER_STATE, DEFAULT_STATUS_FILTER_STATE, type TagFilterState, type StatusFilterState } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { openFileInExistingLeaf } from '../utils/fileOpener';
 import { updateTaskCompletion } from '../tasks/taskUpdater';
@@ -21,8 +21,8 @@ export abstract class BaseViewRenderer {
 	// 标签筛选状态
 	protected tagFilterState: TagFilterState = DEFAULT_TAG_FILTER_STATE;
 
-	// 任务状态筛选状态
-	protected taskFilter: 'all' | 'completed' | 'uncompleted' = 'uncompleted';
+	// 状态筛选状态
+	protected statusFilterState: StatusFilterState = DEFAULT_STATUS_FILTER_STATE;
 
 	constructor(app: App, plugin: any) {
 		this.app = app;
@@ -129,17 +129,17 @@ export abstract class BaseViewRenderer {
 	}
 
 	/**
-	 * 获取任务状态筛选
+	 * 获取状态筛选状态
 	 */
-	public getTaskFilter(): 'all' | 'completed' | 'uncompleted' {
-		return this.taskFilter;
+	public getStatusFilterState(): StatusFilterState {
+		return this.statusFilterState;
 	}
 
 	/**
-	 * 设置任务状态筛选
+	 * 设置状态筛选状态
 	 */
-	public setTaskFilter(value: 'all' | 'completed' | 'uncompleted'): void {
-		this.taskFilter = value;
+	public setStatusFilterState(state: StatusFilterState): void {
+		this.statusFilterState = state;
 	}
 
 	/**
@@ -148,9 +148,24 @@ export abstract class BaseViewRenderer {
 	 * @returns 筛选后的任务列表
 	 */
 	protected applyStatusFilter(tasks: GCTask[]): GCTask[] {
-		if (this.taskFilter === 'all') return tasks;
-		if (this.taskFilter === 'completed') return tasks.filter(t => t.completed);
-		return tasks.filter(t => !t.completed);
+		const { selectedStatuses } = this.statusFilterState;
+
+		// 未选择任何状态，返回所有任务
+		if (selectedStatuses.length === 0) return tasks;
+
+		return tasks.filter(task => {
+			const taskStatus = task.status || this.getInferredStatus(task);
+			return selectedStatuses.includes(taskStatus);
+		});
+	}
+
+	/**
+	 * 推断任务状态（当任务没有明确的 status 字段时）
+	 */
+	private getInferredStatus(task: GCTask): string {
+		if (task.completed) return 'done';
+		if (task.cancelled) return 'canceled';
+		return 'todo';
 	}
 
 	/**

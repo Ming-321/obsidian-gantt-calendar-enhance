@@ -314,12 +314,22 @@ export const ToolbarClasses = {
 			btnActive: bem(BLOCKS.TOOLBAR, 'time-granularity-btn', 'active'),
 		},
 
-		/** 状态筛选 */
+		/** 状态筛选（复选框多选模式） */
 		statusFilter: {
-			group: bem(BLOCKS.TOOLBAR, 'status-filter-group'),
-			groupGantt: bem(BLOCKS.TOOLBAR, 'status-filter-group', 'gantt'),
-			label: bem(BLOCKS.TOOLBAR, 'status-filter-label'),
-			select: bem(BLOCKS.TOOLBAR, 'status-filter-select'),
+			container: bem(BLOCKS.TOOLBAR, 'status-filter-container'),
+			btn: bem(BLOCKS.TOOLBAR, 'status-filter-btn'),
+			icon: bem(BLOCKS.TOOLBAR, 'status-filter-icon'),
+			count: bem(BLOCKS.TOOLBAR, 'status-filter-count'),
+			btnHasSelection: bem(BLOCKS.TOOLBAR, 'status-filter-btn', 'has-selection'),
+			dropdown: bem(BLOCKS.TOOLBAR, 'status-filter-dropdown'),
+			dropdownHeader: bem(BLOCKS.TOOLBAR, 'status-filter-dropdown-header'),
+			dropdownActions: bem(BLOCKS.TOOLBAR, 'status-filter-dropdown-actions'),
+			statusList: bem(BLOCKS.TOOLBAR, 'status-filter-list'),
+			empty: bem(BLOCKS.TOOLBAR, 'status-filter-empty'),
+			statusItem: bem(BLOCKS.TOOLBAR, 'status-filter-item'),
+			statusItemSelected: bem(BLOCKS.TOOLBAR, 'status-filter-item', 'selected'),
+			statusCheckbox: bem(BLOCKS.TOOLBAR, 'status-checkbox'),
+			statusLabel: bem(BLOCKS.TOOLBAR, 'status-label'),
 		},
 
 		/** 排序按钮 */

@@ -731,21 +731,167 @@ Author: sugar
 	font-weight: 600;
 }
 
-/* 状态筛选 */
-.gc-toolbar__status-filter-label {
-	font-size: 13px;
-	color: var(--text-muted);
-	padding-left: 6px;
+/* ============================================
+   状态筛选按钮样式（复选框多选模式，现代 UI）
+   ============================================ */
+
+.gc-toolbar__status-filter-container {
+	display: inline-flex;
 }
 
-.gc-toolbar__status-filter-select {
-	padding: 4px 8px;
+.gc-toolbar__status-filter-btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.gc-toolbar__status-filter-btn:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+}
+
+.gc-toolbar__status-filter-btn--has-selection {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.gc-toolbar__status-filter-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.gc-toolbar__status-filter-icon svg {
+	display: block;
+}
+
+.gc-toolbar__status-filter-count {
+	display: none;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: rgba(255, 255, 255, 0.2);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 18px;
+	text-align: center;
+}
+
+.gc-toolbar__status-filter-btn--has-selection .gc-toolbar__status-filter-count {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================
+   状态筛选下拉面板样式
+   ============================================ */
+
+.gc-toolbar__status-filter-dropdown {
+	position: fixed;
+	z-index: 1000;
+	min-width: 200px;
+	max-width: 240px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+	padding: 0;
+	overflow: hidden;
+}
+
+.gc-toolbar__status-filter-dropdown-header {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.gc-toolbar__status-filter-dropdown-actions {
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	display: flex;
+	justify-content: flex-end;
+}
+
+.gc-toolbar__status-filter-dropdown-actions button {
+	padding: 4px 12px;
 	border: none;
 	border-radius: 4px;
-	background-color: transparent;
-	color: var(--text-normal);
+	background: transparent;
+	color: var(--text-muted);
 	font-size: 12px;
 	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.gc-toolbar__status-filter-dropdown-actions button:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.gc-toolbar__status-filter-list {
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 4px;
+}
+
+.gc-toolbar__status-filter-list::-webkit-scrollbar {
+	width: 6px;
+}
+
+.gc-toolbar__status-filter-list::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+.gc-toolbar__status-filter-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.gc-toolbar__status-filter-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.gc-toolbar__status-filter-item--selected {
+	background: rgba(var(--interactive-accent-rgb, 0.1), var(--interactive-accent));
+}
+
+/* 复选框 */
+.gc-toolbar__status-checkbox svg {
+	display: block;
+	flex-shrink: 0;
+}
+
+/* 状态标签 */
+.gc-toolbar__status-label {
+	flex: 1;
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+/* 空状态 */
+.gc-toolbar__status-filter-empty {
+	padding: 24px 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
 }
 
 /* 排序按钮 */

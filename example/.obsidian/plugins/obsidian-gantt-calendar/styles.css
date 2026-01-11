@@ -70,7 +70,8 @@ Author: sugar
 }
 
 /* Calendar Grid Layouts */
-.calendar-week-grid {
+.calendar-week-grid,
+.gc-week-view__grid {
 	display: flex;
 	flex-direction: column;
 	gap: 0;
@@ -81,7 +82,8 @@ Author: sugar
 	position: relative;
 }
 
-.calendar-week-header-row {
+.calendar-week-header-row,
+.gc-week-view__header-row {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
 	gap: 0;
@@ -91,7 +93,8 @@ Author: sugar
 	top: 0;
 }
 
-.calendar-week-tasks-grid {
+.calendar-week-tasks-grid,
+.gc-week-view__tasks-grid {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
 	gap: 0;
@@ -183,7 +186,6 @@ Author: sugar
 
 /* ==================== Year/Month/Week Layout ==================== */
 /* BEM命名: gc-view--year/--month/--week */
-.calendar-year-container,
 .gc-view.gc-view--year {
 	display: flex;
 	flex-direction: column;
@@ -192,7 +194,7 @@ Author: sugar
 	overflow: hidden;
 }
 
-.calendar-months-grid,
+/* BEM: 年视图月份网格 */
 .gc-view--year .gc-year-view__months {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
@@ -368,13 +370,15 @@ Author: sugar
 }
 
 .calendar-toggle-group,
-.gc-toggle-group {
+.gc-toggle-group,
+.gc-toolbar__view-toggle-group {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
-.calendar-toggle-btn {
+.calendar-toggle-btn,
+.gc-toolbar__view-toggle-btn {
 	padding: 6px 12px;
 	border: 1px solid var(--background-modifier-border);
 	background-color: var(--background-modifier-hover);
@@ -382,15 +386,18 @@ Author: sugar
 	color: var(--text-normal);
 	cursor: pointer;
 	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+	font-size: 13px;
 }
 
-.calendar-toggle-btn.active {
+.calendar-toggle-btn.active,
+.gc-toolbar__view-toggle-btn--active {
 	background-color: var(--interactive-accent);
 	border-color: var(--interactive-accent);
 	color: white;
 }
 
-.calendar-toggle-btn:hover {
+.calendar-toggle-btn:hover,
+.gc-toolbar__view-toggle-btn:hover {
 	background-color: var(--background-modifier-border);
 }
 
@@ -636,7 +643,8 @@ Author: sugar
 	min-width: auto;
 }
 
-.calendar-date-display {
+.calendar-title-display,
+.gc-toolbar__title-display {
 	font-weight: 600;
 	color: var(--text-normal);
 	text-align: center;
@@ -723,21 +731,167 @@ Author: sugar
 	font-weight: 600;
 }
 
-/* 状态筛选 */
-.gc-toolbar__status-filter-label {
-	font-size: 13px;
-	color: var(--text-muted);
-	padding-left: 6px;
+/* ============================================
+   状态筛选按钮样式（复选框多选模式，现代 UI）
+   ============================================ */
+
+.gc-toolbar__status-filter-container {
+	display: inline-flex;
 }
 
-.gc-toolbar__status-filter-select {
-	padding: 4px 8px;
+.gc-toolbar__status-filter-btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.gc-toolbar__status-filter-btn:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+}
+
+.gc-toolbar__status-filter-btn--has-selection {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.gc-toolbar__status-filter-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.gc-toolbar__status-filter-icon svg {
+	display: block;
+}
+
+.gc-toolbar__status-filter-count {
+	display: none;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: rgba(255, 255, 255, 0.2);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 18px;
+	text-align: center;
+}
+
+.gc-toolbar__status-filter-btn--has-selection .gc-toolbar__status-filter-count {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================
+   状态筛选下拉面板样式
+   ============================================ */
+
+.gc-toolbar__status-filter-dropdown {
+	position: fixed;
+	z-index: 1000;
+	min-width: 200px;
+	max-width: 240px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+	padding: 0;
+	overflow: hidden;
+}
+
+.gc-toolbar__status-filter-dropdown-header {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.gc-toolbar__status-filter-dropdown-actions {
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	display: flex;
+	justify-content: flex-end;
+}
+
+.gc-toolbar__status-filter-dropdown-actions button {
+	padding: 4px 12px;
 	border: none;
 	border-radius: 4px;
-	background-color: transparent;
-	color: var(--text-normal);
+	background: transparent;
+	color: var(--text-muted);
 	font-size: 12px;
 	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.gc-toolbar__status-filter-dropdown-actions button:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.gc-toolbar__status-filter-list {
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 4px;
+}
+
+.gc-toolbar__status-filter-list::-webkit-scrollbar {
+	width: 6px;
+}
+
+.gc-toolbar__status-filter-list::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+.gc-toolbar__status-filter-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.gc-toolbar__status-filter-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.gc-toolbar__status-filter-item--selected {
+	background: rgba(var(--interactive-accent-rgb, 0.1), var(--interactive-accent));
+}
+
+/* 复选框 */
+.gc-toolbar__status-checkbox svg {
+	display: block;
+	flex-shrink: 0;
+}
+
+/* 状态标签 */
+.gc-toolbar__status-label {
+	flex: 1;
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+/* 空状态 */
+.gc-toolbar__status-filter-empty {
+	padding: 24px 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
 }
 
 /* 排序按钮 */
@@ -1093,31 +1247,6 @@ Author: sugar
 	color: white;
 }
 
-/* 标签颜色变体 */
-.gc-toolbar__tag-filter-tag-item.tag-color-0 .gc-toolbar__tag-filter-tag-name {
-	color: #3884ff;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-1 .gc-toolbar__tag-filter-tag-name {
-	color: #22c55e;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-2 .gc-toolbar__tag-filter-tag-name {
-	color: #f97316;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-3 .gc-toolbar__tag-filter-tag-name {
-	color: #eab308;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-4 .gc-toolbar__tag-filter-tag-name {
-	color: #a855f7;
-}
-
-.gc-toolbar__tag-filter-tag-item.tag-color-5 .gc-toolbar__tag-filter-tag-name {
-	color: #ec4899;
-}
-
 .gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-name {
 	color: white !important;
 }
@@ -1235,68 +1364,106 @@ Author: sugar
 	margin-left: 4px;
 }
 
-/* Tag badge - 标签样式 */
-.gantt-tag-badge,
+/* ========================================
+   Tag 组件统一样式
+   BEM: gc-tag
+   ======================================== */
+
+/* Block 基础样式 */
 .gc-tag {
 	display: inline-flex;
 	align-items: center;
+	gap: 4px;
 	font-size: 11px;
-	padding: 2px 8px;
+	font-weight: 500;
+	padding: 3px 8px;
 	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
 	border-radius: 12px;
 	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
 	flex-shrink: 0;
 	white-space: nowrap;
-	font-weight: 500;
 	transition: all 0.2s ease;
 	cursor: default;
+	user-select: none;
 }
 
-.gantt-tag-badge:hover,
+/* Hover 状态 */
 .gc-tag:hover {
 	background-color: var(--background-modifier-hover);
-	transform: translateY(-1px);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 标签颜色变体（6种颜色，基于hash自动分配） */
-.gantt-tag-badge.tag-color-0,
+/* 可选状态 */
+.gc-tag--selectable {
+	cursor: pointer;
+}
+
+.gc-tag--selectable:active {
+	transform: scale(0.96);
+}
+
+/* 选中状态 */
+.gc-tag--selected {
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.gc-tag--selected .gc-tag__label {
+	color: var(--text-on-accent);
+}
+
+.gc-tag--selected .gc-tag__suffix {
+	background-color: rgba(255, 255, 255, 0.25);
+	color: var(--text-on-accent);
+}
+
+/* Elements */
+.gc-tag__label {
+	line-height: 1.2;
+}
+
+.gc-tag__suffix {
+	font-size: 9px;
+	color: var(--text-muted);
+	background-color: var(--background-modifier-border);
+	padding: 1px 4px;
+	border-radius: 6px;
+	font-weight: 500;
+	line-height: 1;
+}
+
+/* 颜色变体（6种颜色，基于hash自动分配） */
 .gc-tag--color-0 {
 	background-color: rgba(56, 132, 255, 0.1);
 	border-color: rgba(56, 132, 255, 0.2);
 	color: #3884ff;
 }
 
-.gantt-tag-badge.tag-color-1,
 .gc-tag--color-1 {
 	background-color: rgba(34, 197, 94, 0.1);
 	border-color: rgba(34, 197, 94, 0.2);
 	color: #22c55e;
 }
 
-.gantt-tag-badge.tag-color-2,
 .gc-tag--color-2 {
 	background-color: rgba(249, 115, 22, 0.1);
 	border-color: rgba(249, 115, 22, 0.2);
 	color: #f97316;
 }
 
-.gantt-tag-badge.tag-color-3,
 .gc-tag--color-3 {
 	background-color: rgba(234, 179, 8, 0.1);
 	border-color: rgba(234, 179, 8, 0.2);
 	color: #eab308;
 }
 
-.gantt-tag-badge.tag-color-4,
 .gc-tag--color-4 {
 	background-color: rgba(168, 85, 247, 0.1);
 	border-color: rgba(168, 85, 247, 0.2);
 	color: #a855f7;
 }
 
-.gantt-tag-badge.tag-color-5,
 .gc-tag--color-5 {
 	background-color: rgba(236, 72, 153, 0.1);
 	border-color: rgba(236, 72, 153, 0.2);
@@ -1317,23 +1484,10 @@ Author: sugar
 	border-radius: 4px;
 }
 
-.tooltip-tag-badge,
-.gc-tag.gc-tag--tooltip {
-	display: inline-flex;
-	align-items: center;
-	font-size: 12px;
-	padding: 3px 10px;
-	background-color: var(--background-primary);
-	border-radius: 4px;
-	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-}
-
 /* ==================== 响应式设计 ==================== */
 
 /* 小屏幕适配 */
 @media (max-width: 768px) {
-	.gantt-tag-badge,
 	.gc-tag {
 		font-size: 10px;
 		padding: 1px 6px;
@@ -1359,7 +1513,6 @@ Author: sugar
 
 /* 6.3 Year View Components */
 /* 月卡片 - BEM类名: gc-year-view__month-card */
-.calendar-month-card,
 .gc-year-view__month-card {
 	background-color: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
@@ -1372,7 +1525,6 @@ Author: sugar
 }
 
 /* 月份标题 - BEM类名: gc-year-view__month-header */
-.calendar-month-header,
 .gc-year-view__month-header {
 	text-align: center;
 	margin-bottom: 4px;
@@ -1380,7 +1532,7 @@ Author: sugar
 	padding-bottom: 2px;
 }
 
-.calendar-month-header h3 {
+.gc-year-view__month-header h3 {
 	font-size: 12px;
 	font-weight: 600;
 	margin: 0;
@@ -1388,7 +1540,6 @@ Author: sugar
 }
 
 /* 星期标签容器 - BEM类名: gc-year-view__weekdays */
-.calendar-weekdays,
 .gc-year-view__weekdays {
 	display: grid !important;
 	grid-template-columns: repeat(7, 1fr);
@@ -1397,7 +1548,6 @@ Author: sugar
 }
 
 /* 星期标签 - BEM类名: gc-year-view__weekday */
-.calendar-weekday,
 .gc-year-view__weekday {
 	text-align: center;
 	font-size: 9px;
@@ -1407,7 +1557,6 @@ Author: sugar
 }
 
 /* 日期网格 - BEM类名: gc-year-view__days-grid */
-.calendar-days-grid,
 .gc-year-view__days-grid {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
@@ -1415,7 +1564,6 @@ Author: sugar
 }
 
 /* 日期单元格 - BEM类名: gc-year-view__day */
-.calendar-day,
 .gc-year-view__day {
 	aspect-ratio: 1;
 	display: flex;
@@ -1433,7 +1581,6 @@ Author: sugar
 }
 
 /* 日期数字 - BEM类名: gc-year-view__day-number */
-.calendar-day-number,
 .gc-year-view__day-number {
 	font-size: 13px;
 	font-weight: 400;
@@ -1442,7 +1589,6 @@ Author: sugar
 }
 
 /* 农历文本 - BEM类名: gc-year-view__lunar-text */
-.calendar-lunar-text,
 .gc-year-view__lunar-text {
 	font-size: 7px;
 	color: var(--text-faint);
@@ -1454,13 +1600,11 @@ Author: sugar
 }
 
 /* 年视图月卡片中的农历字体大小可调 */
-.calendar-month-card .calendar-lunar-text,
 .gc-year-view__month-card .gc-year-view__lunar-text {
 	font-size: var(--year-lunar-font-size, 10px);
 }
 
 /* 年视图农历始终显示 */
-.calendar-year-container .calendar-lunar-text,
 .gc-view--year .gc-year-view__lunar-text {
 	display: block;
 }
@@ -1544,7 +1688,6 @@ Author: sugar
 }
 
 /* 任务数量 - BEM类名: gc-year-view__task-count */
-.calendar-day-task-count,
 .gc-year-view__task-count {
 	font-size: 10px;
 	color: var(--text-muted);
@@ -1634,7 +1777,8 @@ Author: sugar
 	min-height: min-content;
 }
 
-.calendar-week-tasks-column {
+.calendar-week-tasks-column,
+.gc-week-view__tasks-column {
 	border-right: 1px solid var(--background-modifier-border);
 	padding: 8px;
 	overflow-y: auto;
@@ -1645,11 +1789,13 @@ Author: sugar
 	background-color: var(--background-primary);
 }
 
-.calendar-week-tasks-column:last-child {
+.calendar-week-tasks-column:last-child,
+.gc-week-view__tasks-column:last-child {
 	border-right: none;
 }
 
-.calendar-day-header-cell {
+.calendar-day-header-cell,
+.gc-week-view__header-cell {
 	padding: 12px 8px;
 	text-align: center;
 	border-right: 1px solid var(--background-modifier-border);
@@ -1664,23 +1810,27 @@ Author: sugar
 	z-index: 4;
 }
 
-.calendar-day-header-cell:last-child {
+.calendar-day-header-cell:last-child,
+.gc-week-view__header-cell:last-child {
 	border-right: none;
 }
 
-.calendar-day-header-cell .day-name {
+.calendar-day-header-cell .day-name,
+.gc-week-view__day-name {
 	font-size: 12px;
 	font-weight: 600;
 	color: var(--text-muted);
 }
 
-.calendar-day-header-cell .day-number {
+.calendar-day-header-cell .day-number,
+.gc-week-view__day-number {
 	font-size: 18px;
 	font-weight: 700;
 	color: var(--text-normal);
 }
 
-.calendar-day-header-cell .day-lunar {
+.calendar-day-header-cell .day-lunar,
+.gc-week-view__lunar-text {
 	font-size: 10px;
 	color: var(--text-muted);
 }
@@ -1796,7 +1946,8 @@ Author: sugar
 	font-family: var(--font-monospace);
 }
 
-.calendar-week-task-empty {
+.calendar-week-task-empty,
+.gc-week-view__empty {
 	padding: 16px 8px;
 	text-align: center;
 	color: var(--text-muted);
@@ -2178,57 +2329,8 @@ Author: sugar
 }
 
 /* 6.9 Heatmap Components */
-/* 热力图色卡：蓝、绿、红（5级）
-	使用更高的选择器优先级并明确 background-color，避免被主题的 `.calendar-day { background-color: transparent; }` 覆盖。 */
-.calendar-day.heatmap-blue-1 { background-image: none; background-color: rgba(56, 132, 255, 0.12) !important; }
-.calendar-day.heatmap-blue-2 { background-image: none; background-color: rgba(56, 132, 255, 0.22) !important; }
-.calendar-day.heatmap-blue-3 { background-image: none; background-color: rgba(56, 132, 255, 0.32) !important; }
-.calendar-day.heatmap-blue-4 { background-image: none; background-color: rgba(56, 132, 255, 0.44) !important; }
-.calendar-day.heatmap-blue-5 { background-image: none; background-color: rgba(56, 132, 255, 0.58) !important; }
-
-.calendar-day.heatmap-green-1 { background-image: none; background-color: rgba(82, 196, 26, 0.12) !important; }
-.calendar-day.heatmap-green-2 { background-image: none; background-color: rgba(82, 196, 26, 0.22) !important; }
-.calendar-day.heatmap-green-3 { background-image: none; background-color: rgba(82, 196, 26, 0.32) !important; }
-.calendar-day.heatmap-green-4 { background-image: none; background-color: rgba(82, 196, 26, 0.44) !important; }
-.calendar-day.heatmap-green-5 { background-image: none; background-color: rgba(82, 196, 26, 0.58) !important; }
-
-.calendar-day.heatmap-red-1 { background-image: none; background-color: rgba(231, 76, 60, 0.12) !important; }
-.calendar-day.heatmap-red-2 { background-image: none; background-color: rgba(231, 76, 60, 0.22) !important; }
-.calendar-day.heatmap-red-3 { background-image: none; background-color: rgba(231, 76, 60, 0.32) !important; }
-.calendar-day.heatmap-red-4 { background-image: none; background-color: rgba(231, 76, 60, 0.44) !important; }
-.calendar-day.heatmap-red-5 { background-image: none; background-color: rgba(231, 76, 60, 0.58) !important; }
-
-.calendar-day.heatmap-purple-1 { background-image: none; background-color: rgba(142, 68, 173, 0.12) !important; }
-.calendar-day.heatmap-purple-2 { background-image: none; background-color: rgba(142, 68, 173, 0.22) !important; }
-.calendar-day.heatmap-purple-3 { background-image: none; background-color: rgba(142, 68, 173, 0.32) !important; }
-.calendar-day.heatmap-purple-4 { background-image: none; background-color: rgba(142, 68, 173, 0.44) !important; }
-.calendar-day.heatmap-purple-5 { background-image: none; background-color: rgba(142, 68, 173, 0.58) !important; }
-
-.calendar-day.heatmap-orange-1 { background-image: none; background-color: rgba(245, 124, 0, 0.12) !important; }
-.calendar-day.heatmap-orange-2 { background-image: none; background-color: rgba(245, 124, 0, 0.22) !important; }
-.calendar-day.heatmap-orange-3 { background-image: none; background-color: rgba(245, 124, 0, 0.32) !important; }
-.calendar-day.heatmap-orange-4 { background-image: none; background-color: rgba(245, 124, 0, 0.44) !important; }
-.calendar-day.heatmap-orange-5 { background-image: none; background-color: rgba(245, 124, 0, 0.58) !important; }
-
-.calendar-day.heatmap-cyan-1 { background-image: none; background-color: rgba(0, 188, 212, 0.12) !important; }
-.calendar-day.heatmap-cyan-2 { background-image: none; background-color: rgba(0, 188, 212, 0.22) !important; }
-.calendar-day.heatmap-cyan-3 { background-image: none; background-color: rgba(0, 188, 212, 0.32) !important; }
-.calendar-day.heatmap-cyan-4 { background-image: none; background-color: rgba(0, 188, 212, 0.44) !important; }
-.calendar-day.heatmap-cyan-5 { background-image: none; background-color: rgba(0, 188, 212, 0.58) !important; }
-
-.calendar-day.heatmap-pink-1 { background-image: none; background-color: rgba(233, 30, 99, 0.12) !important; }
-.calendar-day.heatmap-pink-2 { background-image: none; background-color: rgba(233, 30, 99, 0.22) !important; }
-.calendar-day.heatmap-pink-3 { background-image: none; background-color: rgba(233, 30, 99, 0.32) !important; }
-.calendar-day.heatmap-pink-4 { background-image: none; background-color: rgba(233, 30, 99, 0.44) !important; }
-.calendar-day.heatmap-pink-5 { background-image: none; background-color: rgba(233, 30, 99, 0.58) !important; }
-
-.calendar-day.heatmap-yellow-1 { background-image: none; background-color: rgba(255, 193, 7, 0.12) !important; }
-.calendar-day.heatmap-yellow-2 { background-image: none; background-color: rgba(255, 193, 7, 0.22) !important; }
-.calendar-day.heatmap-yellow-3 { background-image: none; background-color: rgba(255, 193, 7, 0.32) !important; }
-.calendar-day.heatmap-yellow-4 { background-image: none; background-color: rgba(255, 193, 7, 0.44) !important; }
-.calendar-day.heatmap-yellow-5 { background-image: none; background-color: rgba(255, 193, 7, 0.58) !important; }
-
-/* 热力图 BEM 类名支持 - 为年视图新类名添加相同样式 */
+/* 热力图色卡：蓝、绿、红（5级） - BEM类名支持 */
+/* 为年视图新类名添加热力图样式 */
 .gc-year-view__day.heatmap-blue-1 { background-image: none; background-color: rgba(56, 132, 255, 0.12) !important; }
 .gc-year-view__day.heatmap-blue-2 { background-image: none; background-color: rgba(56, 132, 255, 0.22) !important; }
 .gc-year-view__day.heatmap-blue-3 { background-image: none; background-color: rgba(56, 132, 255, 0.32) !important; }
@@ -2523,13 +2625,15 @@ Author: sugar
 
 /* Week View */
 .calendar-week-tasks-grid .calendar-task-card--week.completed,
-.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--completed {
+.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--completed,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed {
 	opacity: 0.6;
 	border-left-color: var(--task-completed-color);
 }
 
 .calendar-week-tasks-grid .calendar-task-card--week.pending,
-.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--pending {
+.calendar-week-tasks-grid .gc-task-card--week.gc-task-card--pending,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--pending {
 	border-left-color: var(--task-pending-color);
 }
 
@@ -2583,7 +2687,8 @@ Author: sugar
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.calendar-day:hover {
+/* 年视图日期悬停效果 */
+.gc-year-view__day:hover {
 	background-color: var(--background-secondary);
 }
 
@@ -2620,25 +2725,22 @@ Author: sugar
 }
 
 /* 7.4 Festival Themes */
-.calendar-lunar-text.festival,
+/* 年视图节日样式 */
 .gc-year-view__lunar-text.festival {
 	font-weight: 600;
 }
 
 /* 阳历节日 - 使用CSS变量 */
-.calendar-lunar-text.festival-solar,
 .gc-year-view__lunar-text.festival-solar {
 	color: var(--festival-solar-color);
 }
 
 /* 农历传统节日 - 使用CSS变量 */
-.calendar-lunar-text.festival-lunar,
 .gc-year-view__lunar-text.festival-lunar {
 	color: var(--festival-lunar-color);
 }
 
 /* 二十四节气 - 使用CSS变量 */
-.calendar-lunar-text.festival-solarTerm,
 .gc-year-view__lunar-text.festival-solarTerm {
 	color: var(--festival-solar-term-color);
 }
@@ -2665,15 +2767,6 @@ Author: sugar
 }
 
 /* 7.5 Special States */
-/* Outside month */
-.calendar-day.outside-month {
-	opacity: 0.4;
-}
-
-.calendar-day.outside-month .calendar-day-number {
-	color: var(--text-faint);
-}
-
 /* BEM类名: gc-month-view__day-cell--outside-month */
 .gc-month-view__day-cell--outside-month {
 	background-color: var(--background-secondary);
@@ -2681,6 +2774,19 @@ Author: sugar
 }
 
 .gc-month-view__day-cell--outside-month .gc-month-view__day-number {
+	color: var(--text-faint);
+}
+
+/* BEM类名: gc-year-view__day.outside-month (年视图非本月日期) */
+.gc-year-view__day.outside-month {
+	opacity: 0.4;
+}
+
+.gc-year-view__day.outside-month .gc-year-view__day-number {
+	color: var(--text-faint);
+}
+
+.gc-year-view__day.outside-month .gc-year-view__lunar-text {
 	color: var(--text-faint);
 }
 
@@ -2751,11 +2857,13 @@ Author: sugar
 	color: white;
 }
 
-.calendar-day-header-cell.today {
+.calendar-day-header-cell.today,
+.gc-week-view__header-cell--today {
 	background-color: rgba(255, 107, 107, 0.1);
 }
 
-.calendar-day-header-cell.today .day-number {
+.calendar-day-header-cell.today .day-number,
+.gc-week-view__header-cell--today .gc-week-view__day-number {
 	color: #ff6b6b;
 }
 
@@ -2763,7 +2871,8 @@ Author: sugar
 	background-color: rgba(255, 107, 107, 0.05);
 }
 
-.calendar-week-tasks-column.today {
+.calendar-week-tasks-column.today,
+.gc-week-view__tasks-column--today {
 	background-color: rgba(255, 107, 107, 0.03);
 }
 
@@ -2773,6 +2882,7 @@ Author: sugar
 .gc-day-view__task-list .gc-task-card--day.gc-task-card--completed .gc-task-card__text,
 .calendar-week-tasks-grid .calendar-task-card--week.completed .calendar-task-card-text,
 .calendar-week-tasks-grid .gc-task-card--week.gc-task-card--completed .gc-task-card__text,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed .gc-task-card__text,
 .gc-month-view__tasks .gc-task-card--month.gc-task-card--completed .gc-task-card__text,
 .gc-view--task .gc-task-card--task.gc-task-card--completed .gc-task-card__text,
 .gc-task-card--gantt.gc-task-card--completed .gc-task-card__text {
@@ -3099,40 +3209,6 @@ Author: sugar
 .tag-filter-tag-item.selected .tag-filter-tag-count {
 	background: rgba(255, 255, 255, 0.25);
 	color: white;
-}
-
-/* ============================================
-   标签颜色变体（复用现有6种颜色）
-   ============================================ */
-
-/* 蓝色 */
-.tag-filter-tag-item.tag-color-0 .tag-filter-tag-name {
-	color: #3884ff;
-}
-
-/* 绿色 */
-.tag-filter-tag-item.tag-color-1 .tag-filter-tag-name {
-	color: #22c55e;
-}
-
-/* 橙色 */
-.tag-filter-tag-item.tag-color-2 .tag-filter-tag-name {
-	color: #f97316;
-}
-
-/* 黄色 */
-.tag-filter-tag-item.tag-color-3 .tag-filter-tag-name {
-	color: #eab308;
-}
-
-/* 紫色 */
-.tag-filter-tag-item.tag-color-4 .tag-filter-tag-name {
-	color: #a855f7;
-}
-
-/* 粉色 */
-.tag-filter-tag-item.tag-color-5 .tag-filter-tag-name {
-	color: #ec4899;
 }
 
 /* 选中状态下覆盖颜色为白色 */
