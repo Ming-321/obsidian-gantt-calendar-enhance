@@ -24,6 +24,9 @@ export class TaskViewRenderer extends BaseViewRenderer {
 	// 排序状态
 	private sortState: SortState = DEFAULT_SORT_STATE;
 
+	// 任务列表容器缓存
+	private taskListContainer: HTMLElement | null = null;
+
 	// ===== Getter/Setter 方法 =====
 
 	public getTimeFilterField(): 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' {
@@ -62,7 +65,18 @@ export class TaskViewRenderer extends BaseViewRenderer {
 		// 创建任务视图容器
 		const taskRoot = container.createDiv(withModifiers(ViewClasses.block, ViewClasses.modifiers.task));
 
+		this.taskListContainer = taskRoot;
 		this.loadTaskList(taskRoot);
+	}
+
+	/**
+	 * 只刷新任务列表，不重新创建整个视图
+	 * 用于筛选条件变化时更新显示
+	 */
+	public refreshTaskList(): void {
+		if (this.taskListContainer) {
+			this.loadTaskList(this.taskListContainer);
+		}
 	}
 
 	/**

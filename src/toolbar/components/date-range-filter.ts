@@ -62,6 +62,8 @@ const DEFAULT_MODES: DateRangeMode[] = [
  * - 快捷按钮：全/日/周/月
  * - 自定义日期时清除按钮高亮
  * - 记录前一个模式用于恢复
+ * - 修复：选择日期后正确更新显示
+ * - 修复：允许重复选择同一天
  *
  * @param container 容器元素
  * @param options 配置选项
@@ -83,6 +85,8 @@ export function renderDateRangeFilter(
 
 	// 记录前一个模式（用于清除自定义日期后恢复）
 	let previousMode: DateRangeType = 'week';
+	// 记录当前输入框的值，用于检测是否重复选择同一天
+	let lastInputValue: string = '';
 
 	// 创建日期筛选组容器
 	const dateFilterGroup = container.createDiv('toolbar-right-task-date-filter-group');
@@ -100,40 +104,74 @@ export function renderDateRangeFilter(
 		attr: { type: 'date' }
 	}) as HTMLInputElement;
 
-	// 设置初始值
-	if (currentState.specificDate) {
-		try {
-			dateInput.value = formatDate(currentState.specificDate, 'yyyy-MM-dd');
-		} catch {
-			dateInput.value = new Date().toISOString().slice(0, 10);
-		}
-	} else {
-		try {
-			dateInput.value = formatDate(new Date(), 'yyyy-MM-dd');
-		} catch {
-			dateInput.value = new Date().toISOString().slice(0, 10);
-		}
-	}
-
 	// 存储模式按钮元素
 	const modeButtons: Map<DateRangeType, HTMLElement> = new Map();
 
-	// 输入变化处理
-	dateInput.addEventListener('change', () => {
-		const val = dateInput.value;
-		if (val) {
-			const d = new Date(val);
-			onRangeChange({ type: 'custom', specificDate: d });
-			// 清除所有按钮的高亮
-			modeButtons.forEach(btn => btn.classList.remove('active'));
+	/**
+	 * 更新输入框显示
+	 */
+	const updateInputDisplay = (state: DateRangeState) => {
+		if (state.type === 'custom' && state.specificDate) {
+			try {
+				dateInput.value = formatDate(state.specificDate, 'yyyy-MM-dd');
+				lastInputValue = dateInput.value;
+			} catch {
+				dateInput.value = '';
+				lastInputValue = '';
+			}
+		} else if (state.type === 'day') {
+			// 日模式显示当天日期
+			const today = new Date();
+			dateInput.value = formatDate(today, 'yyyy-MM-dd');
+			lastInputValue = dateInput.value;
 		} else {
-			// 无输入时，恢复为前一个模式
+			// 其他模式清空输入框
+			dateInput.value = '';
+			lastInputValue = '';
+		}
+	};
+
+	// 设置初始值
+	updateInputDisplay(currentState);
+
+	/**
+	 * 验证日期格式是否完整 (yyyy-MM-dd)
+	 */
+	const isValidDateFormat = (val: string): boolean => {
+		return /^\d{4}-\d{2}-\d{2}$/.test(val);
+	};
+
+	/**
+	 * 处理日期输入完成（只处理完整日期）
+	 */
+	const handleDateInput = () => {
+		const val = dateInput.value;
+
+		// 空值处理
+		if (!val) {
 			onRangeChange({ type: previousMode, specificDate: undefined });
-			// 恢复前一个按钮的高亮
 			const prevBtn = modeButtons.get(previousMode);
 			if (prevBtn) prevBtn.classList.add('active');
+			lastInputValue = '';
+			return;
 		}
-	});
+
+		// 只在日期格式完整时才触发筛选
+		if (isValidDateFormat(val) && val !== lastInputValue) {
+			const d = new Date(val);
+			if (!isNaN(d.getTime())) {
+				onRangeChange({ type: 'custom', specificDate: d });
+				lastInputValue = val;
+				// 清除所有按钮的高亮
+				modeButtons.forEach(btn => btn.classList.remove('active'));
+			}
+		}
+	};
+
+	// 监听 input 事件（支持手动输入）
+	// 监听 change 事件（支持日历选择）
+	dateInput.addEventListener('input', handleDateInput);
+	dateInput.addEventListener('change', handleDateInput);
 
 	// 创建模式按钮
 	const modes = showAllOption
@@ -155,13 +193,13 @@ export function renderDateRangeFilter(
 		}
 
 		btn.addEventListener('click', () => {
-			// 清空输入框
-			dateInput.value = '';
 			// 保存当前模式为前一个状态
 			previousMode = mode.key;
 			// 更新状态
-			const specificDate = mode.key !== 'all' ? new Date() : undefined;
+			const specificDate = mode.key === 'day' ? new Date() : undefined;
 			onRangeChange({ type: mode.key, specificDate });
+			// 更新输入框显示
+			updateInputDisplay({ type: mode.key, specificDate });
 			// 高亮切换
 			modeButtons.forEach(b => b.classList.remove('active'));
 			btn.classList.add('active');
@@ -184,14 +222,8 @@ export function renderDateRangeFilter(
 			}
 		});
 
-		// 更新输入框
-		if (state.specificDate) {
-			try {
-				dateInput.value = formatDate(state.specificDate, 'yyyy-MM-dd');
-			} catch {
-				// ignore
-			}
-		}
+		// 更新输入框显示
+		updateInputDisplay(state);
 	};
 
 	// 清理函数

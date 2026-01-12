@@ -163,7 +163,14 @@ export class GCMainView extends ItemView {
 			onPrevious: () => this.previousPeriod(),
 			onToday: () => this.goToToday(),
 			onNext: () => this.nextPeriod(),
-			onFilterChange: () => this.render(),
+			onFilterChange: () => {
+				// 任务视图：只刷新任务列表，不重新渲染工具栏
+				if (this.viewType === 'task') {
+					this.taskRenderer.refreshTaskList();
+				} else {
+					this.render();
+				}
+			},
 			onRender: () => this.render(),  // 仅重新渲染视图，不刷新缓存
 			onRefresh: async () => {
 				await this.plugin.taskCache.initialize(
