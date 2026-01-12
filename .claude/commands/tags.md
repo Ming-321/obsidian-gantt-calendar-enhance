@@ -1,6 +1,6 @@
 ---
 description: 根据版本为项目添加tag并生成对应的信息
-allowed-tools: Bash(git status:*),Bash(git diff:*),Bash(git tag:*)
+allowed-tools: Bash(git status:*),Bash(git diff:*),Bash(git tag:*),Bash(git log:*)
 ---
 
 请为 commit $2 添加 tag $1, 如果 $2 为空, 则为当前最新的 commit 添加 tag
