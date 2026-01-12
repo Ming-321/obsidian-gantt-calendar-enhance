@@ -15,10 +15,14 @@ import { Logger } from './logger';
  */
 export interface CreateTaskData {
 	description: string;
-	priority: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal';
+	priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest';
 	createdDate: Date;
+	startDate?: Date | null;
+	scheduledDate?: Date | null;
 	dueDate: Date;
-	tags: string[];
+	completionDate?: Date | null;
+	cancelledDate?: Date | null;
+	tags?: string[];
 }
 
 /**
@@ -207,7 +211,7 @@ function serializeNewTask(taskData: CreateTaskData, app: App): string {
 	}
 
 	// 标签
-	if (taskData.tags.length > 0) {
+	if (taskData.tags && taskData.tags.length > 0) {
 		parts.push(taskData.tags.map(t => `#${t}`).join(' '));
 	}
 
@@ -215,9 +219,13 @@ function serializeNewTask(taskData: CreateTaskData, app: App): string {
 	parts.push(taskData.description);
 
 	// 优先级
-	if (format === 'tasks' && taskData.priority !== 'normal') {
-		const priorityEmoji = getPriorityEmoji(taskData.priority);
-		if (priorityEmoji) parts.push(priorityEmoji);
+	if (taskData.priority) {
+		if (format === 'tasks') {
+			const priorityEmoji = getPriorityEmoji(taskData.priority);
+			if (priorityEmoji) parts.push(priorityEmoji);
+		} else {
+			parts.push(`[priority:: ${taskData.priority}]`);
+		}
 	}
 
 	// 创建日期
@@ -228,12 +236,52 @@ function serializeNewTask(taskData: CreateTaskData, app: App): string {
 		parts.push(`[created:: ${createdStr}]`);
 	}
 
+	// 开始日期
+	if (taskData.startDate) {
+		const startStr = formatDate(taskData.startDate, 'yyyy-MM-dd');
+		if (format === 'tasks') {
+			parts.push(`🛫 ${startStr}`);
+		} else {
+			parts.push(`[start:: ${startStr}]`);
+		}
+	}
+
+	// 计划日期
+	if (taskData.scheduledDate) {
+		const scheduledStr = formatDate(taskData.scheduledDate, 'yyyy-MM-dd');
+		if (format === 'tasks') {
+			parts.push(`⏳ ${scheduledStr}`);
+		} else {
+			parts.push(`[scheduled:: ${scheduledStr}]`);
+		}
+	}
+
 	// 截止日期
 	const dueStr = formatDate(taskData.dueDate, 'yyyy-MM-dd');
 	if (format === 'tasks') {
 		parts.push(`📅 ${dueStr}`);
 	} else {
 		parts.push(`[due:: ${dueStr}]`);
+	}
+
+	// 完成日期
+	if (taskData.completionDate) {
+		const completionStr = formatDate(taskData.completionDate, 'yyyy-MM-dd');
+		if (format === 'tasks') {
+			parts.push(`✅ ${completionStr}`);
+		} else {
+			parts.push(`[completed:: ${completionStr}]`);
+		}
+	}
+
+	// 取消日期
+	if (taskData.cancelledDate) {
+		const cancelledStr = formatDate(taskData.cancelledDate, 'yyyy-MM-dd');
+		if (format === 'tasks') {
+			parts.push(`❌ ${cancelledStr}`);
+		} else {
+			parts.push(`[cancelled:: ${cancelledStr}]`);
+		}
 	}
 
 	return `- ${parts.join(' ')}`;

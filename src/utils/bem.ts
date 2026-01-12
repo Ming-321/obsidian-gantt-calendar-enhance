@@ -48,8 +48,8 @@ export const BLOCKS = {
 	CREATE_TASK_MODAL: 'create-task-modal',
 	/** 创建任务按钮 */
 	CREATE_TASK_BUTTON: 'create-task-btn',
-
-
+	/** 编辑任务弹窗 */
+	EDIT_TASK_MODAL: 'edit-task-modal',
 
 } as const;
 
@@ -408,6 +408,46 @@ export const CreateTaskButtonClasses = {
 	block: bem(BLOCKS.CREATE_TASK_BUTTON),
 	modifiers: {
 		toolbar: bem(BLOCKS.CREATE_TASK_BUTTON, undefined, 'toolbar'),
+	},
+};
+
+/**
+ * 编辑任务弹窗类名常量
+ */
+export const EditTaskModalClasses = {
+	block: bem(BLOCKS.EDIT_TASK_MODAL),
+
+	elements: {
+		container: bem(BLOCKS.EDIT_TASK_MODAL, 'container'),
+		title: bem(BLOCKS.EDIT_TASK_MODAL, 'title'),
+		section: bem(BLOCKS.EDIT_TASK_MODAL, 'section'),
+		sectionLabel: bem(BLOCKS.EDIT_TASK_MODAL, 'section-label'),
+		sectionHint: bem(BLOCKS.EDIT_TASK_MODAL, 'section-hint'),
+
+		// 任务描述板块
+		descContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'desc-container'),
+		descTextarea: bem(BLOCKS.EDIT_TASK_MODAL, 'desc-textarea'),
+
+		// 优先级板块
+		priorityContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'priority-container'),
+		priorityGrid: bem(BLOCKS.EDIT_TASK_MODAL, 'priority-grid'),
+		priorityBtn: bem(BLOCKS.EDIT_TASK_MODAL, 'priority-btn'),
+		priorityBtnSelected: bem(BLOCKS.EDIT_TASK_MODAL, 'priority-btn', 'selected'),
+
+		// 日期设置板块
+		datesContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'dates-container'),
+		datesGrid: bem(BLOCKS.EDIT_TASK_MODAL, 'dates-grid'),
+		dateItem: bem(BLOCKS.EDIT_TASK_MODAL, 'date-item'),
+		dateLabel: bem(BLOCKS.EDIT_TASK_MODAL, 'date-label'),
+		dateInputContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'date-input-container'),
+		dateInput: bem(BLOCKS.EDIT_TASK_MODAL, 'date-input'),
+		dateClear: bem(BLOCKS.EDIT_TASK_MODAL, 'date-clear'),
+
+		// 标签选择器板块
+		tagsSection: bem(BLOCKS.EDIT_TASK_MODAL, 'tags-section'),
+
+		// 按钮
+		buttons: bem(BLOCKS.EDIT_TASK_MODAL, 'buttons'),
 	},
 };
 
