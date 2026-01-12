@@ -40,12 +40,12 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		});
 		taskSettingsBuilder.render();
 
-		// ===== 任务视图设置 =====
-		const taskViewBuilder = new TaskViewSettingsBuilder({
-			containerEl,
-			plugin: this.plugin
-		});
-		taskViewBuilder.render();
+		// // ===== 任务视图设置 =====
+		// const taskViewBuilder = new TaskViewSettingsBuilder({
+		// 	containerEl,
+		// 	plugin: this.plugin
+		// });
+		// taskViewBuilder.render();
 
 		// ===== 日历视图设置 =====
 		const calendarViewBuilder = new CalendarViewSettingsBuilder({

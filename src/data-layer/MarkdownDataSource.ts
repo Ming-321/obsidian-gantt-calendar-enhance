@@ -66,6 +66,8 @@ export class MarkdownDataSource implements IDataSource {
 	private readonly DEBOUNCE_MS = 50;
 	// 防止并发处理同一文件
 	private processingFiles: Set<string> = new Set();
+	// 防止重复注册事件监听器
+	private fileWatchersRegistered: boolean = false;
 
 	constructor(app: App, eventBus: EventBus, config: DataSourceConfig) {
 		this.app = app;
@@ -80,12 +82,19 @@ export class MarkdownDataSource implements IDataSource {
 		Logger.debug('MarkdownDataSource', 'initialize() started');
 		const scanStartTime = performance.now();
 
+		// 【修复】清除旧缓存，防止使用过期的筛选符配置
+		this.cache.clear();
+
 		this.config = config;
 
 		// 【性能优化】扫描阶段返回所有任务，避免二次解析
 		const allTasks = await this.scanAllFiles();
 
-		this.setupFileWatchers();
+		// 【修复】只注册一次事件监听器，防止重复注册
+		if (!this.fileWatchersRegistered) {
+			this.setupFileWatchers();
+			this.fileWatchersRegistered = true;
+		}
 
 		// 通知数据源已初始化，发送所有任务（使用扫描阶段收集的任务）
 		await this.notifyInitialTasks(allTasks);

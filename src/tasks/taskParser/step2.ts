@@ -52,7 +52,8 @@ export function passesGlobalFilter(content: string, globalTaskFilter?: string): 
     if (!globalTaskFilter) return true;
 
     const trimmedContent = content.trim();
-    return trimmedContent.startsWith(globalTaskFilter);
+    const trimmedFilter = globalTaskFilter.trim();  // 【修复】添加 trim，防御性处理
+    return trimmedContent.startsWith(trimmedFilter);
 }
 
 /**
@@ -79,7 +80,8 @@ export function passesGlobalFilter(content: string, globalTaskFilter?: string): 
 export function removeGlobalFilter(content: string, globalTaskFilter?: string): string {
     if (!globalTaskFilter) return content;
 
-    const escapedFilter = escapeRegExp(globalTaskFilter);
+    const trimmedFilter = globalTaskFilter.trim();  // 【修复】添加 trim，与 passesGlobalFilter 保持一致
+    const escapedFilter = escapeRegExp(trimmedFilter);
     return content.replace(new RegExp(`^\\s*${escapedFilter}\\s*`), '');
 }
 

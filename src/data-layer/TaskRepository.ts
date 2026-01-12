@@ -252,10 +252,12 @@ export class TaskRepository {
 
 	/**
 	 * 清空缓存
+	 * 【注意】不清空 eventBus，因为 eventBus 的所有权属于 TaskStore
 	 */
 	clear(): void {
 		this.taskCache.clear();
 		this.fileIndex.clear();
-		this.eventBus.clear();
+		// 【修复】不清空 eventBus，因为它是 TaskStore 的实例，TaskStore 的监听器会受影响
+		// this.eventBus.clear();
 	}
 }

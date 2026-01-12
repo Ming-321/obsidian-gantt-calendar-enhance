@@ -121,6 +121,10 @@ export class TaskStore {
 		this.globalTaskFilter = (globalTaskFilter || '').trim();
 		this.enabledFormats = enabledFormats || ['tasks', 'dataview'];
 
+		// 【修复】重新初始化前，先清除旧的仓库缓存，防止任务累加
+		this.repository.clear();
+		this.invalidateCache();
+
 		const config: DataSourceConfig = {
 			enabled: true,
 			syncDirection: 'import-only',

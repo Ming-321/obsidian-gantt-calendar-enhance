@@ -18,6 +18,64 @@ export class TaskSettingsBuilder extends BaseBuilder {
 		// ===== 任务设置 =====
 		this.containerEl.createEl('h1', { text: '任务设置' });
 
+		// 全局任务筛选标记
+		new Setting(this.containerEl)
+			.setName('全局任务筛选标记(修改此设置后需重启 Obsidian 生效)')
+			.setDesc('用于标记任务的前缀符号或文字（如 "🎯 ", "TODO ", "#task "）')
+			.addText(text => text
+				.setPlaceholder('空则不使用筛选')
+				.setValue(this.plugin.settings.globalTaskFilter)
+				.onChange(async (value) => {
+					this.plugin.settings.globalTaskFilter = value.trim();  // 【修复】添加 trim
+					await this.saveAndRefresh();
+				}));
+
+		// 启用的任务格式
+		new Setting(this.containerEl)
+			.setName('启用的任务格式')
+			.setDesc('选择要支持的任务格式（Tasks 插件或 Dataview 插件）')
+			.addDropdown(drop => {
+				drop.addOptions({
+					'tasks': 'Tasks 插件格式（使用 emoji 表示日期）',
+					'dataview': 'Dataview 插件格式（使用字段表示日期）',
+					'both': '两者都支持',
+				});
+
+				const formats = this.plugin.settings.enabledTaskFormats;
+				if (formats.includes('tasks') && formats.includes('dataview')) drop.setValue('both');
+				else if (formats.includes('tasks')) drop.setValue('tasks');
+				else if (formats.includes('dataview')) drop.setValue('dataview');
+
+				drop.onChange(async (value) => {
+					this.plugin.settings.enabledTaskFormats = (value === 'both') ? ['tasks', 'dataview'] : [value];
+					await this.saveAndRefresh();
+				});
+			});
+
+		// 任务文本是否显示 Global Filter
+		new Setting(this.containerEl)
+			.setName('任务文本显示 Global Filter')
+			.setDesc('在任务列表中文本前显示全局筛选前缀（如 🎯）。关闭则仅显示任务描述. 修改全局筛选器后可能会有显示错误,需要关闭再打开此选项一次')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showGlobalFilterInTaskText)
+				.onChange(async (value) => {
+					this.plugin.settings.showGlobalFilterInTaskText = value;
+					await this.saveAndRefresh();
+				}));
+
+		// 任务笔记文件夹路径
+		new Setting(this.containerEl)
+			.setName('任务笔记文件夹路径')
+			.setDesc('从任务创建笔记时的默认存放路径（相对于库根目录）')
+			.addText(text => text
+				.setPlaceholder('Tasks')
+				.setValue(this.plugin.settings.taskNotePath)
+				.onChange(async (value) => {
+					this.plugin.settings.taskNotePath = value;
+					await this.plugin.saveSettings();
+				}));
+
+        
 		// ===== 任务创建设置 =====
 		this.containerEl.createEl('h2', { text: '任务创建设置' });
 
@@ -80,17 +138,15 @@ export class TaskSettingsBuilder extends BaseBuilder {
 				}));
 
 		// ===== 任务状态设置 =====
-		this.containerEl.createEl('h2', { text: '任务状态设置' });
-
-		const desc = this.containerEl.createEl('div', {
-			cls: 'setting-item-description',
-			text: '配置任务状态的颜色和样式。支持 7 种默认状态和自定义状态。'
-		});
-		desc.style.marginBottom = '16px';
 
 		// 默认状态列表
 		const defaultStatusesDiv = this.containerEl.createDiv();
-		defaultStatusesDiv.createEl('h3', { text: '默认状态', cls: 'setting-item-heading' });
+		defaultStatusesDiv.createEl('h2', { text: '任务默认状态设置', cls: 'setting-item-heading' });
+		const defaultStatus = this.containerEl.createEl('div', {
+			cls: 'setting-item-description',
+			text: '配置任务7中默认状态的颜色和样式。'
+		});
+		defaultStatus.style.marginBottom = '16px';
 
 		// 从设置中获取默认状态（而不是从 DEFAULT_TASK_STATUSES）
 		const defaultStatuses = this.plugin.settings.taskStatuses.filter((s: TaskStatus) => s.isDefault);
@@ -105,7 +161,12 @@ export class TaskSettingsBuilder extends BaseBuilder {
 
 		// 自定义状态部分
 		const customStatusesDiv = this.containerEl.createDiv();
-		customStatusesDiv.createEl('h3', { text: '自定义状态', cls: 'setting-item-heading' });
+		customStatusesDiv.createEl('h2', { text: '任务自定义状态设置', cls: 'setting-item-heading' });
+        const customStatusDesc = this.containerEl.createEl('div', {
+			cls: 'setting-item-description',
+			text: '配置任务自定义状态的颜色和样式。最多支持 3 个自定义状态。'
+		});
+		customStatusDesc.style.marginBottom = '16px';
 
 		// 获取自定义状态数量
 		const customStatuses = this.plugin.settings.taskStatuses.filter((s: TaskStatus) => !s.isDefault);

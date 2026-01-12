@@ -16,13 +16,13 @@ export class TaskViewSettingsBuilder extends BaseBuilder {
 
 		// 全局任务筛选标记
 		new Setting(this.containerEl)
-			.setName('全局任务筛选标记')
+			.setName('全局任务筛选标记(修改此设置后需重启 Obsidian 生效)')
 			.setDesc('用于标记任务的前缀符号或文字（如 "🎯 " 或 "TODO"）')
 			.addText(text => text
 				.setPlaceholder('空则不使用筛选')
 				.setValue(this.plugin.settings.globalTaskFilter)
 				.onChange(async (value) => {
-					this.plugin.settings.globalTaskFilter = value;
+					this.plugin.settings.globalTaskFilter = value.trim();  // 【修复】添加 trim
 					await this.saveAndRefresh();
 				}));
 
