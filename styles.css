@@ -1639,19 +1639,40 @@ Author: sugar
 	overflow: hidden;
 }
 
+/* 日期头部：日期数字和农历文本的横向布局容器 */
+.gc-month-view__day-header {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	padding: 0 25%;
+	margin-bottom: 4px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	gap: 8px;
+}
+
+/* 日期头部中间的分隔圆点 */
+.gc-month-view__day-header-separator {
+	width: 4px;
+	height: 4px;
+	background-color: var(--text-muted);
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
 /* BEM类名: gc-month-view__day-number */
 .gc-month-view__day-cell .gc-month-view__day-number {
-	font-size: 16px;
-	font-weight: 600;
+	font-size: 18px;
+	font-weight: 500;
 	color: var(--text-normal);
-	align-self: center;
 }
 
 /* BEM类名: gc-month-view__lunar-text */
 .gc-month-view__day-cell .gc-month-view__lunar-text {
-	font-size: 11px;
-	color: var(--text-muted);
-	align-self: center;
+	font-size: 18px;
+	font-weight: 500;
+	color: var(--text-normal);
 }
 
 /* BEM类名: gc-month-view__tasks */
@@ -1688,14 +1709,14 @@ Author: sugar
 }
 
 .gc-week-view__header-cell {
-	padding: 12px 8px;
+	padding: 12px 20%;
 	text-align: center;
 	border-right: 1px solid var(--background-modifier-border);
 	border-bottom: 2px solid var(--background-modifier-border);
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	justify-content: center;
+	justify-content: space-between;
 	gap: 6px;
 	background-color: var(--background-primary);
 	position: sticky;
@@ -1708,20 +1729,27 @@ Author: sugar
 }
 
 .gc-week-view__day-name {
-	font-size: 12px;
-	font-weight: 600;
-	color: var(--text-muted);
+	flex: 1;
+	font-size: 16px;
+	font-weight: 500;
+	color: var(--text-normal);
+	text-align: left;
 }
 
 .gc-week-view__day-number {
-	font-size: 18px;
-	font-weight: 700;
+	flex: 1;
+	font-size: 16px;
+	font-weight: 500;
 	color: var(--text-normal);
+	text-align: center;
 }
 
 .gc-week-view__lunar-text {
-	font-size: 10px;
-	color: var(--text-muted);
+	flex: 1;
+	font-size: 16px;
+	font-weight: 500;
+	color: var(--text-normal);
+	text-align: right;
 }
 
 /* ==================== Task Tooltip ==================== */

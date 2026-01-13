@@ -493,6 +493,8 @@ export const MonthViewClasses = {
 		weekNumber: bem(BLOCKS.MONTH_VIEW, 'week-number'),
 		weekDays: bem(BLOCKS.MONTH_VIEW, 'week-days'),
 		dayCell: bem(BLOCKS.MONTH_VIEW, 'day-cell'),
+		dayHeader: bem(BLOCKS.MONTH_VIEW, 'day-header'),
+		dayHeaderSeparator: bem(BLOCKS.MONTH_VIEW, 'day-header-separator'),
 		dayNumber: bem(BLOCKS.MONTH_VIEW, 'day-number'),
 		lunarText: bem(BLOCKS.MONTH_VIEW, 'lunar-text'),
 		tasks: bem(BLOCKS.MONTH_VIEW, 'tasks'),

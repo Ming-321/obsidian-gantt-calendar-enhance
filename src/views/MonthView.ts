@@ -98,11 +98,17 @@ export class MonthViewRenderer extends BaseViewRenderer {
 				const dayEl = daysDiv.createEl('div');
 				dayEl.addClass(MonthViewClasses.elements.dayCell);
 
-				const dateNum = dayEl.createEl('div', { text: day.day.toString() });
+				// 日期头部：包含日期数字和农历文本
+				const dayHeader = dayEl.createDiv(MonthViewClasses.elements.dayHeader);
+				const dateNum = dayHeader.createEl('div', { text: day.day.toString() });
 				dateNum.addClass(MonthViewClasses.elements.dayNumber);
 
+				// 中间分隔圆点
+				const separator = dayHeader.createEl('span');
+				separator.addClass(MonthViewClasses.elements.dayHeaderSeparator);
+
 				if (day.lunarText) {
-					const lunarEl = dayEl.createEl('div', { text: day.lunarText });
+					const lunarEl = dayHeader.createEl('div', { text: day.lunarText });
 					lunarEl.addClass(MonthViewClasses.elements.lunarText);
 					if (day.festival || day.festivalType) {
 						lunarEl.addClass(MonthViewClasses.modifiers.festival);
