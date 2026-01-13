@@ -253,6 +253,7 @@ export const GanttClasses = {
 		taskNumberCell: bem(BLOCKS.GANTT, 'task-number-cell'),
 		taskNumberText: bem(BLOCKS.GANTT, 'task-number-text'),
 		taskContentCell: bem(BLOCKS.GANTT, 'task-content-cell'),
+		taskCheckbox: bem(BLOCKS.GANTT, 'task-checkbox'),
 		chartContainer: bem(BLOCKS.GANTT, 'chart-container'),
 		chartSvg: bem(BLOCKS.GANTT, 'chart-svg'),
 		resizer: bem(BLOCKS.GANTT, 'resizer'),

@@ -89,7 +89,7 @@ export class TaskCardRenderer {
 		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
 		checkbox.checked = task.completed;
 		checkbox.disabled = false;
-		checkbox.addClass('gc-task-card__checkbox');
+		checkbox.addClass(TaskCardClasses.elements.checkbox);
 
 		checkbox.addEventListener('change', async (e) => {
 			e.stopPropagation();
@@ -101,8 +101,8 @@ export class TaskCardRenderer {
 					isNowCompleted,
 					this.plugin.settings.enabledTaskFormats
 				);
-				taskItem.toggleClass('gc-task-card--completed', isNowCompleted);
-				taskItem.toggleClass('gc-task-card--pending', !isNowCompleted);
+				taskItem.toggleClass(TaskCardClasses.modifiers.completed, isNowCompleted);
+				taskItem.toggleClass(TaskCardClasses.modifiers.pending, !isNowCompleted);
 			} catch (error) {
 				Logger.error('TaskCardRenderer', 'Error updating task:', error);
 				checkbox.checked = task.completed;

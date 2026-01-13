@@ -760,7 +760,7 @@ export class SvgGanttRenderer {
 		const checkbox = document.createElement('input');
 		checkbox.type = 'checkbox';
 		checkbox.checked = isCompleted;
-		checkbox.className = 'gc-gantt-view__task-checkbox';
+		checkbox.className = GanttClasses.elements.taskCheckbox;
 		checkbox.style.cssText = `
 			flex-shrink: 0;
 			width: 16px;

@@ -3,11 +3,11 @@ import type { GCTask } from '../types';
 import { DEFAULT_TAG_FILTER_STATE, DEFAULT_STATUS_FILTER_STATE, type TagFilterState, type StatusFilterState } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { openFileInExistingLeaf } from '../utils/fileOpener';
-import { updateTaskCompletion } from '../tasks/taskUpdater';
 import { getStatusColor, DEFAULT_TASK_STATUSES, getStatusByKey } from '../tasks/taskStatus';
 import type { TaskStatus } from '../tasks/taskStatus';
 import { RegularExpressions } from '../utils/RegularExpressions';
 import { Logger } from '../utils/logger';
+import { TooltipClasses } from '../utils/bem';
 
 /**
  * 日历渲染器基类
@@ -220,44 +220,8 @@ export abstract class BaseViewRenderer {
 	 * 清理悬浮提示
 	 */
 	protected clearTaskTooltips(): void {
-		const tooltips = document.querySelectorAll('.calendar-week-task-tooltip, .gc-task-tooltip');
+		const tooltips = document.querySelectorAll(`.${TooltipClasses.block}`);
 		tooltips.forEach(t => t.remove());
-	}
-
-	/**
-	 * 渲染任务复选框（复用逻辑）
-	 */
-	protected createTaskCheckbox(task: GCTask, taskItem: HTMLElement): HTMLInputElement {
-		const checkbox = taskItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
-		checkbox.checked = task.completed;
-		checkbox.disabled = false;
-		checkbox.addClass('gc-task-card__checkbox');
-
-		checkbox.addEventListener('change', async (e) => {
-			e.stopPropagation();
-			this.clearTaskTooltips();
-			const isNowCompleted = checkbox.checked;
-			try {
-				await updateTaskCompletion(
-					this.app,
-					task,
-					isNowCompleted,
-					this.plugin.settings.enabledTaskFormats
-				);
-				taskItem.toggleClass('completed', isNowCompleted);
-				taskItem.toggleClass('pending', !isNowCompleted);
-			} catch (error) {
-				Logger.error('BaseViewRenderer', 'Error updating task:', error);
-				new Notice('更新任务失败');
-				checkbox.checked = task.completed;
-			}
-		});
-
-		checkbox.addEventListener('click', (e) => {
-			e.stopPropagation();
-		});
-
-		return checkbox;
 	}
 
 	/**
