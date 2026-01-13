@@ -19,4 +19,3 @@ allowed-tools: Bash(git status:*),Bash(git diff:*),Bash(git tag:*),Bash(git log:
     1. 插件版本已经更新到最新,与待添加的tag版本保持一致, 则直接添加tag.
     2. 插件版本信息未更新,请修改插件版本到待添加的tag版本, 生成一个新的commit, 在新的commit上添加tag, commit请不要带作者信息
 4. 为新生成的tag添加上述总结的描述信息
-5. 每次生成并添加tag之后,请将最新构建的`main.js`,`manifest.json`,`style.css`三个文件打包成一个`obsidian-gantt-calendar.zip`压缩包
