@@ -330,7 +330,6 @@ export const ToolbarClasses = {
 			container: bem(BLOCKS.TOOLBAR, 'status-filter-container'),
 			btn: bem(BLOCKS.TOOLBAR, 'status-filter-btn'),
 			icon: bem(BLOCKS.TOOLBAR, 'status-filter-icon'),
-			count: bem(BLOCKS.TOOLBAR, 'status-filter-count'),
 			btnHasSelection: bem(BLOCKS.TOOLBAR, 'status-filter-btn', 'has-selection'),
 			dropdown: bem(BLOCKS.TOOLBAR, 'status-filter-dropdown'),
 			dropdownHeader: bem(BLOCKS.TOOLBAR, 'status-filter-dropdown-header'),
@@ -346,8 +345,6 @@ export const ToolbarClasses = {
 		/** 排序按钮 */
 		sort: {
 			container: bem(BLOCKS.TOOLBAR, 'sort-container'),
-			containerWrapper: bem(BLOCKS.TOOLBAR, 'sort-container', 'wrapper'),
-			containerGantt: bem(BLOCKS.TOOLBAR, 'sort-container', 'gantt'), // 向后兼容
 			btn: bem(BLOCKS.TOOLBAR, 'sort-btn'),
 			icon: bem(BLOCKS.TOOLBAR, 'sort-icon'),
 			dropdownIcon: bem(BLOCKS.TOOLBAR, 'sort-dropdown-icon'),
@@ -363,11 +360,8 @@ export const ToolbarClasses = {
 		/** 标签筛选 */
 		tagFilter: {
 			container: bem(BLOCKS.TOOLBAR, 'tag-filter-container'),
-			containerWrapper: bem(BLOCKS.TOOLBAR, 'tag-filter-container', 'wrapper'),
-			containerGantt: bem(BLOCKS.TOOLBAR, 'tag-filter-container', 'gantt'), // 向后兼容
 			btn: bem(BLOCKS.TOOLBAR, 'tag-filter-btn'),
 			icon: bem(BLOCKS.TOOLBAR, 'tag-filter-icon'),
-			count: bem(BLOCKS.TOOLBAR, 'tag-filter-count'),
 			btnHasSelection: bem(BLOCKS.TOOLBAR, 'tag-filter-btn', 'has-selection'),
 			pane: bem(BLOCKS.TOOLBAR, 'tag-filter-pane'),
 			operators: bem(BLOCKS.TOOLBAR, 'tag-filter-operators'),
@@ -405,6 +399,7 @@ export const ToolbarClasses = {
 		/** 6视图按钮组 */
 		viewSelectorGroup: {
 			group: bem(BLOCKS.TOOLBAR, 'view-selector-group'),
+			iconOnly: bem(BLOCKS.TOOLBAR, 'view-selector-group', 'icon-only'),
 			btn: bem(BLOCKS.TOOLBAR, 'view-selector-btn'),
 			btnActive: bem(BLOCKS.TOOLBAR, 'view-selector-btn', 'active'),
 			icon: bem(BLOCKS.TOOLBAR, 'view-selector-icon'),

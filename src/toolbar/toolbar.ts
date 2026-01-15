@@ -64,7 +64,8 @@ export class Toolbar {
 		this.leftSection.render(
 			leftContainer,
 			config.currentViewType,
-			config.onViewSwitch
+			config.onViewSwitch,
+			config.showViewNavButtonText ?? true
 		);
 
 		// 渲染中间信息展示区
@@ -124,6 +125,7 @@ export interface ToolbarConfig {
 	currentViewType: CalendarViewType;
 	currentDate: Date;
 	titleText: string;
+	showViewNavButtonText?: boolean; // 是否显示视图导航按钮文本
 
 	// 任务视图相关
 	globalFilterText?: string;
