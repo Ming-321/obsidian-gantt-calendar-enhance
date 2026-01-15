@@ -106,6 +106,9 @@ export function renderTagFilterButton(
 		}
 	};
 
+	// 立即调用以初始化按钮状态
+	updateButtonState();
+
 	// 创建标签选择窗格
 	const pane = document.createElement('div');
 	pane.addClass(classes.pane);

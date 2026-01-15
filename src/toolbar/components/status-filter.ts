@@ -53,6 +53,9 @@ export function renderStatusFilterButton(
 		}
 	};
 
+	// 立即调用以初始化按钮状态
+	updateButtonState();
+
 	// 5. 创建下拉面板
 	const dropdown = document.createElement('div');
 	dropdown.addClass(classes.dropdown);
