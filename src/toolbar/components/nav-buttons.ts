@@ -4,6 +4,7 @@
  */
 
 import { setIcon } from 'obsidian';
+import { ToolbarClasses } from '../../utils/bem';
 
 /**
  * 导航按钮组配置选项
@@ -50,7 +51,7 @@ export function renderNavButtons(
 		onToday,
 		onNext,
 		containerClass,
-		buttonClass = 'calendar-nav-compact-btn',
+		buttonClass = ToolbarClasses.components.navButtons.btn,
 		todayText = '今天',
 		prevText = '◀',
 		nextText = '▶',
@@ -58,7 +59,7 @@ export function renderNavButtons(
 	} = options;
 
 	// 创建导航按钮组容器
-	const navButtons = container.createDiv('calendar-nav-buttons');
+	const navButtons = container.createDiv(ToolbarClasses.components.navButtons.group);
 	if (containerClass) navButtons.addClass(containerClass);
 
 	// 上一期按钮
@@ -118,10 +119,10 @@ export function renderNavButtonsFull(
 		...baseOptions
 	} = options;
 
-	const navButtons = container.createDiv('calendar-nav-buttons');
+	const navButtons = container.createDiv(ToolbarClasses.components.navButtons.group);
 	if (baseOptions.containerClass) navButtons.addClass(baseOptions.containerClass);
 
-	const buttonClass = baseOptions.buttonClass || 'calendar-nav-compact-btn';
+	const buttonClass = baseOptions.buttonClass || ToolbarClasses.components.navButtons.btn;
 	const buttons: HTMLButtonElement[] = [];
 
 	// 首页按钮

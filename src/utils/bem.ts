@@ -336,7 +336,8 @@ export const ToolbarClasses = {
 		/** 排序按钮 */
 		sort: {
 			container: bem(BLOCKS.TOOLBAR, 'sort-container'),
-			containerGantt: bem(BLOCKS.TOOLBAR, 'sort-container', 'gantt'),
+			containerWrapper: bem(BLOCKS.TOOLBAR, 'sort-container', 'wrapper'),
+			containerGantt: bem(BLOCKS.TOOLBAR, 'sort-container', 'gantt'), // 向后兼容
 			btn: bem(BLOCKS.TOOLBAR, 'sort-btn'),
 			icon: bem(BLOCKS.TOOLBAR, 'sort-icon'),
 			dropdownIcon: bem(BLOCKS.TOOLBAR, 'sort-dropdown-icon'),
@@ -352,7 +353,8 @@ export const ToolbarClasses = {
 		/** 标签筛选 */
 		tagFilter: {
 			container: bem(BLOCKS.TOOLBAR, 'tag-filter-container'),
-			containerGantt: bem(BLOCKS.TOOLBAR, 'tag-filter-container', 'gantt'),
+			containerWrapper: bem(BLOCKS.TOOLBAR, 'tag-filter-container', 'wrapper'),
+			containerGantt: bem(BLOCKS.TOOLBAR, 'tag-filter-container', 'gantt'), // 向后兼容
 			btn: bem(BLOCKS.TOOLBAR, 'tag-filter-btn'),
 			icon: bem(BLOCKS.TOOLBAR, 'tag-filter-icon'),
 			count: bem(BLOCKS.TOOLBAR, 'tag-filter-count'),
@@ -377,6 +379,58 @@ export const ToolbarClasses = {
 			select: bem(BLOCKS.TOOLBAR, 'field-selector-select'),
 			dualWrapper: bem(BLOCKS.TOOLBAR, 'field-selector-dual-wrapper'),
 			dualWrapperGantt: bem(BLOCKS.TOOLBAR, 'field-selector-dual-wrapper', 'gantt'),
+		},
+
+		/** 导航按钮组 */
+		navButtons: {
+			group: bem(BLOCKS.TOOLBAR, 'nav-buttons'),
+			btn: bem(BLOCKS.TOOLBAR, 'btn'),
+		},
+
+		/** 视图选择器 */
+		viewSelector: {
+			group: bem(BLOCKS.TOOLBAR, 'view-selector'),
+		},
+
+		/** 6视图按钮组 */
+		viewSelectorGroup: {
+			group: bem(BLOCKS.TOOLBAR, 'view-selector-group'),
+			btn: bem(BLOCKS.TOOLBAR, 'view-selector-btn'),
+			btnActive: bem(BLOCKS.TOOLBAR, 'view-selector-btn', 'active'),
+			icon: bem(BLOCKS.TOOLBAR, 'view-selector-icon'),
+			label: bem(BLOCKS.TOOLBAR, 'view-selector-label'),
+		},
+
+		/** 通用按钮组 */
+		buttonGroup: {
+			group: bem(BLOCKS.TOOLBAR, 'button-group'),
+			horizontal: bem(BLOCKS.TOOLBAR, 'button-group', 'horizontal'),
+			vertical: bem(BLOCKS.TOOLBAR, 'button-group', 'vertical'),
+		},
+
+		/** 输入组 */
+		inputGroup: {
+			group: bem(BLOCKS.TOOLBAR, 'input-group'),
+		},
+
+		/** 模式切换组 */
+		modeToggle: {
+			group: bem(BLOCKS.TOOLBAR, 'mode-toggle-group'),
+			icon: bem(BLOCKS.TOOLBAR, 'mode-icon'),
+			label: bem(BLOCKS.TOOLBAR, 'mode-label'),
+		},
+
+		/** 日期范围筛选器 */
+		dateFilter: {
+			group: bem(BLOCKS.TOOLBAR, 'date-filter-group'),
+			input: bem(BLOCKS.TOOLBAR, 'date-input'),
+			modeBtn: bem(BLOCKS.TOOLBAR, 'date-mode-btn'),
+			label: bem(BLOCKS.TOOLBAR, 'date-filter-label'),
+		},
+
+		/** 字段筛选组 */
+		fieldFilter: {
+			group: bem(BLOCKS.TOOLBAR, 'field-filter-group'),
 		},
 	},
 };

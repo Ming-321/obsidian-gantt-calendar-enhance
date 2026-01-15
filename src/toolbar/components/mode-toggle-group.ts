@@ -3,6 +3,8 @@
  * @module toolbar/components/mode-toggle-group
  */
 
+import { ToolbarClasses } from '../../utils/bem';
+
 /**
  * 单个模式选项配置
  */
@@ -62,7 +64,7 @@ export function renderModeToggleGroup(
 	} = options;
 
 	// 创建按钮组容器
-	const group = container.createDiv('calendar-mode-toggle-group');
+	const group = container.createDiv(ToolbarClasses.components.modeToggle.group);
 	if (groupClass) group.addClass(groupClass);
 	if (compact) group.addClass('compact');
 
@@ -72,7 +74,7 @@ export function renderModeToggleGroup(
 	// 创建各个模式按钮
 	modeOptions.forEach((mode) => {
 		const btn = group.createEl('button', {
-			cls: buttonClass || 'calendar-view-compact-btn',
+			cls: buttonClass || ToolbarClasses.components.navButtons.btn,
 			attr: {
 				'data-value': mode.value,
 				title: mode.title || mode.label
@@ -86,12 +88,12 @@ export function renderModeToggleGroup(
 
 		// 添加图标
 		if (mode.icon) {
-			const iconSpan = btn.createSpan('calendar-mode-icon');
+			const iconSpan = btn.createSpan(ToolbarClasses.components.modeToggle.icon);
 			iconSpan.setText(mode.icon);
 		}
 
 		// 添加文本
-		const textSpan = btn.createSpan('calendar-mode-label');
+		const textSpan = btn.createSpan(ToolbarClasses.components.modeToggle.label);
 		textSpan.setText(mode.label);
 
 		// 绑定点击事件

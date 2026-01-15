@@ -3,6 +3,8 @@
  * @module toolbar/components/input-group
  */
 
+import { ToolbarClasses } from '../../utils/bem';
+
 /**
  * 输入组配置选项
  */
@@ -62,7 +64,7 @@ export function renderInputGroup(
 	} = options;
 
 	// 创建输入组容器
-	const group = container.createDiv('calendar-input-group');
+	const group = container.createDiv(ToolbarClasses.components.inputGroup.group);
 	if (groupClass) group.addClass(groupClass);
 
 	// 创建标签

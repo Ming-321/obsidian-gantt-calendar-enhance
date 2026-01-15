@@ -4,6 +4,7 @@
  */
 
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
+import { ToolbarClasses } from '../../utils/bem';
 
 /**
  * 日期范围类型
@@ -77,8 +78,8 @@ export function renderDateRangeFilter(
 		currentState,
 		onRangeChange,
 		containerClass,
-		inputClass = 'toolbar-right-task-date-input',
-		buttonClass = 'toolbar-right-task-date-mode-btn',
+		inputClass = ToolbarClasses.components.dateFilter.input,
+		buttonClass = ToolbarClasses.components.dateFilter.modeBtn,
 		showAllOption = true,
 		labelText = '日期'
 	} = options;
@@ -89,13 +90,13 @@ export function renderDateRangeFilter(
 	let lastInputValue: string = '';
 
 	// 创建日期筛选组容器
-	const dateFilterGroup = container.createDiv('toolbar-right-task-date-filter-group');
+	const dateFilterGroup = container.createDiv(ToolbarClasses.components.dateFilter.group);
 	if (containerClass) dateFilterGroup.addClass(containerClass);
 
 	// 创建标签
 	const dateLabel = dateFilterGroup.createEl('span', {
 		text: labelText,
-		cls: 'toolbar-right-task-date-filter-label'
+		cls: ToolbarClasses.components.dateFilter.label
 	});
 
 	// 创建日期输入框

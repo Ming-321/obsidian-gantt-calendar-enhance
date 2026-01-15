@@ -4,6 +4,7 @@
  */
 
 import { setIcon } from 'obsidian';
+import { ToolbarClasses } from '../../utils/bem';
 
 /**
  * 单个按钮配置
@@ -59,11 +60,11 @@ export function renderButtonGroup(
 	const { buttons, orientation = 'horizontal', groupClass, buttonBaseClass } = options;
 
 	// 创建按钮组容器
-	const group = container.createDiv('calendar-button-group');
+	const group = container.createDiv(ToolbarClasses.components.buttonGroup.group);
 	if (groupClass) group.addClass(groupClass);
 
 	// 设置布局方向
-	group.addClass(orientation === 'vertical' ? 'calendar-button-group-vertical' : 'calendar-button-group-horizontal');
+	group.addClass(orientation === 'vertical' ? ToolbarClasses.components.buttonGroup.vertical : ToolbarClasses.components.buttonGroup.horizontal);
 
 	// 清理函数数组
 	const cleanupFunctions: (() => void)[] = [];
@@ -71,7 +72,7 @@ export function renderButtonGroup(
 	// 创建各个按钮
 	buttons.forEach((config) => {
 		const btn = group.createEl('button', {
-			cls: buttonBaseClass || 'calendar-view-compact-btn',
+			cls: buttonBaseClass || ToolbarClasses.components.navButtons.btn,
 			attr: { title: config.title || config.text }
 		});
 

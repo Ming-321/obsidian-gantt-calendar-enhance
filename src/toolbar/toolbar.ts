@@ -21,14 +21,14 @@ export class Toolbar {
 	private centerSection: ToolbarCenter;
 	private rightCalendarSection: ToolbarRightCalendar;
 	private rightTaskSection: ToolbarRightTask;
-    private rightGanttSection: ToolbarRightGantt;
+	private rightGanttSection: ToolbarRightGantt;
 
 	constructor() {
 		this.leftSection = new ToolbarLeft();
 		this.centerSection = new ToolbarCenter();
 		this.rightCalendarSection = new ToolbarRightCalendar();
 		this.rightTaskSection = new ToolbarRightTask();
-        this.rightGanttSection = new ToolbarRightGantt();
+		this.rightGanttSection = new ToolbarRightGantt();
 	}
 
 	/**
@@ -57,11 +57,10 @@ export class Toolbar {
 		const centerContainer = container.createDiv(ToolbarClasses.elements.center);
 		const rightContainer = container.createDiv(ToolbarClasses.elements.right);
 
-		// 渲染左侧视图选择器
+		// 渲染左侧6视图选择器
 		this.leftSection.render(
 			leftContainer,
 			config.currentViewType,
-			config.lastCalendarViewType,
 			config.onViewSwitch
 		);
 
@@ -82,13 +81,13 @@ export class Toolbar {
 				config.plugin
 			);
 		} else if (config.currentViewType === 'gantt') {
-            this.rightGanttSection.render(
-                rightContainer,
-                config.ganttRenderer,
-                config.onRefresh,
-                config.onRender,
-                config.plugin
-            );
+			this.rightGanttSection.render(
+				rightContainer,
+				config.ganttRenderer,
+				config.onRefresh,
+				config.onRender,
+				config.plugin
+			);
 		} else {
 			this.rightCalendarSection.render(
 				rightContainer,
@@ -96,7 +95,6 @@ export class Toolbar {
 				config.onPrevious,
 				config.onToday,
 				config.onNext,
-				config.onViewSwitch,
 				config.onRefresh,
 				config.onRender,
 				config.plugin
@@ -111,14 +109,13 @@ export class Toolbar {
 export interface ToolbarConfig {
 	// 基础信息
 	currentViewType: CalendarViewType;
-	lastCalendarViewType: CalendarViewType;
 	currentDate: Date;
 	titleText: string;
 
 	// 任务视图相关
 	globalFilterText?: string;
 	taskRenderer: TaskViewRenderer;
-    ganttRenderer: GanttViewRenderer;
+	ganttRenderer: GanttViewRenderer;
 	dayRenderer?: DayViewRenderer;
 	weekRenderer?: WeekViewRenderer;
 

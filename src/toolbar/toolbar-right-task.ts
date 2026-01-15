@@ -8,6 +8,7 @@ import { renderFieldSelector } from './components/field-selector';
 import { renderDateRangeFilter, type DateRangeState } from './components/date-range-filter';
 import { renderCreateTaskButton } from './components/create-task-button';
 import type { DateFieldType } from './components/field-selector';
+import { ToolbarClasses } from '../utils/bem';
 
 /**
  * 工具栏右侧区域 - 任务视图功能区
@@ -42,7 +43,6 @@ export class ToolbarRightTask {
 		plugin?: any
 	): void {
 		container.empty();
-		container.addClass('toolbar-right-task');
 
 		// ===== 左侧：任务视图私有按钮 =====
 
@@ -66,7 +66,7 @@ export class ToolbarRightTask {
 				onFilterChange();
 			},
 			label: '字段筛选',
-			containerClass: 'toolbar-right-task-field-filter-group'
+			containerClass: ToolbarClasses.components.fieldFilter.group
 		});
 
 		// 日期筛选组
@@ -85,9 +85,9 @@ export class ToolbarRightTask {
 				}
 				onFilterChange();
 			},
-			containerClass: 'toolbar-right-task-date-filter-group',
-			inputClass: 'toolbar-right-task-date-input',
-			buttonClass: 'toolbar-right-task-date-mode-btn',
+			containerClass: ToolbarClasses.components.dateFilter.group,
+			inputClass: ToolbarClasses.components.dateFilter.input,
+			buttonClass: ToolbarClasses.components.dateFilter.modeBtn,
 			showAllOption: true,
 			labelText: '日期'
 		});
@@ -119,7 +119,7 @@ export class ToolbarRightTask {
 		if (plugin) {
 			renderCreateTaskButton(container, {
 				plugin: plugin,
-				buttonClass: 'calendar-nav-compact-btn'
+				buttonClass: ToolbarClasses.components.navButtons.btn
 			});
 		}
 

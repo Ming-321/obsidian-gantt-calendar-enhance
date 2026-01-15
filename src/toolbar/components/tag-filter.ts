@@ -74,7 +74,7 @@ export function renderTagFilterButton(
 	const classes = ToolbarClasses.components.tagFilter;
 
 	// 创建按钮容器
-	const buttonContainer = container.createDiv(classes.containerGantt);
+	const buttonContainer = container.createDiv(classes.containerWrapper);
 
 	// 创建标签筛选按钮
 	const tagBtn = buttonContainer.createEl('button', {

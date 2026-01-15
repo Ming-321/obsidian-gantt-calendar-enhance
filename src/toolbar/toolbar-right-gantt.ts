@@ -6,6 +6,7 @@ import { renderSortButton } from './components/sort-button';
 import { renderTagFilterButton } from './components/tag-filter';
 import { renderDualFieldSelector, type DateFieldType } from './components/field-selector';
 import { renderCreateTaskButton } from './components/create-task-button';
+import { ToolbarClasses } from '../utils/bem';
 
 /**
  * 工具栏右侧区域 - 甘特视图功能区
@@ -31,7 +32,6 @@ export class ToolbarRightGantt {
 		plugin?: any
 	): void {
 		container.empty();
-		container.addClass('toolbar-right-gantt');
 
 		// ===== 左侧：甘特图视图私有按钮 =====
 
@@ -101,7 +101,7 @@ export class ToolbarRightGantt {
 		if (plugin) {
 			renderCreateTaskButton(container, {
 				plugin: plugin,
-				buttonClass: 'calendar-nav-compact-btn'
+				buttonClass: ToolbarClasses.components.navButtons.btn
 			});
 		}
 

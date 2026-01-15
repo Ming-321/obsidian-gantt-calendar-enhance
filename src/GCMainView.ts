@@ -16,7 +16,6 @@ export const GC_VIEW_ID = 'gantt-calendar-view';
 export class GCMainView extends ItemView {
 	private currentDate: Date = new Date();
 	private viewType: CalendarViewType = 'year';
-	private lastCalendarViewType: CalendarViewType = 'month';
 	private resizeObserver: ResizeObserver | null = null;
 	private plugin: any;
 	private cacheUpdateListener: (() => void) | null = null;
@@ -150,12 +149,11 @@ export class GCMainView extends ItemView {
 		const toolbarContainer = container.createDiv('calendar-toolbar');
 		this.toolbar.render(toolbarContainer, {
 			currentViewType: this.viewType,
-			lastCalendarViewType: this.lastCalendarViewType,
 			currentDate: this.currentDate,
 			titleText: this.getViewTitle(),
 			globalFilterText: this.plugin?.settings?.globalTaskFilter,
 			taskRenderer: this.taskRenderer,
-            ganttRenderer: this.ganttRenderer,
+			ganttRenderer: this.ganttRenderer,
 			dayRenderer: this.dayRenderer,
 			weekRenderer: this.weekRenderer,
 			plugin: this.plugin,
@@ -235,10 +233,6 @@ export class GCMainView extends ItemView {
 	}
 
 	public switchView(type: CalendarViewType): void {
-		// 只有真正的日历视图才更新 lastCalendarViewType
-		if (type !== 'task' && type !== 'gantt') {
-			this.lastCalendarViewType = type;
-		}
 		this.viewType = type;
 		this.render();
 	}

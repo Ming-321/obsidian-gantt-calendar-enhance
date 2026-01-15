@@ -38,7 +38,7 @@ export function renderSortButton(
 	const { getCurrentState, onSortChange } = options;
 
 	// 创建按钮容器
-	const buttonContainer = container.createDiv(ToolbarClasses.components.sort.containerGantt);
+	const buttonContainer = container.createDiv(ToolbarClasses.components.sort.containerWrapper);
 
 	// 创建排序按钮
 	const sortBtn = buttonContainer.createEl('button', {

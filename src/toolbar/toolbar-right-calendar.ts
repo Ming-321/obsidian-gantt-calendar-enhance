@@ -1,5 +1,4 @@
 import { renderNavButtons } from './components/nav-buttons';
-import { renderCalendarViewSwitcher } from './components/calendar-view-switcher';
 import { renderRefreshButton } from './components/refresh-button';
 import { renderSortButton } from './components/sort-button';
 import { renderTagFilterButton } from './components/tag-filter';
@@ -10,22 +9,22 @@ import type { DayViewRenderer } from '../views/DayView';
 import type { WeekViewRenderer } from '../views/WeekView';
 import type { MonthViewRenderer } from '../views/MonthView';
 import type { YearViewRenderer } from '../views/YearView';
+import { ToolbarClasses } from '../utils/bem';
 
 /**
  * 工具栏右侧区域 - 日历视图功能区
  *
  * 按钮布局顺序：
- * 日视图：           [排序] | [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [日/周/月/年] | [刷新]
- * 周视图：[状态筛选] [排序] | [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [日/周/月/年] | [刷新]
- * 月视图：         [状态筛选] [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [日/周/月/年] | [刷新]
- * 年视图：                    [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [日/周/月/年] | [刷新]
+ * 日视图：           [排序] | [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [刷新]
+ * 周视图：[状态筛选] [排序] | [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [刷新]
+ * 月视图：         [状态筛选] [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [刷新]
+ * 年视图：                    [标签筛选] | [◀ 上一期] [今天] [下一期▶] | [刷新]
  */
 export class ToolbarRightCalendar {
 	private dayRenderer?: DayViewRenderer;
 	private weekRenderer?: WeekViewRenderer;
 	private monthRenderer?: MonthViewRenderer;
 	private yearRenderer?: YearViewRenderer;
-	private viewSwitcherInstance?: { updateActive: (view: string) => void; cleanup: () => void };
 
 	/**
 	 * 设置渲染器引用
@@ -49,7 +48,6 @@ export class ToolbarRightCalendar {
 	 * @param onPrevious 上一期回调
 	 * @param onToday 今天回调
 	 * @param onNext 下一期回调
-	 * @param onViewSwitch 视图切换回调
 	 * @param onRefresh 刷新回调（重新扫描文件）
 	 * @param onRender 渲染回调（仅重新渲染视图）
 	 * @param plugin 插件实例
@@ -60,13 +58,11 @@ export class ToolbarRightCalendar {
 		onPrevious: () => void,
 		onToday: () => void,
 		onNext: () => void,
-		onViewSwitch: (type: CalendarViewType) => void,
 		onRefresh: () => Promise<void>,
 		onRender: () => void = () => {},
 		plugin?: any
 	): void {
 		container.empty();
-		container.addClass('calendar-toolbar-right');
 
 		// ===== 左侧：筛选和排序按钮 =====
 
@@ -121,23 +117,15 @@ export class ToolbarRightCalendar {
 			});
 		}
 
-		// ===== 中间：导航和视图切换 =====
+		// ===== 中间：导航按钮 =====
 
 		// 导航按钮组（日历视图）
 		renderNavButtons(container, {
 			onPrevious,
 			onToday,
 			onNext,
-			containerClass: 'calendar-nav-buttons',
-			buttonClass: 'calendar-nav-compact-btn'
-		});
-
-		// 视图选择器（日/周/月/年）
-		this.viewSwitcherInstance = renderCalendarViewSwitcher(container, {
-			currentView: currentViewType as 'year' | 'month' | 'week' | 'day',
-			onViewChange: (view) => onViewSwitch(view as CalendarViewType),
-			containerClass: 'calendar-view-selector',
-			buttonClass: 'calendar-view-compact-btn'
+			containerClass: ToolbarClasses.components.navButtons.group,
+			buttonClass: ToolbarClasses.components.navButtons.btn
 		});
 
 		// ===== 右侧：功能按钮 =====
@@ -146,25 +134,11 @@ export class ToolbarRightCalendar {
 		if (plugin) {
 			renderCreateTaskButton(container, {
 				plugin: plugin,
-				buttonClass: 'calendar-nav-compact-btn'
+				buttonClass: ToolbarClasses.components.navButtons.btn
 			});
 		}
 
 		// 刷新按钮（所有视图共有，始终在最右边）
 		renderRefreshButton(container, onRefresh, '刷新任务');
-	}
-
-	/**
-	 * 更新当前视图的激活状态
-	 */
-	updateActiveView(viewType: CalendarViewType): void {
-		this.viewSwitcherInstance?.updateActive(viewType);
-	}
-
-	/**
-	 * 清理资源
-	 */
-	cleanup(): void {
-		this.viewSwitcherInstance?.cleanup();
 	}
 }

@@ -4,6 +4,7 @@
  */
 
 import type { CalendarViewType } from '../../types';
+import { ToolbarClasses } from '../../utils/bem';
 
 /**
  * 日历视图切换器配置选项
@@ -51,12 +52,12 @@ export function renderCalendarViewSwitcher(
 		currentView,
 		onViewChange,
 		containerClass,
-		buttonClass = 'calendar-view-compact-btn',
+		buttonClass = ToolbarClasses.components.navButtons.btn,
 		fullLabel = false
 	} = options;
 
 	// 创建视图选择器容器
-	const viewContainer = container.createDiv('calendar-view-selector');
+	const viewContainer = container.createDiv(ToolbarClasses.components.viewSelector.group);
 	if (containerClass) viewContainer.addClass(containerClass);
 
 	// 存储按钮元素以便更新
@@ -129,10 +130,10 @@ export function renderSimpleViewSwitcher(
 		currentView,
 		onViewChange,
 		containerClass,
-		buttonClass = 'calendar-view-compact-btn'
+		buttonClass = ToolbarClasses.components.navButtons.btn
 	} = options;
 
-	const viewContainer = container.createDiv('calendar-view-selector');
+	const viewContainer = container.createDiv(ToolbarClasses.components.viewSelector.group);
 	if (containerClass) viewContainer.addClass(containerClass);
 
 	const buttonElements: Map<string, HTMLElement> = new Map();
