@@ -369,7 +369,11 @@ Author: sugar
 .gc-toolbar__field-filter-group {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 70%, #888 10%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 旧类名兼容 - toolbar-right-task-date-filter-group */
@@ -1004,8 +1008,7 @@ Author: sugar
 
 /* 字段选择器 */
 .gc-toolbar__field-selector-label {
-	font-size: 13px;
-	color: var(--text-muted);
+	display: none;
 }
 
 .gc-toolbar__field-selector-select {
