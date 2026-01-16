@@ -376,20 +376,19 @@ Author: sugar
 .gc-toolbar__date-filter-group {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 70%, #888 10%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 	flex-wrap: wrap;
-}
-
-/* BEM: 日期筛选标签 */
-.gc-toolbar__date-filter-label {
-	font-size: 14px;
-	color: var(--text-muted);
-	white-space: nowrap;
 }
 
 /* BEM: 日期输入框 */
 .gc-toolbar__date-input {
-	padding: 4px 8px;
+	padding: 4px 2px 4px 6px;
+	margin-left: 6px;
+	width: 95px;
 	border: 1px solid var(--input-border-color);
 	border-radius: 4px;
 	background-color: var(--background-secondary);
@@ -399,10 +398,9 @@ Author: sugar
 
 /* BEM: 日期模式按钮 */
 .gc-toolbar__date-mode-btn {
-	padding: 2px 6px;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	border-radius: 4px;
+	padding: 4px 8px;
+	border: none;
+	background-color: transparent;
 	cursor: pointer;
 	font-size: 12px;
 	color: var(--text-muted);

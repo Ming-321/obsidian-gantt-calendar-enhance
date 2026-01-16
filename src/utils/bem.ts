@@ -430,7 +430,6 @@ export const ToolbarClasses = {
 			group: bem(BLOCKS.TOOLBAR, 'date-filter-group'),
 			input: bem(BLOCKS.TOOLBAR, 'date-input'),
 			modeBtn: bem(BLOCKS.TOOLBAR, 'date-mode-btn'),
-			label: bem(BLOCKS.TOOLBAR, 'date-filter-label'),
 		},
 
 		/** 字段筛选组 */

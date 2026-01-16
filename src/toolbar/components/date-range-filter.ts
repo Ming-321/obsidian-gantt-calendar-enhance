@@ -93,12 +93,6 @@ export function renderDateRangeFilter(
 	const dateFilterGroup = container.createDiv(ToolbarClasses.components.dateFilter.group);
 	if (containerClass) dateFilterGroup.addClass(containerClass);
 
-	// 创建标签
-	const dateLabel = dateFilterGroup.createEl('span', {
-		text: labelText,
-		cls: ToolbarClasses.components.dateFilter.label
-	});
-
 	// 创建日期输入框
 	const dateInput = dateFilterGroup.createEl('input', {
 		cls: inputClass,
@@ -231,7 +225,6 @@ export function renderDateRangeFilter(
 	const cleanup = () => {
 		modeButtons.clear();
 		dateInput.remove();
-		dateLabel.remove();
 		dateFilterGroup.remove();
 	};
 
