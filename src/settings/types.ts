@@ -5,7 +5,7 @@ import type { TaskStatus } from '../tasks/taskStatus';
 /**
  * 日期字段类型
  */
-type DateFieldType = 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate';
+export type DateFieldType = 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate';
 
 /**
  * Gantt Calendar Plugin Settings Interface
@@ -74,6 +74,11 @@ export interface GanttCalendarSettings {
 	// YearView 状态
 	yearViewSelectedTags: string[];
 	yearViewTagOperator: TagFilterOperator;
+
+	// ========== 甘特图设置 ==========
+
+	ganttStartField: DateFieldType;  // 甘特图开始时间字段
+	ganttEndField: DateFieldType;    // 甘特图结束时间字段
 }
 
 /**

@@ -34,10 +34,6 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	private scrollLeftPosition = 0;
 	private scrollTopPosition = 0;
 
-	// 时间字段配置
-	private startField: DateFieldType = 'startDate';
-	private endField: DateFieldType = 'dueDate';
-
 	// 视图模式
 	private timeGranularity: GanttTimeGranularity = 'day';
 	private ganttViewMode: GanttChartConfig['view_mode'] = 'day';
@@ -53,16 +49,16 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	private currentGlobalTasks: GCTask[] = [];
 	private currentGanttTasks: import('../gantt').GanttChartTask[] = [];
 
-	// Getter 方法（供工具栏调用）
-	public getStartField(): DateFieldType { return this.startField; }
+	// Getter 方法（供工具栏调用）- 从插件设置读取
+	public getStartField(): DateFieldType { return this.plugin.settings.ganttStartField; }
 	public setStartField(value: DateFieldType): void {
-		this.startField = value;
+		this.plugin.settings.ganttStartField = value;
 		this.refresh();
 	}
 
-	public getEndField(): DateFieldType { return this.endField; }
+	public getEndField(): DateFieldType { return this.plugin.settings.ganttEndField; }
 	public setEndField(value: DateFieldType): void {
-		this.endField = value;
+		this.plugin.settings.ganttEndField = value;
 		this.refresh();
 	}
 
@@ -149,8 +145,8 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 转换为 GanttChartTask
 			const ganttTasks = TaskDataAdapter.toGanttChartTasks(
 				filteredGlobalTasks,
-				this.startField,
-				this.endField
+				this.getStartField(),
+				this.getEndField()
 			);
 			this.currentGanttTasks = ganttTasks;
 
@@ -228,8 +224,8 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 4. 转换为 甘特图 格式
 			const ganttTasks = TaskDataAdapter.toGanttChartTasks(
 				filteredGlobalTasks,
-				this.startField,
-				this.endField
+				this.getStartField(),
+				this.getEndField()
 			);
 			this.currentGanttTasks = ganttTasks;
 
@@ -272,7 +268,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			};
 
 			// 9. 初始化 甘特图 包装器（传递 plugin、原始任务列表和字段配置）
-			this.ganttWrapper = new GanttChartAdapter(ganttRoot, config, this.plugin, filteredGlobalTasks, this.startField, this.endField);
+			this.ganttWrapper = new GanttChartAdapter(ganttRoot, config, this.plugin, filteredGlobalTasks, this.getStartField(), this.getEndField());
 
 			// 10. 渲染甘特图
 			await this.ganttWrapper.init(ganttTasks);
@@ -318,7 +314,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 		if (this.tagFilterState.selectedTags.length > 0) {
 			reasons.push(`标签筛选: ${this.tagFilterState.selectedTags.join(', ')}`);
 		}
-		if (!this.startField || !this.endField) {
+		if (!this.getStartField() || !this.getEndField()) {
 			reasons.push('缺少时间字段配置');
 		}
 
@@ -351,7 +347,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 				<strong>${this.timeGranularity}</strong> 视图
 			</span>
 			<span class="gantt-stat-item">
-				<strong>${this.startField}</strong> → <strong>${this.endField}</strong>
+				<strong>${this.getStartField()}</strong> → <strong>${this.getEndField()}</strong>
 			</span>
 		`;
 	}
@@ -385,8 +381,8 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			ganttTask,
 			start,
 			end,
-			this.startField,
-			this.endField,
+			this.getStartField(),
+			this.getEndField(),
 			this.currentGlobalTasks
 		);
 	}
@@ -454,8 +450,8 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 3. 转换为 GanttChartTask
 			const ganttTasks = TaskDataAdapter.toGanttChartTasks(
 				filteredGlobalTasks,
-				this.startField,
-				this.endField
+				this.getStartField(),
+				this.getEndField()
 			);
 			this.currentGanttTasks = ganttTasks;
 

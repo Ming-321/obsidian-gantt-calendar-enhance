@@ -7,6 +7,7 @@ import { CalendarViewSettingsBuilder } from './builders/CalendarViewSettingsBuil
 import { DayViewSettingsBuilder } from './builders/DayViewSettingsBuilder';
 import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
 import { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
+import { GanttViewSettingsBuilder } from './builders/GanttViewSettingsBuilder';
 import type { BuilderConfig } from './types';
 
 /**
@@ -91,5 +92,13 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			onRefreshSettings: refreshCallback
 		});
 		yearViewBuilder.render();
+
+		// ===== 甘特图设置 =====
+		const ganttViewBuilder = new GanttViewSettingsBuilder({
+			containerEl,
+			plugin: this.plugin,
+			onRefreshSettings: refreshCallback
+		});
+		ganttViewBuilder.render();
 	}
 }

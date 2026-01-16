@@ -68,6 +68,11 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	// YearView
 	yearViewSelectedTags: [],
 	yearViewTagOperator: 'OR',
+
+	// ========== 甘特图设置 ==========
+
+	ganttStartField: 'startDate',  // 默认使用开始日期
+	ganttEndField: 'dueDate',      // 默认使用截止日期
 };
 
 /**
