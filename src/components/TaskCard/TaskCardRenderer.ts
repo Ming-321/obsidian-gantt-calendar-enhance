@@ -283,11 +283,17 @@ export class TaskCardRenderer {
 			card.setAttribute('data-target-date', targetDate.toISOString().split('T')[0]);
 		}
 
+		// 获取 TooltipManager 单例
+		const tooltipManager = TooltipManager.getInstance(this.plugin);
+
 		card.addEventListener('dragstart', (e: DragEvent) => {
 			if (e.dataTransfer) {
 				e.dataTransfer.effectAllowed = 'move';
 				e.dataTransfer.setData('taskId', `${task.filePath}:${task.lineNumber}`);
 				card.style.opacity = '0.6';
+
+				// 拖动时取消悬浮窗
+				tooltipManager.cancel();
 			}
 		});
 
@@ -306,6 +312,14 @@ export class TaskCardRenderer {
 	): void {
 		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
 		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
+
+		// 获取 TooltipManager 单例
+		const tooltipManager = TooltipManager.getInstance(this.plugin);
+
+		// 右键菜单打开时隐藏悬浮窗
+		card.addEventListener('contextmenu', () => {
+			tooltipManager.cancel();
+		});
 
 		registerTaskContextMenu(
 			card,

@@ -331,6 +331,32 @@ export class TooltipManager {
 	}
 
 	/**
+	 * 取消悬浮窗显示（用于拖动等操作）
+	 * - 取消显示定时器
+	 * - 取消隐藏定时器
+	 * - 立即隐藏已显示的悬浮窗
+	 */
+	cancel(): void {
+		// 取消显示定时器
+		if (this.showTimeout) {
+			window.clearTimeout(this.showTimeout);
+			this.showTimeout = null;
+		}
+
+		// 取消隐藏定时器
+		if (this.hideTimeout) {
+			window.clearTimeout(this.hideTimeout);
+			this.hideTimeout = null;
+		}
+
+		// 立即隐藏悬浮窗
+		if (this.tooltip) {
+			this.tooltip.removeClass('gc-task-tooltip--visible');
+			this.tooltip.style.opacity = '0';
+		}
+	}
+
+	/**
 	 * 隐藏 tooltip
 	 */
 	hide(): void {

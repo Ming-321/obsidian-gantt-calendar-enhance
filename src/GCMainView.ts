@@ -79,9 +79,9 @@ export class GCMainView extends ItemView {
 		this.setupResizeObserver();
 
 		// 订阅缓存更新事件
-		this.cacheUpdateListener = () => {
+		this.cacheUpdateListener = (filePath?: string) => {
 			if (this.containerEl.isConnected) {
-				this.incrementalRefresh();
+				this.incrementalRefresh(filePath);
 			}
 		};
 		this.plugin?.taskCache?.onUpdate(this.cacheUpdateListener);
@@ -89,8 +89,9 @@ export class GCMainView extends ItemView {
 
 	/**
 	 * 增量刷新：根据当前视图类型调用对应的增量刷新方法
+	 * @param filePath - 变更的文件路径（可选），甘特图可用于增量更新
 	 */
-	private incrementalRefresh(): void {
+	private incrementalRefresh(filePath?: string): void {
 		switch (this.viewType) {
 			case 'month':
 				this.monthRenderer.refreshTasks();
@@ -108,8 +109,8 @@ export class GCMainView extends ItemView {
 				this.yearRenderer.refreshTasks();
 				break;
 			case 'gantt':
-				// 甘特图有自己独立的增量更新机制
-				// 不需要在这里做任何操作
+				// 调用甘特图的增量更新
+				this.ganttRenderer.refreshTasks();
 				break;
 		}
 	}

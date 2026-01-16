@@ -122,12 +122,51 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	}
 
 	/**
-	 * 增量刷新：甘特图已有 incrementallyUpdate 机制
-	 * 此方法为接口兼容，实际由 incrementallyUpdate 处理
+	 * 刷新任务数据（公共接口）
+	 * 当外部文件变更时调用此方法执行增量更新
 	 */
 	public refreshTasks(): void {
-		// 甘特图有自己独立的增量更新机制
-		// 不需要在这里做任何操作
+		try {
+			// 如果甘特图还未初始化，跳过
+			if (!this.ganttWrapper || !this.currentContainer) {
+				return;
+			}
+
+			// 获取最新的任务数据
+			const globalTasks: GCTask[] = this.plugin.taskCache.getAllTasks();
+			const oldGanttTasks = this.currentGanttTasks;
+			this.currentGlobalTasks = globalTasks;
+
+			// 应用筛选和排序
+			let filteredGlobalTasks = TaskDataAdapter.applyFilters(
+				globalTasks,
+				this.getStatusFilterState(),
+				this.tagFilterState.selectedTags,
+				this.tagFilterState.operator
+			);
+			filteredGlobalTasks = sortTasks(filteredGlobalTasks, this.sortState);
+
+			// 转换为 GanttChartTask
+			const ganttTasks = TaskDataAdapter.toGanttChartTasks(
+				filteredGlobalTasks,
+				this.startField,
+				this.endField
+			);
+			this.currentGanttTasks = ganttTasks;
+
+			// 判断更新策略
+			if (this.shouldFullRefresh(oldGanttTasks, ganttTasks)) {
+				// 任务数量或顺序变化大，执行完整刷新
+				this.refresh();
+			} else {
+				// 增量更新：只更新视觉，保持滚动位置
+				this.ganttWrapper.updateTasks(ganttTasks);
+			}
+		} catch (error) {
+			Logger.error('GanttView', 'Error in refreshTasks:', error);
+			// 出错时回退到完整刷新
+			this.refresh();
+		}
 	}
 
 	/**
@@ -207,9 +246,9 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 7. 初始化更新处理器
 			if (!this.updateHandler) {
 				this.updateHandler = new TaskUpdateHandler(this.app, this.plugin);
-				// 设置增量更新回调
-				this.updateHandler.onTaskUpdated = (filePath: string) => {
-					this.incrementallyUpdate(filePath);
+				// 设置增量更新回调（当甘特图内部操作触发任务更新时）
+				this.updateHandler.onTaskUpdated = (_filePath: string) => {
+					this.refreshTasks();
 				};
 			}
 

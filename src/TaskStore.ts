@@ -15,7 +15,7 @@ import { TaskRepository } from './data-layer/TaskRepository';
 import { MarkdownDataSource } from './data-layer/MarkdownDataSource';
 import { DataSourceConfig } from './data-layer/types';
 
-export type TaskStoreUpdateListener = () => void;
+export type TaskStoreUpdateListener = (filePath?: string) => void;
 
 /**
  * TaskStore - 任务数据存储
@@ -82,22 +82,28 @@ export class TaskStore {
 
 	/**
 	 * 设置事件转发
+	 * 传递文件路径以便甘特图等组件进行增量更新
 	 */
 	private setupEventForwarding(): void {
-		this.eventBus.on('task:created', () => {
-			Logger.debug('TaskStore', 'Event: task:created');
+		this.eventBus.on('task:created', (data) => {
+			const filePath = (data as any)?.task?.filePath;
+			Logger.debug('TaskStore', `Event: task:created from ${filePath || 'unknown'}`);
 			this.invalidateCache();
-			this.notifyListenersDebounced();
+			this.notifyListenersDebounced(filePath);
 		});
-		this.eventBus.on('task:updated', () => {
-			Logger.debug('TaskStore', 'Event: task:updated');
+		this.eventBus.on('task:updated', (data) => {
+			const filePath = (data as any)?.task?.filePath;
+			Logger.debug('TaskStore', `Event: task:updated from ${filePath || 'unknown'}`);
 			this.invalidateCache();
-			this.notifyListenersDebounced();
+			this.notifyListenersDebounced(filePath);
 		});
-		this.eventBus.on('task:deleted', () => {
-			Logger.debug('TaskStore', 'Event: task:deleted');
+		this.eventBus.on('task:deleted', (data) => {
+			// 从 taskId 解析 filePath (格式: "filePath:lineNumber")
+			const taskId = (data as any)?.taskId;
+			const filePath = taskId ? taskId.split(':')[0] : undefined;
+			Logger.debug('TaskStore', `Event: task:deleted from ${filePath || 'unknown'}`);
 			this.invalidateCache();
-			this.notifyListenersDebounced();
+			this.notifyListenersDebounced(filePath);
 		});
 	}
 
@@ -255,25 +261,27 @@ export class TaskStore {
 
 	/**
 	 * 防抖通知监听器
+	 * @param filePath - 变更的文件路径（可选），用于增量更新
 	 */
-	private notifyListenersDebounced(): void {
+	private notifyListenersDebounced(filePath?: string): void {
 		if (this.updateDebounceTimer !== null) {
 			clearTimeout(this.updateDebounceTimer);
 		}
 
 		this.updateDebounceTimer = window.setTimeout(() => {
-			this.notifyListeners();
+			this.notifyListeners(filePath);
 			this.updateDebounceTimer = null;
 		}, this.DEBOUNCE_MS);
 	}
 
 	/**
 	 * 通知所有监听器
+	 * @param filePath - 变更的文件路径（可选），用于增量更新
 	 */
-	private notifyListeners(): void {
+	private notifyListeners(filePath?: string): void {
 		this.updateListeners.forEach(listener => {
 			try {
-				listener();
+				listener(filePath);
 			} catch (error) {
 				Logger.error('TaskStore', 'Error in update listener:', error);
 			}
