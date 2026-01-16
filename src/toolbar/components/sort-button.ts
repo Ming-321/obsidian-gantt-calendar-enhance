@@ -45,7 +45,7 @@ export function renderSortButton(
 	// 创建排序按钮
 	const sortBtn = buttonGroup.createEl('button', {
 		cls: ToolbarClasses.components.navButtons.btn,
-		attr: { title: '排序选项' }
+		attr: { 'aria-label': '排序选项' }
 	});
 
 	// 更新按钮显示内容的函数

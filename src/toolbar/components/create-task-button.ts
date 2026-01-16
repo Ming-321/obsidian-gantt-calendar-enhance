@@ -38,7 +38,7 @@ export function renderCreateTaskButton(
 	// 创建按钮
 	const createBtn = buttonGroup.createEl('button', {
 		cls: ToolbarClasses.components.navButtons.btn,
-		attr: { title: '创建新任务', 'aria-label': '创建新任务' }
+		attr: { 'aria-label': '创建新任务' }
 	});
 
 	// 添加样式类

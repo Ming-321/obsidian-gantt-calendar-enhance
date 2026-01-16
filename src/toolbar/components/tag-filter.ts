@@ -82,7 +82,7 @@ export function renderTagFilterButton(
 	// 创建标签筛选按钮
 	const tagBtn = buttonGroup.createEl('button', {
 		cls: ToolbarClasses.components.navButtons.btn,
-		attr: { title: '标签筛选', 'aria-label': '标签筛选' }
+		attr: { 'aria-label': '标签筛选' }
 	});
 
 	// 按钮图标 - 使用线条风格的标签图标

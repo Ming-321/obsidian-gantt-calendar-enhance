@@ -15,7 +15,7 @@ export function renderRefreshButton(
 
   const btn = buttonGroup.createEl('button', {
     cls: ToolbarClasses.components.navButtons.btn,
-    attr: { title, 'aria-label': title }
+    attr: { 'aria-label': title }
   });
   setIcon(btn, 'rotate-ccw');
   btn.addEventListener('click', onRefresh);

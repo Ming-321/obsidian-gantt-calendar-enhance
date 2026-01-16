@@ -70,7 +70,6 @@ Author: sugar
 }
 
 /* Calendar Grid Layouts */
-.calendar-week-grid,
 .gc-week-view__grid {
 	display: flex;
 	flex-direction: column;
@@ -82,7 +81,6 @@ Author: sugar
 	position: relative;
 }
 
-.calendar-week-header-row,
 .gc-week-view__header-row {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
@@ -101,19 +99,6 @@ Author: sugar
 	overflow-x: hidden;
 	flex: 1 1 auto;
 	min-height: 0;
-	position: relative;
-}
-
-.calendar-day-grid {
-	display: grid;
-	grid-template-columns: 60px 1fr;
-	gap: 0;
-	margin: 0;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	overflow-y: auto;
-	overflow-x: hidden;
-	grid-row: 2;
 	position: relative;
 }
 
@@ -220,7 +205,6 @@ Author: sugar
 }
 
 /* Week/Day Layout */
-.calendar-week-view,
 .gc-view.gc-view--week {
 	display: flex;
 	flex-direction: column;
@@ -230,7 +214,6 @@ Author: sugar
 	height: 100%;
 }
 
-.calendar-week-days-container,
 .gc-week-view__days {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
@@ -239,7 +222,6 @@ Author: sugar
 
 /* ==================== Day View Layout ==================== */
 /* BEM命名: gc-day-view, gc-view */
-.calendar-day-view,
 .gc-day-view,
 .gc-view.gc-view--day {
 	display: flex;
@@ -566,13 +548,6 @@ Author: sugar
 	background-color: #ff6b4a;
 	border-color: #ff6b4a;
 	color: white;
-}
-
-/* BEM: 导航按钮组 - 旧样式保留用于日历视图 */
-.calendar-nav-buttons {
-	display: flex;
-	align-items: center;
-	gap: 8px;
 }
 
 /* BEM: 导航按钮组 - 工具栏凹陷底座效果 */

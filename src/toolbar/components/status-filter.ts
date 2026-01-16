@@ -28,7 +28,7 @@ export function renderStatusFilterButton(
 	// 2. 创建筛选按钮
 	const statusBtn = buttonGroup.createEl('button', {
 		cls: ToolbarClasses.components.navButtons.btn,
-		attr: { title: '状态筛选', 'aria-label': '状态筛选', 'data-tooltip': '状态筛选' }
+		attr: { 'aria-label': '状态筛选' }
 	});
 
 	// 3. 按钮内容：图标 - 使用线条风格的复选框图标
