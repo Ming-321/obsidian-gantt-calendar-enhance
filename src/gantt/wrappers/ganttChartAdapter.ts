@@ -38,7 +38,14 @@ export class GanttChartAdapter {
 	 * @param startField - 开始时间字段
 	 * @param endField - 结束时间字段
 	 */
-	constructor(container: HTMLElement, config: GanttChartConfig, plugin: any, originalTasks: GCTask[] = [], startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
+	constructor(
+		container: HTMLElement,
+		config: GanttChartConfig,
+		plugin: any,
+		originalTasks: GCTask[] = [],
+		startField: DateFieldType = 'startDate',
+		endField: DateFieldType = 'dueDate'
+	) {
 		this.container = container;
 		this.plugin = plugin;
 		this.app = plugin?.app;
@@ -70,7 +77,7 @@ export class GanttChartAdapter {
 		}
 
 		try {
-			// 创建 SVG 渲染器（传递所有参数）
+			// 创建 SVG 渲染器
 			this.renderer = new SvgGanttRenderer(
 				this.container,
 				this.config,
@@ -164,6 +171,24 @@ export class GanttChartAdapter {
 	scrollToToday(): void {
 		if (this.renderer) {
 			this.renderer.scrollToToday();
+		}
+	}
+
+	/**
+	 * 滚动到最左边
+	 */
+	scrollToLeft(): void {
+		if (this.renderer) {
+			this.renderer.scrollToLeft();
+		}
+	}
+
+	/**
+	 * 滚动到最右边
+	 */
+	scrollToRight(): void {
+		if (this.renderer) {
+			this.renderer.scrollToRight();
 		}
 	}
 

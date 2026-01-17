@@ -1,6 +1,7 @@
 import type { GanttViewRenderer } from '../views/GanttView';
 import { renderStatusFilterButton } from './components/status-filter';
 import { renderRefreshButton } from './components/refresh-button';
+import { renderGanttScrollButtons } from './components/gantt-scroll-buttons';
 import { renderTimeGranularity } from './components/time-granularity';
 import { renderSortButton } from './components/sort-button';
 import { renderTagFilterButton } from './components/tag-filter';
@@ -11,7 +12,7 @@ import { ToolbarClasses } from '../utils/bem';
  * 工具栏右侧区域 - 甘特视图功能区
  *
  * 按钮布局顺序：
- * 左侧（私有）：[时间颗粒度] | [状态筛选]
+ * 左侧（私有）：[滚动按钮] | [时间颗粒度] | [状态筛选]
  * 右侧（共有）：[排序] | [标签筛选] | [刷新]
  *
  * 这样设计确保切换视图时共有按钮位置不变，避免跳动
@@ -29,6 +30,13 @@ export class ToolbarRightGantt {
 
 		// ===== 左侧：甘特图视图私有按钮 =====
 
+		// 滚动按钮（左置顶/今天/右置顶）
+		renderGanttScrollButtons(container, {
+			onScrollToLeft: () => ganttRenderer.jumpToLeft(),
+			onScrollToToday: () => ganttRenderer.jumpToToday(),
+			onScrollToRight: () => ganttRenderer.jumpToRight(),
+		});
+
 		// 时间颗粒度选择按钮
 		renderTimeGranularity(
 			container,
@@ -38,9 +46,6 @@ export class ToolbarRightGantt {
 					ganttRenderer.setTimeGranularity(granularity);
 					onRefresh();
 				},
-			},
-			() => {
-				ganttRenderer.jumpToToday();
 			}
 		);
 

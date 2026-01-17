@@ -160,6 +160,10 @@ export class YearViewRenderer extends BaseViewRenderer {
 					const palette = this.plugin.settings.yearHeatmapPalette || 'blue';
 					const level = count >= 20 ? 5 : count >= 10 ? 4 : count >= 5 ? 3 : count >= 2 ? 2 : 1;
 					dayEl.addClass(`heatmap-${palette}-${level}`);
+					// 添加3D效果类
+					if (this.plugin.settings.yearHeatmap3DEnabled) {
+						dayEl.addClass('heatmap-3d');
+					}
 				}
 
 				const dateNum = dayEl.createEl('div', { text: day.day.toString() });
@@ -261,7 +265,13 @@ export class YearViewRenderer extends BaseViewRenderer {
 				(dayEl as HTMLElement).classList.remove(
 					'heatmap-blue-1', 'heatmap-blue-2', 'heatmap-blue-3', 'heatmap-blue-4', 'heatmap-blue-5',
 					'heatmap-green-1', 'heatmap-green-2', 'heatmap-green-3', 'heatmap-green-4', 'heatmap-green-5',
-					'heatmap-red-1', 'heatmap-red-2', 'heatmap-red-3', 'heatmap-red-4', 'heatmap-red-5'
+					'heatmap-red-1', 'heatmap-red-2', 'heatmap-red-3', 'heatmap-red-4', 'heatmap-red-5',
+					'heatmap-purple-1', 'heatmap-purple-2', 'heatmap-purple-3', 'heatmap-purple-4', 'heatmap-purple-5',
+					'heatmap-orange-1', 'heatmap-orange-2', 'heatmap-orange-3', 'heatmap-orange-4', 'heatmap-orange-5',
+					'heatmap-cyan-1', 'heatmap-cyan-2', 'heatmap-cyan-3', 'heatmap-cyan-4', 'heatmap-cyan-5',
+					'heatmap-pink-1', 'heatmap-pink-2', 'heatmap-pink-3', 'heatmap-pink-4', 'heatmap-pink-5',
+					'heatmap-yellow-1', 'heatmap-yellow-2', 'heatmap-yellow-3', 'heatmap-yellow-4', 'heatmap-yellow-5',
+					'heatmap-3d'
 				);
 
 				// 添加新的热力图类
@@ -269,6 +279,10 @@ export class YearViewRenderer extends BaseViewRenderer {
 					const palette = this.plugin.settings.yearHeatmapPalette || 'blue';
 					const level = count >= 20 ? 5 : count >= 10 ? 4 : count >= 5 ? 3 : count >= 2 ? 2 : 1;
 					(dayEl as HTMLElement).classList.add(`heatmap-${palette}-${level}`);
+					// 添加3D效果类
+					if (this.plugin.settings.yearHeatmap3DEnabled) {
+						(dayEl as HTMLElement).classList.add('heatmap-3d');
+					}
 				}
 
 				// 更新任务数量显示

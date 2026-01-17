@@ -96,6 +96,30 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	}
 
 	/**
+	 * 跳转到最左边
+	 */
+	public jumpToLeft(): void {
+		if (this.ganttWrapper) {
+			// 保存当前位置
+			this.saveScrollPosition();
+			// 滚动到最左边
+			this.ganttWrapper.scrollToLeft();
+		}
+	}
+
+	/**
+	 * 跳转到最右边
+	 */
+	public jumpToRight(): void {
+		if (this.ganttWrapper) {
+			// 保存当前位置
+			this.saveScrollPosition();
+			// 滚动到最右边
+			this.ganttWrapper.scrollToRight();
+		}
+	}
+
+	/**
 	 * 保存滚动位置
 	 */
 	private saveScrollPosition(): void {
@@ -267,7 +291,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 				// tooltip 由全局 TooltipManager 统一管理
 			};
 
-			// 9. 初始化 甘特图 包装器（传递 plugin、原始任务列表和字段配置）
+			// 9. 初始化 甘特图 包装器（传递 plugin、原始任务列表、字段配置）
 			this.ganttWrapper = new GanttChartAdapter(ganttRoot, config, this.plugin, filteredGlobalTasks, this.getStartField(), this.getEndField());
 
 			// 10. 渲染甘特图
@@ -277,9 +301,6 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			if (this.ganttWrapper) {
 				this.restoreScrollPosition();
 			}
-
-			// 12. 创建控制面板（可选）
-			this.renderControlPanel(root, ganttTasks.length);
 
 		} catch (error) {
 			Logger.error('GanttView', 'Error rendering gantt:', error);
@@ -329,27 +350,6 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			text: '请检查任务是否包含开始和结束日期',
 			cls: 'gantt-empty-hint'
 		});
-	}
-
-	/**
-	 * 渲染控制面板
-	 */
-	private renderControlPanel(root: HTMLElement, taskCount: number): void {
-		const panel = root.createDiv('gantt-control-panel');
-
-		// 显示任务统计
-		const stats = panel.createDiv('gantt-stats');
-		stats.innerHTML = `
-			<span class="gantt-stat-item">
-				<strong>${taskCount}</strong> 个任务
-			</span>
-			<span class="gantt-stat-item">
-				<strong>${this.timeGranularity}</strong> 视图
-			</span>
-			<span class="gantt-stat-item">
-				<strong>${this.getStartField()}</strong> → <strong>${this.getEndField()}</strong>
-			</span>
-		`;
 	}
 
 	/**

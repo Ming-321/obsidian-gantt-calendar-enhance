@@ -66,8 +66,8 @@ export class SvgGanttRenderer {
 	private minDate: Date | null = null;
 	private totalUnits = 0;  // 颗粒度单元数（原totalDays）
 
-	// 布局容器
-	private ganttLayout: HTMLElement | null = null;
+	// 布局容器 - 单个 Grid 包含所有元素
+	private mainGrid: HTMLElement | null = null;
 	private headerContainer: HTMLElement | null = null;
 	private taskListContainer: HTMLElement | null = null;
 	private ganttContainer: HTMLElement | null = null;
@@ -90,7 +90,16 @@ export class SvgGanttRenderer {
 	private startField: DateFieldType = 'startDate';
 	private endField: DateFieldType = 'dueDate';
 
-	constructor(container: HTMLElement, config: GanttChartConfig, plugin: any, _originalTasks: GCTask[] = [], app: any = null, startField: DateFieldType = 'startDate', endField: DateFieldType = 'dueDate') {
+	constructor(
+		container: HTMLElement,
+		config: GanttChartConfig,
+		plugin: any,
+		_originalTasks: GCTask[] = [],
+		app: any = null,
+		startField: DateFieldType = 'startDate',
+		endField: DateFieldType = 'dueDate',
+		_stickyHeader: HTMLElement | null = null  // 保留参数以兼容，但不使用
+	) {
 		this.container = container;
 		this.config = config;
 		this.plugin = plugin;
@@ -208,7 +217,13 @@ export class SvgGanttRenderer {
 	}
 
 	/**
-	 * 主渲染方法 - 使用多区域布局实现冻结效果
+	 * 主渲染方法 - 使用单个 Grid 布局实现冻结效果
+	 * Grid 结构：
+	 * ┌────────────┬──────────────────────────────┐
+	 * │ 空白区域   │ 时间轴（sticky）             │
+	 * ├────────────┼──────────────────────────────┤
+	 * │ 任务列表   │ 甘特图（双向滚动）           │
+	 * └────────────┴──────────────────────────────┘
 	 */
 	private render(): void {
 		// 清空容器
@@ -228,11 +243,13 @@ export class SvgGanttRenderer {
 		const taskListWidth = 2040; // taskNumberColumnWidth (40) + contentWidth (2000)
 		const taskListHeight = ganttHeight;
 
-		// 创建 BEM 结构的布局容器
-		this.ganttLayout = this.container.createDiv(GanttClasses.elements.layout);
+		// 创建单个 Grid 容器
+		this.mainGrid = this.container.createDiv(GanttClasses.elements.mainGrid);
+		// 设置 CSS 变量用于控制任务列宽度
+		this.mainGrid.style.setProperty('--task-column-width', `${this.taskColumnWidth}px`);
 
-		// 左上角空白区域
-		this.cornerContainer = this.ganttLayout.createDiv(GanttClasses.elements.corner);
+		// 1. 左上角空白区域（sticky）
+		this.cornerContainer = this.mainGrid.createDiv(GanttClasses.elements.corner);
 		this.cornerSvg = this.createSvgElement(
 			this.cornerContainer,
 			this.taskColumnWidth,
@@ -241,8 +258,8 @@ export class SvgGanttRenderer {
 		);
 		this.renderCorner(this.cornerSvg);
 
-		// 顶部时间轴容器（可水平滚动）
-		this.headerContainer = this.ganttLayout.createDiv(GanttClasses.elements.headerContainer);
+		// 2. 顶部时间轴容器（sticky，可水平滚动）
+		this.headerContainer = this.mainGrid.createDiv(GanttClasses.elements.header);
 		this.headerSvg = this.createSvgElement(
 			this.headerContainer,
 			ganttWidth,
@@ -251,8 +268,8 @@ export class SvgGanttRenderer {
 		);
 		this.renderHeader(this.headerSvg, minDate, totalUnits, granularity);
 
-		// 左侧任务列表容器（可垂直滚动）
-		this.taskListContainer = this.ganttLayout.createDiv(GanttClasses.elements.tasklistContainer);
+		// 3. 左侧任务列表容器（可垂直滚动）
+		this.taskListContainer = this.mainGrid.createDiv(GanttClasses.elements.tasklist);
 		this.taskListSvg = this.createSvgElement(
 			this.taskListContainer,
 			taskListWidth,
@@ -261,8 +278,8 @@ export class SvgGanttRenderer {
 		);
 		this.renderTaskList(this.taskListSvg);
 
-		// 右侧甘特图容器（双向滚动）
-		this.ganttContainer = this.ganttLayout.createDiv(GanttClasses.elements.chartContainer);
+		// 4. 右侧甘特图容器（双向滚动）
+		this.ganttContainer = this.mainGrid.createDiv(GanttClasses.elements.chart);
 		this.ganttSvg = this.createSvgElement(
 			this.ganttContainer,
 			ganttWidth,
@@ -271,8 +288,8 @@ export class SvgGanttRenderer {
 		);
 		this.renderGanttChart(this.ganttSvg, minDate, totalUnits, ganttHeight, granularity);
 
-		// 创建分隔条
-		this.resizer = this.ganttLayout.createDiv(GanttClasses.elements.resizer);
+		// 5. 创建分隔条（覆盖在 Grid 上）
+		this.resizer = this.mainGrid.createDiv(GanttClasses.elements.resizer);
 
 		// 设置同步滚动
 		this.setupSyncScrolling();
@@ -404,12 +421,13 @@ export class SvgGanttRenderer {
 
 	/**
 	 * 设置分隔条拖动
+	 * 使用 CSS 变量控制宽度，确保所有区域同步变化
 	 */
 	private setupResizer(): void {
-		if (!this.resizer || !this.ganttLayout) return;
+		if (!this.resizer || !this.mainGrid) return;
 
 		const resizer = this.resizer;
-		const layout = this.ganttLayout;
+		const mainGrid = this.mainGrid;
 
 		// 鼠标按下开始拖动
 		resizer.addEventListener('mousedown', (e) => {
@@ -422,9 +440,9 @@ export class SvgGanttRenderer {
 
 		// 鼠标移动调整宽度
 		document.addEventListener('mousemove', (e) => {
-			if (!this.isResizing || !layout) return;
+			if (!this.isResizing || !mainGrid) return;
 
-			const layoutRect = layout.getBoundingClientRect();
+			const layoutRect = mainGrid.getBoundingClientRect();
 			const newWidth = e.clientX - layoutRect.left;
 
 			// 限制最小和最大宽度
@@ -434,8 +452,8 @@ export class SvgGanttRenderer {
 			if (newWidth >= minWidth && newWidth <= maxWidth) {
 				this.taskColumnWidth = newWidth;
 
-				// 更新 Grid 列宽
-				layout.style.gridTemplateColumns = `${newWidth}px ${this.resizerWidth}px 1fr`;
+				// 更新 CSS 变量，Grid 中所有区域都会同步变化
+				mainGrid.style.setProperty('--task-column-width', `${newWidth}px`);
 
 				// 更新 corner SVG 元素
 				if (this.cornerSvg) {
@@ -932,10 +950,11 @@ export class SvgGanttRenderer {
 		if (!svg) return;
 
 		const ns = 'http://www.w3.org/2000/svg';
-		const width = totalUnits * this.columnWidth + this.padding * 2;
+		// 移除左侧 padding，只保留右侧 padding
+		const width = totalUnits * this.columnWidth + this.padding;
 		const height = fullHeight - this.headerHeight;
 
-		// 背景 - 从 y=0 开始
+		// 背景 - 从 x=0 开始（与任务列表分隔线对齐）
 		const bg = document.createElementNS(ns, 'rect');
 		bg.setAttribute('x', '0');
 		bg.setAttribute('y', '0');
@@ -947,7 +966,7 @@ export class SvgGanttRenderer {
 		// 清空甘特图行背景元素数组
 		this.rowBgElements.gantt = [];
 
-		// 绘制网格线
+		// 绘制网格线（传递 width 用于水平线）
 		this.renderGrid(ns, svg, minDate, totalUnits, width, height, granularity);
 
 		// 绘制今天线
@@ -1016,9 +1035,9 @@ export class SvgGanttRenderer {
 		const gridGroup = document.createElementNS(ns, 'g');
 		addSvgClass(gridGroup, GanttClasses.elements.grid);
 
-		// 垂直线（时间单元分隔）
+		// 垂直线（时间单元分隔）- 从 x=0 开始
 		for (let i = 0; i <= totalUnits; i++) {
-			const x = this.padding + i * this.columnWidth;
+			const x = i * this.columnWidth;
 
 			const line = document.createElementNS(ns, 'line');
 			line.setAttribute('x1', String(x));
@@ -1039,9 +1058,9 @@ export class SvgGanttRenderer {
 		for (let i = 0; i < this.tasks.length; i++) {
 			const y = i * this.rowHeight;
 			const rowBg = document.createElementNS(ns, 'rect') as SVGRectElement;
-			rowBg.setAttribute('x', String(this.padding));
+			rowBg.setAttribute('x', '0');
 			rowBg.setAttribute('y', String(y));
-			rowBg.setAttribute('width', String(width - this.padding * 2));
+			rowBg.setAttribute('width', String(width));
 			rowBg.setAttribute('height', String(this.rowHeight));
 			rowBg.setAttribute('data-row-index', String(i));
 			addSvgClass(rowBg, GanttClasses.elements.rowBg);
@@ -1056,14 +1075,14 @@ export class SvgGanttRenderer {
 			this.rowBgElements.gantt.push(rowBg);
 		}
 
-		// 水平线（任务行分隔）- 保持不变
+		// 水平线（任务行分隔）- 从 x=0 到 width
 		for (let i = 0; i <= this.tasks.length; i++) {
 			const y = i * this.rowHeight;
 
 			const line = document.createElementNS(ns, 'line');
-			line.setAttribute('x1', String(this.padding));
+			line.setAttribute('x1', '0');
 			line.setAttribute('y1', String(y));
-			line.setAttribute('x2', String(width - this.padding));
+			line.setAttribute('x2', String(width));
 			line.setAttribute('y2', String(y));
 			line.setAttribute('stroke', 'var(--background-modifier-border)');
 			line.setAttribute('stroke-width', '0.5');
@@ -1092,7 +1111,7 @@ export class SvgGanttRenderer {
 		const unitsDiff = (today.getTime() - minDate.getTime()) / config.milliseconds;
 
 		if (unitsDiff >= 0 && unitsDiff <= totalUnits) {
-			const x = this.padding + unitsDiff * this.columnWidth;
+			const x = unitsDiff * this.columnWidth;
 
 			const line = document.createElementNS(ns, 'line');
 			line.setAttribute('x1', String(x));
@@ -1132,7 +1151,7 @@ export class SvgGanttRenderer {
 			const startOffset = (taskStart.getTime() - minDate.getTime()) / config.milliseconds;
 			const duration = (taskEnd.getTime() - taskStart.getTime()) / config.milliseconds;
 
-			const x = this.padding + startOffset * this.columnWidth;
+			const x = startOffset * this.columnWidth;
 			const y = index * this.rowHeight + (this.rowHeight - 24) / 2;
 			const barWidth = duration * this.columnWidth - 8;
 
@@ -1561,7 +1580,7 @@ export class SvgGanttRenderer {
 		// 计算新的位置和宽度
 		const startOffset = Math.floor((newStart.getTime() - minDate.getTime()) / (24 * 60 * 60 * 1000));
 		const duration = Math.ceil((newEnd.getTime() - newStart.getTime()) / (24 * 60 * 60 * 1000)) + 1;
-		const x = this.padding + startOffset * this.columnWidth;
+		const x = startOffset * this.columnWidth;
 		const barWidth = duration * this.columnWidth - 8;
 
 		// 更新任务条
@@ -1720,7 +1739,7 @@ export class SvgGanttRenderer {
 		const startOffset = (startDate.getTime() - minDate.getTime()) / config.milliseconds;
 		const duration = (endDate.getTime() - startDate.getTime()) / config.milliseconds;
 
-		const x = this.padding + startOffset * this.columnWidth;
+		const x = startOffset * this.columnWidth;
 		const y = this.tasks.findIndex(t => t.id === task.id) * this.rowHeight + 10; // 10px top padding
 		const width = duration * this.columnWidth;
 
@@ -1772,7 +1791,7 @@ export class SvgGanttRenderer {
 
 		if (unitsDiff >= 0 && unitsDiff <= this.totalUnits) {
 			// 计算今天的 x 坐标
-			const todayX = this.padding + unitsDiff * this.columnWidth;
+			const todayX = unitsDiff * this.columnWidth;
 
 			// 获取容器宽度
 			const containerWidth = this.ganttContainer.clientWidth;
@@ -1810,6 +1829,24 @@ export class SvgGanttRenderer {
 	}
 
 	/**
+	 * 滚动到最左边
+	 */
+	scrollToLeft(): void {
+		if (this.ganttContainer) {
+			this.ganttContainer.scrollLeft = 0;
+		}
+	}
+
+	/**
+	 * 滚动到最右边
+	 */
+	scrollToRight(): void {
+		if (this.ganttContainer) {
+			this.ganttContainer.scrollLeft = this.ganttContainer.scrollWidth;
+		}
+	}
+
+	/**
 	 * 销毁渲染器
 	 */
 	destroy(): void {
@@ -1822,7 +1859,8 @@ export class SvgGanttRenderer {
 		this.taskListContainer = null;
 		this.ganttContainer = null;
 		this.cornerContainer = null;
-		this.ganttLayout = null;
+		this.mainGrid = null;
+		this.resizer = null;
 		this.tasks = [];
 	}
 

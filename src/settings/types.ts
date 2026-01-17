@@ -29,6 +29,7 @@ export interface GanttCalendarSettings {
 	yearShowTaskCount: boolean; // 年视图是否显示每日任务数量
 	yearHeatmapEnabled: boolean; // 年视图是否启用任务热力图
 	yearHeatmapPalette: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'cyan' | 'pink' | 'yellow'; // 热力图色卡选择
+	yearHeatmap3DEnabled: boolean; // 年视图热力图是否启用3D玻璃质感效果
 	taskNotePath: string; // 任务笔记默认文件夹路径
 	taskStatuses: TaskStatus[]; // 任务状态配置（包含颜色）
 	taskSortField: SortField; // 任务排序字段

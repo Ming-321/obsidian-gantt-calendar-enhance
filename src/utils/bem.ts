@@ -243,18 +243,19 @@ export const GanttClasses = {
 
 	/** Elements */
 	elements: {
+		mainGrid: bem(BLOCKS.GANTT, 'main-grid'),
 		layout: bem(BLOCKS.GANTT, 'layout'),
 		corner: bem(BLOCKS.GANTT, 'corner'),
 		cornerSvg: bem(BLOCKS.GANTT, 'corner-svg'),
-		headerContainer: bem(BLOCKS.GANTT, 'header-container'),
+		header: bem(BLOCKS.GANTT, 'header'),
 		headerSvg: bem(BLOCKS.GANTT, 'header-svg'),
-		tasklistContainer: bem(BLOCKS.GANTT, 'tasklist-container'),
+		tasklist: bem(BLOCKS.GANTT, 'tasklist'),
 		tasklistSvg: bem(BLOCKS.GANTT, 'tasklist-svg'),
 		taskNumberCell: bem(BLOCKS.GANTT, 'task-number-cell'),
 		taskNumberText: bem(BLOCKS.GANTT, 'task-number-text'),
 		taskContentCell: bem(BLOCKS.GANTT, 'task-content-cell'),
 		taskCheckbox: bem(BLOCKS.GANTT, 'task-checkbox'),
-		chartContainer: bem(BLOCKS.GANTT, 'chart-container'),
+		chart: bem(BLOCKS.GANTT, 'chart'),
 		chartSvg: bem(BLOCKS.GANTT, 'chart-svg'),
 		resizer: bem(BLOCKS.GANTT, 'resizer'),
 		grid: bem(BLOCKS.GANTT, 'grid'),
@@ -264,6 +265,11 @@ export const GanttClasses = {
 		root: bem(BLOCKS.GANTT, 'root'),
 		rowBg: bem(BLOCKS.GANTT, 'row-bg'),
 		rowHighlight: bem(BLOCKS.GANTT, 'row-highlight'),
+		// 保留旧类名以兼容
+		headerContainer: bem(BLOCKS.GANTT, 'header-container'),
+		tasklistContainer: bem(BLOCKS.GANTT, 'tasklist-container'),
+		chartContainer: bem(BLOCKS.GANTT, 'chart-container'),
+		stickyHeader: bem(BLOCKS.GANTT, 'sticky-header'),
 	},
 
 	/** Modifiers */

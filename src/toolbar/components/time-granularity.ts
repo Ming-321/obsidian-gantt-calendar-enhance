@@ -1,6 +1,6 @@
 /**
- * 时间颗粒度选择按钮组件
- * 用于甘特图视图，提供日/周/月三种时间颗粒度选择
+ * @fileoverview 时间颗粒度选择按钮组件
+ * @module toolbar/components/time-granularity
  */
 
 import { ToolbarClasses } from '../../utils/bem';
@@ -13,25 +13,16 @@ export interface TimeGranularityOptions {
 }
 
 /**
- * 渲染时间颗粒度选择按钮组
- * 将"今"按钮和颗粒度选择按钮分为两个独立的下凹按钮组
+ * 渲染时间颗粒度选择按钮组（日/周/月）
+ *
+ * @param container 容器元素
+ * @param options 配置选项
  */
 export function renderTimeGranularity(
 	container: HTMLElement,
-	options: TimeGranularityOptions,
-	onToday?: () => void
+	options: TimeGranularityOptions
 ): void {
-	// 1. "今"按钮独立容器（使用下凹样式）
-	const todayGroup = container.createDiv(ToolbarClasses.components.navButtons.group);
-	const todayBtn = todayGroup.createEl('button', {
-		cls: ToolbarClasses.components.navButtons.btn,
-		text: '今',
-	});
-	todayBtn.addEventListener('click', () => {
-		onToday?.();
-	});
-
-	// 2. 颗粒度选择容器（日周月，使用下凹样式）
+	// 创建颗粒度选择容器
 	const granularityGroup = container.createDiv(ToolbarClasses.components.navButtons.group);
 
 	const granularities: Array<{ value: TimeGranularity; label: string }> = [

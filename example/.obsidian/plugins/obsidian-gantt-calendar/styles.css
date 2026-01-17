@@ -63,14 +63,7 @@ Author: sugar
 	min-height: 0;
 }
 
-.view-content.gantt-root {
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
-}
-
 /* Calendar Grid Layouts */
-.calendar-week-grid,
 .gc-week-view__grid {
 	display: flex;
 	flex-direction: column;
@@ -82,7 +75,6 @@ Author: sugar
 	position: relative;
 }
 
-.calendar-week-header-row,
 .gc-week-view__header-row {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
@@ -104,22 +96,8 @@ Author: sugar
 	position: relative;
 }
 
-.calendar-day-grid {
-	display: grid;
-	grid-template-columns: 60px 1fr;
-	gap: 0;
-	margin: 0;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	overflow-y: auto;
-	overflow-x: hidden;
-	grid-row: 2;
-	position: relative;
-}
-
 /* Gantt Layout Objects */
 /* BEM命名: gc-view--gantt */
-.calendar-gantt-view,
 .gc-view.gc-view--gantt {
 	display: flex;
 	flex-direction: column;
@@ -193,34 +171,22 @@ Author: sugar
 	/* 响应式布局由 TypeScript 控制，基于实际CSS值动态计算 */
 }
 
-.calendar-month-view,
+/* ========================================
+   月视图单一Grid布局（7行8列）
+   ======================================== */
 .gc-view.gc-view--month {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	display: grid;
+	/* 7行: 第1行星期标题(自动高度) + 6行日期(均分空间) */
+	grid-template-rows: auto repeat(6, 1fr);
+	/* 8列: 第1列周数(40px固定) + 7列星期(均分) */
+	grid-template-columns: 40px repeat(7, 1fr);
+	gap: 0;
 	height: 100%;
+	padding: 8px;
 	overflow: hidden;
 }
 
-/* BEM类名: gc-month-view__week-row */
-.gc-month-view__week-row {
-	display: grid;
-	grid-template-columns: 40px repeat(7, 1fr);
-	gap: 8px;
-	padding: 8px;
-	background-color: var(--background-secondary);
-	border-radius: 4px;
-}
-
-/* BEM类名: gc-month-view__weeks */
-.gc-month-view__weeks {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
 /* Week/Day Layout */
-.calendar-week-view,
 .gc-view.gc-view--week {
 	display: flex;
 	flex-direction: column;
@@ -230,7 +196,6 @@ Author: sugar
 	height: 100%;
 }
 
-.calendar-week-days-container,
 .gc-week-view__days {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
@@ -239,7 +204,6 @@ Author: sugar
 
 /* ==================== Day View Layout ==================== */
 /* BEM命名: gc-day-view, gc-view */
-.calendar-day-view,
 .gc-day-view,
 .gc-view.gc-view--day {
 	display: flex;
@@ -276,8 +240,6 @@ Author: sugar
 
 /* ==================== Task View Layout ==================== */
 /* BEM命名: gc-view--task (Modifier) */
-.calendar-task-view,
-.task-view-list,
 .gc-view--task {
 	display: flex;
 	flex-direction: column;
@@ -308,8 +270,8 @@ Author: sugar
 	position: sticky;
 	top: 8px;
 	border-radius: 14px;
-	/* 玻璃效果核心 - 提高透明度从18%到65% */
-	background: color-mix(in srgb, var(--background-primary) 65%, transparent);
+	/* 玻璃效果核心 - 提高透明度 */
+	background: color-mix(in srgb, var(--background-primary) 15%, transparent);
 	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	/* 多层阴影营造深度 + 顶部高光 */
 	box-shadow:
@@ -322,8 +284,6 @@ Author: sugar
 	z-index: 100;
 }
 
-.calendar-toolbar-left,
-.calendar-toolbar-center,
 .gc-toolbar__left,
 .gc-toolbar__center,
 .gc-toolbar__right {
@@ -332,12 +292,10 @@ Author: sugar
 	gap: 10px;
 }
 
-.calendar-toolbar-left,
 .gc-toolbar__left {
 	flex: 0 1 auto;
 }
 
-.calendar-toolbar-center,
 .gc-toolbar__center {
 	flex: 1 1 auto;
 	display: flex;
@@ -351,9 +309,9 @@ Author: sugar
 .gc-toolbar__right {
 	flex: 0 1 auto;
 	justify-content: flex-end;
+	gap: 6px;
 }
 
-.calendar-nav,
 .gc-nav {
 	display: flex;
 	align-items: center;
@@ -361,7 +319,6 @@ Author: sugar
 	flex: 1;
 }
 
-.calendar-toggle-group,
 .gc-toggle-group,
 .gc-toolbar__view-toggle-group {
 	display: flex;
@@ -369,12 +326,11 @@ Author: sugar
 	gap: 8px;
 }
 
-.calendar-toggle-btn,
 .gc-toolbar__view-toggle-btn {
 	padding: 6px 12px;
 	border: 1px solid var(--background-modifier-border);
 	/* 玻璃效果 - 半透明背景 */
-	background-color: color-mix(in srgb, var(--background-primary) 50%, transparent);
+	background-color: color-mix(in srgb, var(--background-primary) 25%, transparent);
 	border-radius: 6px;
 	color: var(--text-normal);
 	cursor: pointer;
@@ -386,7 +342,6 @@ Author: sugar
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.calendar-toggle-btn.active,
 .gc-toolbar__view-toggle-btn--active {
 	background-color: var(--interactive-accent);
 	border-color: var(--interactive-accent);
@@ -395,145 +350,39 @@ Author: sugar
 	backdrop-filter: none;
 }
 
-.calendar-toggle-btn:hover,
 .gc-toolbar__view-toggle-btn:hover {
-	background-color: color-mix(in srgb, var(--background-primary) 65%, transparent);
+	background-color: color-mix(in srgb, var(--background-primary) 35%, transparent);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.toolbar-right-task-refresh-btn {
-	padding: 6px;
-	width: 32px;
-	height: 32px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	background-color: transparent;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	transition: all 0.15s ease;
-}
-
-.toolbar-right-task-refresh-btn:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.toolbar-right-task-refresh-btn svg {
-	width: 18px;
-	height: 18px;
-}
-
-.toolbar-right-task {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	flex: 0 1 auto;
-	justify-content: flex-end;
-	flex-wrap: wrap;
-}
-
-.toolbar-right-task-field-select {
-	padding: 4px 8px;
-	border: 1px solid var(--input-border-color);
-	border-radius: 4px;
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
-	font-size: 12px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.toolbar-right-task-field-select:hover {
-	border-color: var(--interactive-accent);
-}
-
-.toolbar-right-task-field-select:focus {
-	outline: none;
-	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 2px var(--interactive-accent-rgb, rgba(138, 109, 255, 0.1));
-}
-
-.toolbar-right-task-global-filter {
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--text-normal);
-	white-space: nowrap;
-}
-
-.toolbar-right-task-status-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.toolbar-right-task-status-label {
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--text-muted);
-	white-space: nowrap;
-	margin: 0 8px;
-}
-
-.toolbar-right-task-status-select {
-	padding: 4px 8px;
-	border: 1px solid var(--input-border-color);
-	border-radius: 4px;
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
-	font-size: 12px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.toolbar-right-task-status-select:hover {
-	border-color: var(--interactive-accent);
-}
-
-.toolbar-right-task-status-select:focus {
-	outline: none;
-	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 2px var(--interactive-accent-rgb, rgba(138, 109, 255, 0.1));
-}
-
 /* 旧类名兼容 - toolbar-right-task-field-filter-group */
-.toolbar-right-task-field-filter-label,
 .gc-toolbar__field-filter-group {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-}
-
-.toolbar-right-task-field-filter-label {
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--text-muted);
-	white-space: nowrap;
-	margin: 0 8px;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 35%, #888 5%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 旧类名兼容 - toolbar-right-task-date-filter-group */
-.toolbar-right-task-date-filter-group,
 .gc-toolbar__date-filter-group {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 70%, #888 10%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 	flex-wrap: wrap;
 }
 
-/* BEM: 日期筛选标签 */
-.toolbar-right-task-date-filter-label,
-.gc-toolbar__date-filter-label {
-	font-size: 14px;
-	color: var(--text-muted);
-	white-space: nowrap;
-}
-
 /* BEM: 日期输入框 */
-.toolbar-right-task-date-input,
 .gc-toolbar__date-input {
-	padding: 4px 8px;
+	padding: 4px 2px 4px 6px;
+	margin-left: 6px;
+	width: 95px;
 	border: 1px solid var(--input-border-color);
 	border-radius: 4px;
 	background-color: var(--background-secondary);
@@ -542,62 +391,44 @@ Author: sugar
 }
 
 /* BEM: 日期模式按钮 */
-.toolbar-right-task-date-mode-btn,
 .gc-toolbar__date-mode-btn {
-	padding: 2px 6px;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	border-radius: 4px;
+	padding: 4px 8px;
+	border: none;
+	background-color: transparent;
 	cursor: pointer;
 	font-size: 12px;
 	color: var(--text-muted);
 	transition: all 0.15s ease;
 }
 
-.toolbar-right-task-date-mode-btn:hover,
 .gc-toolbar__date-mode-btn:hover {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-normal);
 }
 
-.toolbar-right-task-date-mode-btn.active,
 .gc-toolbar__date-mode-btn.active {
 	background-color: #ff6b4a;
 	border-color: #ff6b4a;
 	color: white;
 }
 
-/* BEM: 导航按钮组 */
-.calendar-nav-buttons,
+/* BEM: 导航按钮组 - 工具栏凹陷底座效果 */
 .gc-toolbar__nav-buttons {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-}
-
-.calendar-nav-btn {
-	padding: 4px 12px;
-	background-color: transparent;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 13px;
-	color: var(--text-muted);
-	transition: all 0.15s ease;
-}
-
-.calendar-nav-btn:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 35%, #888 5%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* BEM: 通用工具栏按钮 */
-.calendar-nav-compact-btn,
 .gc-toolbar__btn {
 	padding: 2px 6px;
 	border: 1px solid var(--background-modifier-border);
 	/* 玻璃效果 */
-	background-color: color-mix(in srgb, var(--background-primary) 40%, transparent);
+	background-color: color-mix(in srgb, var(--background-primary) 20%, transparent);
 	border-radius: 4px;
 	cursor: pointer;
 	font-size: 12px;
@@ -610,68 +441,50 @@ Author: sugar
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-.calendar-nav-compact-btn:hover,
 .gc-toolbar__btn:hover {
-	background-color: color-mix(in srgb, var(--background-primary) 55%, transparent);
+	background-color: color-mix(in srgb, var(--background-primary) 30%, transparent);
 	color: var(--text-normal);
 	border-color: var(--interactive-normal);
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.calendar-view-btn {
-	padding: 6px 16px;
-	background-color: transparent;
+/* 导航按钮内的按钮 - 覆盖通用样式，适配凹陷底座 */
+.gc-toolbar__nav-buttons .gc-toolbar__btn {
+	padding: 4px 2px;
 	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-muted);
-	transition: all 0.15s ease;
-}
-
-.calendar-view-btn:hover {
-	background-color: var(--background-modifier-hover);
+	background-color: transparent;
 	color: var(--text-normal);
-}
-
-.calendar-view-btn.active {
-	background-color: var(--background-modifier-border);
-	color: var(--text-normal);
-}
-
-.calendar-view-compact-btn {
-	padding: 2px 6px;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	border-radius: 4px;
 	cursor: pointer;
-	font-size: 12px;
-	color: var(--text-muted);
-	transition: all 0.15s ease;
-	min-width: 28px;
+	font-size: 13px;
+	min-width: 20px;
 	text-align: center;
+	backdrop-filter: none;
+	box-shadow: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
-.calendar-view-compact-btn:hover {
+/* 只含图标的按钮（左右箭头）- 稍大一点以容纳图标 */
+.gc-toolbar__nav-buttons .gc-toolbar__btn:has(svg) {
+	min-width: 24px;
+	padding: 4px 4px;
+}
+
+/* 导航按钮内的按钮 - 简单悬停效果 */
+.gc-toolbar__nav-buttons .gc-toolbar__btn:hover {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-normal);
-	border-color: var(--interactive-normal);
+	border-color: transparent;
+	box-shadow: none;
 }
 
-.calendar-view-compact-btn.active {
-	background-color: #ff6b4a;
-	border-color: #ff6b4a;
-	color: white;
-	font-weight: 500;
+/* 导航按钮激活状态 */
+.gc-toolbar__nav-buttons .gc-toolbar__btn.active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
-.calendar-view-compact-btn.icon-btn {
-	padding: 2px 6px;
-	min-width: auto;
-}
-
-.calendar-title-display,
 .gc-toolbar__title-display {
 	font-weight: 600;
 	color: var(--text-normal);
@@ -684,7 +497,6 @@ Author: sugar
 }
 
 /* BEM: 视图选择器 */
-.calendar-view-selector,
 .gc-toolbar__view-selector {
 	display: flex;
 	gap: 6px;
@@ -704,30 +516,35 @@ Author: sugar
 	padding: 4px; /* p-1 */
 	border-radius: 8px; /* rounded-lg */
 	/* 与灰色混合，产生轻微差异的背景色 */
-	background-color: color-mix(in srgb, var(--background-secondary) 70%, #888 10%);
+	background-color: color-mix(in srgb, var(--background-secondary) 35%, #888 5%);
 	/* 轻微 inset 阴影产生凹陷效果 */
 	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 单个按钮 */
-/* 使用更高特异性的选择器，覆盖主题的 button 样式 */
-.gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn {
+/* 使用 button 元素选择器提高特异性 (0,2,1)，并使用 !important 确保核心样式不被覆盖 */
+.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 4px;
-	padding: 4px 8px;
-	border: none;
-	border-radius: 6px; /* rounded */
-	background-color: transparent;
-	/* text-gray-400 */
-	color: rgb(127, 133, 142);
+	padding: 4px 8px !important;
+	border: none !important;
+	border-radius: 6px !important; /* rounded */
+	background-color: transparent !important;
+	/* 使用 Obsidian 变量确保主题兼容性 */
+	color: var(--text-normal);
 	cursor: pointer;
 	/* 分属性过渡，背景色快速，transform 中速，阴影慢速 */
 	transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, font-weight 0.1s ease;
-	font-size: 13px;
+	font-size: 13px !important;
 	font-weight: 500;
 	min-width: 0;
+	/* 重置可能的主题样式 */
+	box-shadow: none !important;
+	text-shadow: none !important;
+	/* 防止主题设置背景图片 */
+	background-image: none !important;
 }
 
 /* 按钮内容容器 */
@@ -754,45 +571,82 @@ Author: sugar
 }
 
 /* 悬停状态 - 复用激活按钮的凸起效果 */
-.gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn:hover:not(.gc-toolbar__view-selector-btn--active) {
+.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn:hover:not(.gc-toolbar__view-selector-btn--active) {
 	/* 使用强调色混合半透明背景，避免使用 opacity 实现平滑过渡 */
-	background-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+	background-color: color-mix(in srgb, var(--interactive-accent) 70%, transparent) !important;
 	/* 凸起阴影效果 */
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 	/* 白色文字 */
-	color: var(--text-on-accent);
+	color: var(--text-on-accent) !important;
 	transform: translateY(-1px);
 }
 
 /* 激活状态 - 凸起效果 */
-/* 使用更高特异性的选择器，覆盖主题的 button 样式 */
-.gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn--active {
+/* 使用 button 元素选择器提高特异性 (0,2,1)，并使用 !important 确保核心样式不被覆盖 */
+.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn--active {
 	/* 使用 Obsidian 强调色作为背景，使激活状态更明显 */
-	background-color: var(--interactive-accent);
+	background-color: var(--interactive-accent) !important;
 	/* 凸起阴影效果 */
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 	/* 白色文字 */
-	color: var(--text-on-accent);
+	color: var(--text-on-accent) !important;
 	font-weight: 600;
 	transform: translateY(-1px);
 }
 
 /* ============================================
-   响应式适配 - 渐进式布局优化
+   响应式适配 - 基于容器宽度的响应式布局
    ============================================ */
 
+/* 紧凑模式 - 当中间区域文本溢出时，左侧视图按钮只显示图标 */
+.gc-toolbar--compact .gc-toolbar__view-selector-group .gc-toolbar__view-selector-label {
+	display: none !important;
+}
+
+.gc-toolbar--compact .gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn {
+	padding: 6px 10px;
+	min-width: 36px;
+}
+
+/* 仅图标模式 - 通过设置项控制 */
+.gc-toolbar__view-selector-group--icon-only .gc-toolbar__view-selector-label {
+	display: none !important;
+}
+
+.gc-toolbar__view-selector-group--icon-only .gc-toolbar__view-selector-btn {
+	padding: 6px 10px;
+	min-width: 36px;
+}
+
+/* 按钮隐藏状态 - 用于响应式管理器动态隐藏 */
+.gc-toolbar__item--hidden {
+	display: none !important;
+}
+
+/* 右侧区域包装容器样式 */
+.gc-toolbar__right > div {
+	display: flex;
+	align-items: center;
+}
+
+/* 平滑过渡效果 */
+.gc-toolbar__right > div {
+	transition: opacity 0.15s ease;
+}
+
+/* 保持原有的媒体查询作为后备方案（针对窗口宽度的响应） */
 /* 中等屏幕 (< 900px) - 视图按钮只显示图标 */
 @media (max-width: 900px) {
-	.gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn {
-		padding: 6px 8px;
+	.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn {
+		padding: 6px 8px !important;
 		min-width: 32px;
 	}
 
-	.gc-toolbar__view-selector-group .gc-toolbar__view-selector-label {
+	.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn .gc-toolbar__view-selector-label {
 		display: none;
 	}
 
-	.gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn--active .gc-toolbar__view-selector-label {
+	.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn--active .gc-toolbar__view-selector-label {
 		display: inline;
 	}
 }
@@ -806,8 +660,6 @@ Author: sugar
 	}
 
 	/* 缩小按钮间距 */
-	.calendar-toolbar-left,
-	.calendar-toolbar-center,
 	.gc-toolbar__left,
 	.gc-toolbar__center,
 	.gc-toolbar__right {
@@ -818,30 +670,20 @@ Author: sugar
 /* 极小屏幕 (< 550px) - 进一步优化 */
 @media (max-width: 550px) {
 	/* 激活按钮也只显示图标 */
-	.gc-toolbar__view-selector-group .gc-toolbar__view-selector-btn--active .gc-toolbar__view-selector-label {
+	.gc-toolbar__view-selector-group button.gc-toolbar__view-selector-btn--active .gc-toolbar__view-selector-label {
 		display: none;
 	}
 
 	/* 标题字体缩小 */
-	.calendar-title-display,
 	.gc-toolbar__title-display {
 		font-size: 13px;
 	}
 
 	/* 导航按钮缩小 */
-	.calendar-nav-btn,
 	.gc-nav__btn {
 		padding: 4px 8px;
 		font-size: 12px;
 	}
-}
-
-/* Gantt Toolbar Components */
-.toolbar-right-gantt {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
 }
 
 /* ============================================
@@ -849,25 +691,21 @@ Author: sugar
    ============================================ */
 
 /* BEM: 通用按钮组样式 */
-.calendar-button-group,
 .gc-toolbar__button-group {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
 }
 
-.calendar-button-group-horizontal,
 .gc-toolbar__button-group--horizontal {
 	flex-direction: row;
 }
 
-.calendar-button-group-vertical,
 .gc-toolbar__button-group--vertical {
 	flex-direction: column;
 }
 
 /* BEM: 输入组样式 */
-.calendar-input-group,
 .gc-toolbar__input-group {
 	display: inline-flex;
 	align-items: center;
@@ -875,46 +713,61 @@ Author: sugar
 }
 
 /* BEM: 模式切换组样式 */
-.calendar-mode-toggle-group,
 .gc-toolbar__mode-toggle-group {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
 }
 
-.calendar-mode-icon,
 .gc-toolbar__mode-icon {
 	font-size: 12px;
 }
 
-.calendar-mode-label,
 .gc-toolbar__mode-label {
 	font-size: 13px;
 	color: var(--text-normal);
 }
 
-/* 通用按钮组样式 - 带边框的紧凑按钮组 */
-/* 通用包装样式 (--wrapper modifier，用于所有视图的带边框按钮组) */
+/* 通用按钮组样式 - 下凹设计 */
 .gc-toolbar__time-granularity-group--gantt,
-.gc-toolbar__sort-container--wrapper,
-.gc-toolbar__tag-filter-container--wrapper,
 .gc-toolbar__field-selector-dual-wrapper--gantt {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	padding: 2px;
-	/* 玻璃效果容器 */
-	background-color: color-mix(in srgb, var(--background-secondary) 60%, transparent);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 35%, #888 5%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 向后兼容：旧的 --gantt 类名 */
-.gc-toolbar__sort-container--gantt,
-.gc-toolbar__tag-filter-container--gantt {
-	/* 样式与上面的 --wrapper 相同 */
+/* 甘特图时间颗粒度组内的按钮样式 */
+.gc-toolbar__time-granularity-group--gantt .gc-toolbar__today-btn,
+.gc-toolbar__time-granularity-group--gantt .gc-toolbar__time-granularity-btn {
+	padding: 4px 6px;
+	border: none;
+	border-radius: 0;
+	background-color: transparent;
+	color: var(--text-muted);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.gc-toolbar__time-granularity-group--gantt .gc-toolbar__today-btn {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.gc-toolbar__time-granularity-group--gantt .gc-toolbar__today-btn:hover,
+.gc-toolbar__time-granularity-group--gantt .gc-toolbar__time-granularity-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.gc-toolbar__time-granularity-group--gantt .gc-toolbar__time-granularity-btn--active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-weight: 600;
 }
 
 /* 字段选择器组 */
@@ -967,20 +820,27 @@ Author: sugar
    状态筛选按钮样式（复选框多选模式，现代 UI）
    ============================================ */
 
+/* 状态筛选容器 - 下凹设计 */
 .gc-toolbar__status-filter-container {
 	display: inline-flex;
+	gap: 1px;
+	padding: 1px;
+	border-radius: 8px;
+	background-color: color-mix(in srgb, var(--background-secondary) 35%, #888 5%);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+/* 状态筛选按钮 - 下凹设计 */
 .gc-toolbar__status-filter-btn {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 6px 10px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	background: var(--background-primary);
-	color: var(--text-normal);
+	padding: 4px 8px;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	color: var(--text-muted);
 	font-size: 13px;
 	cursor: pointer;
 	transition: all 0.2s ease;
@@ -988,12 +848,11 @@ Author: sugar
 
 .gc-toolbar__status-filter-btn:hover {
 	background: var(--background-modifier-hover);
-	border-color: var(--background-modifier-border-hover);
+	color: var(--text-normal);
 }
 
 .gc-toolbar__status-filter-btn--has-selection {
 	background: var(--interactive-accent);
-	border-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
 
@@ -1007,23 +866,6 @@ Author: sugar
 	display: block;
 }
 
-.gc-toolbar__status-filter-count {
-	display: none;
-	min-width: 18px;
-	height: 18px;
-	padding: 0 5px;
-	border-radius: 9px;
-	background: rgba(255, 255, 255, 0.2);
-	font-size: 11px;
-	font-weight: 600;
-	line-height: 18px;
-	text-align: center;
-}
-
-.gc-toolbar__status-filter-btn--has-selection .gc-toolbar__status-filter-count {
-	background: rgba(255, 255, 255, 0.25);
-}
-
 /* ============================================
    状态筛选下拉面板样式
    ============================================ */
@@ -1033,17 +875,22 @@ Author: sugar
 	z-index: 1000;
 	min-width: 200px;
 	max-width: 240px;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--background-primary) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	border-radius: 8px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.12),
+		0 2px 6px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
 	padding: 0;
 	overflow: hidden;
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .gc-toolbar__status-filter-dropdown-header {
 	padding: 12px 16px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 	font-size: 13px;
 	font-weight: 600;
 	color: var(--text-normal);
@@ -1051,7 +898,7 @@ Author: sugar
 
 .gc-toolbar__status-filter-dropdown-actions {
 	padding: 8px 16px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 	display: flex;
 	justify-content: flex-end;
 }
@@ -1082,6 +929,10 @@ Author: sugar
 	width: 6px;
 }
 
+.gc-toolbar__status-filter-list::-webkit-scrollbar-track {
+	background: transparent;
+}
+
 .gc-toolbar__status-filter-list::-webkit-scrollbar-thumb {
 	background: var(--background-modifier-border);
 	border-radius: 3px;
@@ -1098,11 +949,13 @@ Author: sugar
 }
 
 .gc-toolbar__status-filter-item:hover {
-	background: var(--background-modifier-hover);
+	background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+	backdrop-filter: blur(8px);
 }
 
 .gc-toolbar__status-filter-item--selected {
-	background: rgba(var(--interactive-accent-rgb, 0.1), var(--interactive-accent));
+	background: color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* 复选框 */
@@ -1111,11 +964,16 @@ Author: sugar
 	flex-shrink: 0;
 }
 
-/* 状态标签 */
+/* 状态标签 - 胶囊样式 */
 .gc-toolbar__status-label {
-	flex: 1;
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 12px;
 	font-size: 13px;
-	color: var(--text-normal);
+	line-height: 1;
+	white-space: nowrap;
 }
 
 /* 空状态 */
@@ -1169,23 +1027,33 @@ Author: sugar
 	color: var(--text-on-accent);
 }
 
+/* 标签筛选按钮图标 */
+.gc-toolbar__tag-filter-icon {
+	font-size: 12px;
+	line-height: 1;
+}
+
+/* 标签筛选数量徽章 */
 .gc-toolbar__tag-filter-count {
-	min-width: 16px;
-	height: 16px;
-	padding: 0 4px;
-	border-radius: 8px;
 	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	font-size: 11px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
+	color: white;
+	font-size: 9px;
+	font-weight: 600;
+	padding: 1px 4px;
+	border-radius: 6px;
+	min-width: 14px;
+	text-align: center;
+	line-height: 1.1;
+}
+
+.gc-toolbar__tag-filter-btn--has-selection .gc-toolbar__tag-filter-count {
+	background-color: white;
+	color: var(--interactive-accent);
 }
 
 /* 字段选择器 */
 .gc-toolbar__field-selector-label {
-	font-size: 13px;
-	color: var(--text-muted);
+	display: none;
 }
 
 .gc-toolbar__field-selector-select {
@@ -1198,87 +1066,6 @@ Author: sugar
 	cursor: pointer;
 }
 
-/* 向下兼容旧类名 */
-.toolbar-dual-field-selector-wrapper {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.toolbar-field-filter-group {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.toolbar-time-granularity-group {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	padding: 2px;
-	background-color: var(--background-secondary);
-}
-
-.time-today-btn {
-	padding: 4px 10px;
-	border: none;
-	border-radius: 4px;
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
-	font-size: 13px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.time-today-btn:hover {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.time-granularity-btn {
-	padding: 4px 12px;
-	border: none;
-	border-radius: 4px;
-	background-color: transparent;
-	color: var(--text-muted);
-	font-size: 13px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.time-granularity-btn:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.time-granularity-btn.active {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	font-weight: 600;
-}
-
-.toolbar-gantt-field-group {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.toolbar-gantt-field-label {
-	font-size: 13px;
-	color: var(--text-muted);
-}
-
-.toolbar-gantt-field-select {
-	padding: 4px 8px;
-	border: none;
-	border-radius: 4px;
-	background-color: transparent;
-	color: var(--text-normal);
-	font-size: 12px;
-}
-
 /* ============================================
    排序下拉菜单样式 (BEM: gc-toolbar)
    ============================================ */
@@ -1286,19 +1073,24 @@ Author: sugar
 .gc-toolbar__sort-dropdown {
 	position: fixed;
 	z-index: 1000;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--background-primary) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	border-radius: 6px;
 	padding: 4px 0;
 	min-width: 160px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.12),
+		0 2px 6px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .gc-toolbar__sort-dropdown-header {
 	padding: 8px 12px;
 	font-size: 11px;
 	color: var(--text-muted);
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 	margin-bottom: 4px;
 }
 
@@ -1308,17 +1100,19 @@ Author: sugar
 	gap: 8px;
 	padding: 8px 12px;
 	cursor: pointer;
-	transition: background-color 0.15s ease;
+	transition: all 0.15s ease;
 	user-select: none;
 }
 
 .gc-toolbar__sort-menu-item:hover {
-	background-color: var(--background-modifier-hover);
+	background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+	backdrop-filter: blur(8px);
 }
 
 .gc-toolbar__sort-menu-item--active {
-	background-color: var(--background-modifier-hover);
+	background: color-mix(in srgb, var(--interactive-accent) 25%, transparent);
 	color: var(--interactive-accent);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .gc-toolbar__sort-option-icon {
@@ -1354,15 +1148,20 @@ Author: sugar
 .gc-toolbar__tag-filter-pane {
 	position: fixed;
 	z-index: 1000;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--background-primary) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	border-radius: 6px;
-	padding: 6px 8px;
-	min-width: 180px;
-	max-width: 260px;
+	padding: 4px 6px;
+	min-width: 140px;
+	max-width: 180px;
 	max-height: 280px;
 	overflow-y: auto;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.12),
+		0 2px 6px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .gc-toolbar__tag-filter-pane::-webkit-scrollbar {
@@ -1384,15 +1183,15 @@ Author: sugar
 
 .gc-toolbar__tag-filter-operators {
 	display: flex;
-	gap: 4px;
-	padding-bottom: 4px;
-	margin-bottom: 6px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	gap: 1px;
+	padding-bottom: 3px;
+	margin-bottom: 4px;
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 }
 
 .gc-toolbar__tag-filter-operator-btn {
-	flex: 1;
-	padding: 2px 6px;
+	flex: 0 1 auto;
+	padding: 2px 3px;
 	border: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
 	border-radius: 3px;
@@ -1403,6 +1202,7 @@ Author: sugar
 	transition: all 0.12s ease;
 	text-align: center;
 	line-height: 1.4;
+	min-width: 24px;
 }
 
 .gc-toolbar__tag-filter-operator-btn:hover {
@@ -1418,7 +1218,7 @@ Author: sugar
 .gc-toolbar__tag-filter-tags-grid {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px;
+	gap: 3px;
 }
 
 .gc-toolbar__tag-filter-empty {
@@ -1431,10 +1231,10 @@ Author: sugar
 .gc-toolbar__tag-filter-tag-item {
 	display: inline-flex;
 	align-items: center;
-	gap: 3px;
-	padding: 3px 6px;
+	gap: 2px;
+	padding: 2px 5px;
 	border: 1px solid var(--background-modifier-border);
-	border-radius: 12px;
+	border-radius: 10px;
 	background: var(--background-primary);
 	cursor: pointer;
 	transition: all 0.12s ease;
@@ -1447,10 +1247,16 @@ Author: sugar
 	border-color: var(--background-modifier-border-hover);
 }
 
+/* 选中状态 - 更显眼的样式 */
 .gc-toolbar__tag-filter-tag-item--selected {
-	background: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-	color: white;
+	/* 使用深色渐变背景，确保白色文字清晰可见 */
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+	border-color: #7c3aed;
+	color: rgb(15, 14, 14);
+	/* 添加外发光效果 */
+	box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 2px 8px rgba(139, 92, 246, 0.4);
+	/* 轻微放大 */
+	transform: scale(1.05);
 }
 
 .gc-toolbar__tag-filter-tag-name {
@@ -1462,6 +1268,8 @@ Author: sugar
 
 .gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-name {
 	color: white;
+	font-weight: 600;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .gc-toolbar__tag-filter-tag-count {
@@ -1475,19 +1283,24 @@ Author: sugar
 }
 
 .gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-count {
-	background: rgba(255, 255, 255, 0.25);
-	color: white;
+	background: rgba(255, 255, 255, 0.9);
+	color: #7c3aed;
+	font-weight: 600;
 }
 
-.gc-toolbar__tag-filter-tag-item--selected .gc-toolbar__tag-filter-tag-name {
-	color: white !important;
+/* 选中状态的悬停 - 保持紫色效果 */
+.gc-toolbar__tag-filter-tag-item--selected:hover {
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+	border-color: #7c3aed;
+	box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(139, 92, 246, 0.5);
+	transform: scale(1.08);
 }
 
 /* 响应式适配 */
 @media (max-width: 768px) {
 	.gc-toolbar__tag-filter-pane {
-		min-width: 160px;
-		max-width: 200px;
+		min-width: 120px;
+		max-width: 160px;
 	}
 
 	.gc-toolbar__tag-filter-tag-item {
@@ -1548,9 +1361,19 @@ Author: sugar
 
 .gc-task-card--week {
 	padding: 8px;
-	gap: 8px;
+	gap: 4px;
 	font-size: 13px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 周视图：给文本添加左侧间距，补偿复选框后的gap */
+.gc-task-card--week .gc-task-card__text {
+	margin-left: 4px;
+}
+
+/* 周视图：移除标签容器的额外左侧间距，避免与文本间距过大 */
+.gc-task-card--week .gc-task-card__tags {
+	margin-left: 0;
 }
 
 .gc-task-card--month {
@@ -1578,7 +1401,6 @@ Author: sugar
 /* BEM命名: gc-tag (独立Block), gc-task-card__tags (作为任务卡Element) */
 
 /* Tags inline container - 任务标签容器 */
-.gantt-task-tags-inline,
 .gc-task-card__tags {
 	display: flex;
 	flex-direction: row;
@@ -1612,8 +1434,8 @@ Author: sugar
 	user-select: none;
 }
 
-/* Hover 状态 */
-.gc-tag:hover {
+/* Hover 状态 - 排除已选中状态 */
+.gc-tag:not(.gc-tag--selected):hover {
 	background-color: var(--background-modifier-hover);
 }
 
@@ -1626,20 +1448,33 @@ Author: sugar
 	transform: scale(0.96);
 }
 
-/* 选中状态 */
+/* 选中状态 - 紫色发光效果 */
 .gc-tag--selected {
-	background-color: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-	color: var(--text-on-accent);
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+	border-color: #7c3aed;
+	color: white;
+	box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 2px 8px rgba(139, 92, 246, 0.4);
+	transform: scale(1.05);
 }
 
 .gc-tag--selected .gc-tag__label {
-	color: var(--text-on-accent);
+	color: white;
+	font-weight: 600;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .gc-tag--selected .gc-tag__suffix {
-	background-color: rgba(255, 255, 255, 0.25);
-	color: var(--text-on-accent);
+	background: rgba(255, 255, 255, 0.9);
+	color: #7c3aed;
+	font-weight: 600;
+}
+
+/* 选中状态的悬停 - 保持紫色效果 */
+.gc-tag--selected:hover {
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+	border-color: #7c3aed;
+	box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4), 0 4px 12px rgba(139, 92, 246, 0.5);
+	transform: scale(1.08);
 }
 
 /* Elements */
@@ -1695,7 +1530,6 @@ Author: sugar
 }
 
 /* Tooltip Tags */
-.tooltip-tags,
 .gc-task-tooltip__tags {
 	display: flex;
 	flex-direction: row;
@@ -1717,7 +1551,6 @@ Author: sugar
 		padding: 1px 6px;
 	}
 
-	.gantt-task-tags-inline,
 	.gc-task-card__tags {
 		gap: 3px;
 	}
@@ -1835,26 +1668,26 @@ Author: sugar
 }
 
 /* 6.4 Month View Components */
-/* BEM类名: gc-month-view__weekdays */
-.gc-month-view__weekdays {
-	display: grid !important;
-	grid-template-columns: 40px repeat(7, 1fr);
-	width: 100%;
-	gap: 8px;
-	margin-bottom: 8px;
-	border-bottom: 2px solid var(--divider-color);
-	padding-bottom: 8px;
-}
-
-/* BEM类名: gc-month-view__weekday */
+/* 星期标签 - 位于Grid第1行 */
 .gc-month-view__weekday {
-	font-size: 12px;
+	font-size: 16px;
 	font-weight: 600;
 	color: var(--text-muted);
 	text-align: center;
+	padding: 8px 4px;
+	/* 网格线：上右有边框 */
+	/*border-top: 2px solid var(--background-modifier-border);*/
+	border-right: 2px solid var(--background-modifier-border);
+	/* 确保在Grid第1行 */
+	grid-row: 1;
 }
 
-/* BEM类名: gc-month-view__week-number */
+/* 空占位 - 第1行第1列 */
+.gc-month-view__weekday--empty {
+	visibility: hidden;
+}
+
+/* 周编号 - 位于每周的第1列 */
 .gc-month-view__week-number {
 	display: flex;
 	align-items: center;
@@ -1862,11 +1695,10 @@ Author: sugar
 	font-size: 11px;
 	font-weight: 600;
 	color: var(--text-muted);
-}
-
-/* BEM类名: gc-month-view__week-days */
-.gc-month-view__week-days {
-	display: contents;
+	/* 网格线：上右有边框 */
+	border-top: 2px solid var(--background-modifier-border);
+	border-right: 2px solid var(--background-modifier-border);
+	/* grid位置由JavaScript内联样式设置 */
 }
 
 /* BEM类名: gc-month-view__day-cell */
@@ -1879,8 +1711,9 @@ Author: sugar
 	padding: 8px;
 	gap: 4px;
 	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
+	/* 网格线：上右有边框，左下由相邻单元格提供 */
+	border-top: 2px solid var(--background-modifier-border);
+	border-right: 2px solid var(--background-modifier-border);
 	cursor: pointer;
 	transition: all 0.15s ease;
 	overflow: hidden;
@@ -2099,57 +1932,6 @@ Author: sugar
 	font-size: 12px;
 }
 
-/* 6.6 Day View Components */
-.calendar-day-details {
-	background-color: var(--background-secondary);
-	border-radius: 6px;
-	padding: 16px;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.calendar-info-group {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px;
-	background-color: var(--background-primary);
-	border-radius: 4px;
-}
-
-.calendar-info-group label {
-	font-weight: 600;
-	min-width: 120px;
-	color: var(--text-muted);
-}
-
-.calendar-info-group span {
-	color: var(--text-normal);
-	font-weight: 500;
-}
-
-.calendar-event-section {
-	margin-top: 8px;
-}
-
-.calendar-event-section h3 {
-	font-size: 14px;
-	font-weight: 600;
-	margin: 0 0 12px 0;
-	color: var(--text-normal);
-}
-
-.calendar-event-placeholder {
-	padding: 16px;
-	text-align: center;
-	color: var(--text-muted);
-	background-color: var(--background-primary);
-	border-radius: 4px;
-	border: 1px dashed var(--divider-color);
-	font-size: 13px;
-}
-
 /* ==================== Day View Sub-Components ==================== */
 /* BEM命名: gc-day-view Elements */
 .gc-day-view__task-list {
@@ -2189,7 +1971,6 @@ Author: sugar
 	min-height: 0;
 }
 
-.calendar-day-divider,
 .gc-day-view__divider {
 	width: 8px;
 	background-color: transparent;
@@ -2198,7 +1979,6 @@ Author: sugar
 	flex-shrink: 0;
 }
 
-.calendar-day-divider:hover,
 .gc-day-view__divider:hover {
 	background-color: var(--interactive-accent);
 }
@@ -2242,7 +2022,6 @@ Author: sugar
 	min-height: 0;
 }
 
-.calendar-day-divider-vertical,
 .gc-day-view__divider--vertical {
 	height: 8px;
 	background-color: transparent;
@@ -2251,28 +2030,6 @@ Author: sugar
 	flex-shrink: 0;
 }
 
-.calendar-day-divider-vertical:hover {
-	background-color: var(--interactive-accent);
-}
-
-.calendar-day-notes-title {
-	margin: 0 0 12px 0;
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--text-normal);
-	flex-shrink: 0;
-}
-
-.calendar-day-notes-content {
-	flex: 1;
-	overflow-y: auto;
-	padding: 8px;
-	background-color: var(--background-primary);
-	border-radius: 4px;
-	min-height: 0;
-}
-
-.calendar-day-notes-markdown,
 .gc-day-view__notes-body {
 	font-size: 12px;
 	line-height: 1.6;
@@ -2281,14 +2038,12 @@ Author: sugar
 
 /* Priority badge inline */
 /* BEM命名: gc-task-card__priority, gc-task-card__priority-badge */
-.gantt-task-priority-inline,
 .gc-task-card__priority {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 }
 
-.gantt-priority-badge,
 .gc-task-card__priority-badge {
 	font-size: 16px;
 	display: inline-flex;
@@ -2300,34 +2055,28 @@ Author: sugar
 	flex-shrink: 0;
 }
 
-.gantt-priority-badge.priority-highest,
 .gc-task-card__priority-badge--highest {
 	background-color: rgba(239, 68, 68, 0.1);
 }
 
-.gantt-priority-badge.priority-high,
 .gc-task-card__priority-badge--high {
 	background-color: rgba(249, 115, 22, 0.1);
 }
 
-.gantt-priority-badge.priority-medium,
 .gc-task-card__priority-badge--medium {
 	background-color: rgba(234, 179, 8, 0.1);
 }
 
-.gantt-priority-badge.priority-low,
 .gc-task-card__priority-badge--low {
 	background-color: rgba(34, 197, 94, 0.1);
 }
 
-.gantt-priority-badge.priority-lowest,
 .gc-task-card__priority-badge--lowest {
 	background-color: rgba(59, 130, 246, 0.1);
 }
 
 /* Time properties inline */
 /* BEM命名: gc-task-card__times, gc-task-card__time-badge */
-.gantt-task-time-properties-inline,
 .gc-task-card__times {
 	display: flex;
 	flex-direction: row;
@@ -2336,7 +2085,6 @@ Author: sugar
 	flex-wrap: wrap;
 }
 
-.gantt-time-badge,
 .gc-task-card__time-badge {
 	display: flex;
 	align-items: center;
@@ -2349,14 +2097,12 @@ Author: sugar
 	white-space: nowrap;
 }
 
-.gantt-time-badge.gantt-overdue,
 .gc-task-card__time-badge--overdue {
 	color: #ef4444;
 	background-color: rgba(239, 68, 68, 0.1);
 	font-weight: 500;
 }
 
-.gantt-task-file,
 .gc-task-card__file {
 	display: flex;
 	align-items: center;
@@ -2369,7 +2115,6 @@ Author: sugar
 
 /* Warning Icon - 任务警告图标 */
 /* BEM命名: gc-task-card__warning */
-.gantt-task-warning-icon,
 .gc-task-card__warning {
 	display: inline-flex;
 	align-items: center;
@@ -2379,19 +2124,8 @@ Author: sugar
 	transition: transform 0.2s ease;
 }
 
-.gantt-task-warning-icon:hover,
 .gc-task-card__warning:hover {
 	transform: scale(1.2);
-}
-
-/* Ribbon Icon */
-.gantt-calendar-ribbon {
-	transition: all 0.2s ease;
-}
-
-.gantt-calendar-ribbon:hover {
-	transform: scale(1.1);
-	opacity: 0.8;
 }
 
 /* 6.9 Heatmap Components */
@@ -2514,87 +2248,6 @@ Author: sugar
 .heatmap-palette-label-text {
 	font-size: 12px;
 	color: var(--text-muted);
-}
-
-/* 6.10 Modal Components */
-.gantt-date-picker-modal {
-	padding: 20px;
-}
-
-.gantt-date-picker-modal h2 {
-	margin: 0 0 20px 0;
-	font-size: 18px;
-	font-weight: 600;
-	color: var(--text-normal);
-}
-
-.gantt-date-picker-modal .setting-item {
-	border: none;
-	padding: 10px 0;
-}
-
-.gantt-date-picker-modal .setting-item-name {
-	font-weight: 500;
-	margin-bottom: 8px;
-}
-
-.gantt-date-picker-modal input[type="date"] {
-	width: 100%;
-	padding: 8px 12px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	background: var(--background-primary);
-	color: var(--text-normal);
-	font-size: 14px;
-}
-
-.gantt-date-picker-modal input[type="date"]:focus {
-	border-color: var(--interactive-accent);
-	outline: none;
-	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
-}
-
-.gantt-date-picker-modal .setting-item-control {
-	display: flex;
-	gap: 10px;
-	justify-content: flex-end;
-	margin-top: 20px;
-}
-
-.gantt-date-picker-modal button {
-	padding: 8px 20px;
-	border-radius: 4px;
-	font-size: 14px;
-	font-weight: 500;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.gantt-date-picker-modal button.mod-cta {
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border: none;
-}
-
-.gantt-date-picker-modal button.mod-cta:hover {
-	background: var(--interactive-accent-hover);
-}
-
-.gantt-date-picker-modal button:not(.mod-cta) {
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border: 1px solid var(--background-modifier-border);
-}
-
-.gantt-date-picker-modal button:not(.mod-cta):hover {
-	background: var(--background-modifier-hover);
-}
-
-/* Task modal sizing */
-.gantt-task-modal.modal {
-	width: 640px;
-	max-width: 90vw;
-	max-height: 80vh;
 }
 
 /* Festival Color Settings */
@@ -2925,11 +2578,12 @@ Author: sugar
 }
 
 /* 7.6 Text Decoration (已完成任务) */
-.gc-day-view__task-list .gc-task-card--day.gc-task-card--completed .gc-task-card__text,
-.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed .gc-task-card__text,
-.gc-month-view__tasks .gc-task-card--month.gc-task-card--completed .gc-task-card__text,
-.gc-view--task .gc-task-card--task.gc-task-card--completed .gc-task-card__text,
-.gc-task-card--gantt.gc-task-card--completed .gc-task-card__text {
+/* 排除自定义状态的已完成任务，使用自定义文字颜色 */
+.gc-day-view__task-list .gc-task-card--day.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
+.gc-month-view__tasks .gc-task-card--month.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
+.gc-view--task .gc-task-card--task.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
+.gc-task-card--gantt.gc-task-card--completed:not(.task-with-status) .gc-task-card__text {
 	text-decoration: line-through;
 	color: var(--text-muted);
 }
@@ -2942,328 +2596,6 @@ Author: sugar
 /* No utility classes currently defined */
 /* Future utility classes can be added here as needed */
 
-/* ========================================
-   Task Sort Button Styles
-   ======================================== */
-
-/* 排序按钮容器 */
-.toolbar-sort-button-container {
-	display: inline-flex;
-	align-items: center;
-	margin-right: 4px;
-}
-
-/* 排序按钮 */
-.toolbar-sort-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	min-width: 32px;
-}
-
-.toolbar-sort-icon {
-	font-size: 14px;
-}
-
-.toolbar-sort-dropdown-icon {
-	font-size: 10px;
-	opacity: 0.7;
-}
-
-/* 排序下拉菜单 */
-.toolbar-sort-dropdown {
-	position: fixed;
-	z-index: 1000;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	padding: 4px 0;
-	min-width: 160px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.toolbar-sort-dropdown-header {
-	padding: 8px 12px;
-	font-size: 11px;
-	color: var(--text-muted);
-	border-bottom: 1px solid var(--background-modifier-border);
-	margin-bottom: 4px;
-}
-
-/* 排序菜单项 */
-.toolbar-sort-menu-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 12px;
-	cursor: pointer;
-	transition: background 0.15s ease;
-}
-
-.toolbar-sort-menu-item:hover {
-	background: var(--background-modifier-hover);
-}
-
-.toolbar-sort-menu-item.active {
-	background: var(--background-modifier-border);
-}
-
-.toolbar-sort-option-icon {
-	font-size: 14px;
-	width: 20px;
-	text-align: center;
-}
-
-.toolbar-sort-option-label {
-	flex: 1;
-	font-size: 13px;
-}
-
-.toolbar-sort-option-indicator {
-	font-size: 12px;
-	width: 20px;
-	text-align: right;
-}
-
-/* ============================================
-   标签筛选器样式（紧凑版）
-   ============================================ */
-
-/* 标签筛选按钮容器 */
-.toolbar-tag-filter-container {
-	display: inline-flex;
-	align-items: center;
-}
-
-/* 标签筛选按钮 */
-.toolbar-tag-filter-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	border-radius: 4px;
-	cursor: pointer;
-	transition: all 0.15s ease;
-	font-size: 12px;
-}
-
-.toolbar-tag-filter-btn:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-.toolbar-tag-filter-btn:active {
-	transform: translateY(0);
-}
-
-/* 标签筛选按钮 - 有选中时的样式 */
-.toolbar-tag-filter-btn.has-selection {
-	background-color: var(--interactive-accent);
-	color: white;
-	border-color: var(--interactive-accent);
-}
-
-/* 标签图标 */
-.toolbar-tag-filter-icon {
-	font-size: 12px;
-	line-height: 1;
-}
-
-/* 标签数量徽章 */
-.toolbar-tag-filter-count {
-	background-color: var(--interactive-accent);
-	color: white;
-	font-size: 9px;
-	font-weight: 600;
-	padding: 1px 4px;
-	border-radius: 6px;
-	min-width: 14px;
-	text-align: center;
-	line-height: 1.1;
-}
-
-.toolbar-tag-filter-btn.has-selection .toolbar-tag-filter-count {
-	background-color: white;
-	color: var(--interactive-accent);
-}
-
-/* ============================================
-   标签选择窗格（紧凑版）
-   ============================================ */
-
-/* 窗格容器 - 更小更紧凑 */
-.tag-filter-pane {
-	position: fixed;
-	z-index: 1000;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	padding: 6px 8px;
-	min-width: 180px;
-	max-width: 260px;
-	max-height: 280px;
-	overflow-y: auto;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* 窗格滚动条样式 */
-.tag-filter-pane::-webkit-scrollbar {
-	width: 4px;
-}
-
-.tag-filter-pane::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.tag-filter-pane::-webkit-scrollbar-thumb {
-	background: var(--background-modifier-border);
-	border-radius: 2px;
-}
-
-.tag-filter-pane::-webkit-scrollbar-thumb:hover {
-	background: var(--text-muted);
-}
-
-/* 组合器区域 - 更紧凑 */
-.tag-filter-operators {
-	display: flex;
-	gap: 4px;
-	padding-bottom: 4px;
-	margin-bottom: 6px;
-	border-bottom: 1px solid var(--background-modifier-border);
-}
-
-/* 组合器按钮 - 更小更紧凑 */
-.tag-filter-operator-btn {
-	flex: 1;
-	padding: 2px 6px;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-primary);
-	border-radius: 3px;
-	cursor: pointer;
-	font-size: 10px;
-	font-weight: 500;
-	color: var(--text-muted);
-	transition: all 0.12s ease;
-	text-align: center;
-	line-height: 1.4;
-}
-
-.tag-filter-operator-btn:hover {
-	background: var(--background-modifier-hover);
-}
-
-.tag-filter-operator-btn.active {
-	background: var(--interactive-accent);
-	color: white;
-	border-color: var(--interactive-accent);
-}
-
-/* 标签网格容器（平铺布局） - 更紧凑 */
-.tag-filter-tags-grid {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-}
-
-/* 空状态提示 - 更紧凑 */
-.tag-filter-empty {
-	padding: 12px;
-	text-align: center;
-	color: var(--text-muted);
-	font-size: 11px;
-}
-
-/* ============================================
-   胶囊样式标签项（紧凑版）
-   ============================================ */
-
-/* 标签项 - 胶囊样式单行布局 */
-.tag-filter-tag-item {
-	display: inline-flex;
-	align-items: center;
-	gap: 3px;
-	padding: 3px 6px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 12px;
-	background: var(--background-primary);
-	cursor: pointer;
-	transition: all 0.12s ease;
-	user-select: none;
-	font-size: 11px;
-}
-
-.tag-filter-tag-item:hover {
-	background: var(--background-modifier-hover);
-	border-color: var(--background-modifier-border-hover);
-}
-
-/* 选中状态 */
-.tag-filter-tag-item.selected {
-	background: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-	color: white;
-}
-
-/* 标签名称 */
-.tag-filter-tag-name {
-	font-size: 11px;
-	font-weight: 500;
-	color: var(--text-normal);
-	line-height: 1.2;
-}
-
-.tag-filter-tag-item.selected .tag-filter-tag-name {
-	color: white;
-}
-
-/* 任务数量 - 小徽章 */
-.tag-filter-tag-count {
-	font-size: 9px;
-	color: var(--text-muted);
-	background: var(--background-modifier-border);
-	padding: 1px 4px;
-	border-radius: 6px;
-	font-weight: 500;
-	line-height: 1;
-}
-
-.tag-filter-tag-item.selected .tag-filter-tag-count {
-	background: rgba(255, 255, 255, 0.25);
-	color: white;
-}
-
-/* 选中状态下覆盖颜色为白色 */
-.tag-filter-tag-item.selected .tag-filter-tag-name {
-	color: white !important;
-}
-
-/* ============================================
-   响应式适配
-   ============================================ */
-
-@media (max-width: 768px) {
-	.tag-filter-pane {
-		min-width: 160px;
-		max-width: 200px;
-	}
-
-	.tag-filter-tag-item {
-		font-size: 10px;
-		padding: 2px 5px;
-	}
-
-	.tag-filter-tag-name {
-		font-size: 10px;
-	}
-
-	.tag-filter-tag-count {
-		font-size: 8px;
-		padding: 1px 3px;
-	}
-}
 
 /* ============================================
    ============================================
@@ -3276,7 +2608,7 @@ Author: sugar
 	min-height: 0;
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
+	overflow: visible;  /* 改为 visible 以允许内部 sticky 定位生效 */
 	width: 100%;
 	height: 100%;
 }
@@ -3294,35 +2626,44 @@ Author: sugar
 }
 
 /* ============================================
-   BEM 布局结构
-   gantt__layout - 主布局容器
-   gantt__corner - 左上角空白区域
-   gantt__header-container - 顶部时间轴容器
-   gantt__tasklist-container - 左侧任务列表容器
-   gantt__chart-container - 右侧甘特图容器
+   BEM 布局结构 - 单个 Grid 布局
+   使用 CSS 变量 --task-column-width 控制任务列宽度
+   Grid 结构：
+   ┌────────────┬──────────────────────────────┐
+   │ 空白区域   │ 时间轴（sticky）             │
+   ├────────────┼──────────────────────────────┤
+   │ 任务列表   │ 甘特图（双向滚动）           │
+   └────────────┴──────────────────────────────┘
    ============================================ */
 
-/* 主布局容器 - 使用 Grid 布局实现冻结效果 */
-.gc-gantt-view__layout {
+/* 单个 Grid 容器 - 包含所有甘特图元素 */
+.gc-gantt-view__main-grid {
+	--task-column-width: 240px;  /* 默认任务列宽度，可通过 JS 动态修改 */
+
 	display: grid;
-	grid-template-columns: 200px 4px 1fr;
-	grid-template-rows: 50px 1fr;
+	grid-template-columns: var(--task-column-width) 4px 1fr;
 	grid-template-areas:
 		"corner resizer header"
 		"tasklist resizer chart";
+	grid-template-rows: 50px 1fr;
+
 	width: 100%;
-	height: 100%;
+	min-height: 400px;
 	gap: 0;
-	overflow: hidden;
-	min-height: 0;
+	position: relative;
 }
 
-/* 左上角空白区域 */
+/* 左上角空白区域（sticky） */
 .gc-gantt-view__corner {
 	grid-area: corner;
+	position: sticky;
+	top: 8px;
+	z-index: 50;
+	height: 50px;
 	overflow: hidden;
 	border-right: 1px solid var(--background-modifier-border);
 	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
 	min-height: 0;
 	min-width: 0;
 }
@@ -3331,9 +2672,13 @@ Author: sugar
 	display: block;
 }
 
-/* 顶部时间轴容器 */
-.gc-gantt-view__header-container {
+/* 顶部时间轴容器（sticky，可水平滚动） */
+.gc-gantt-view__header {
 	grid-area: header;
+	position: sticky;
+	top: 8px;
+	z-index: 50;
+	height: 50px;
 	overflow-x: auto;
 	overflow-y: hidden;
 	border-bottom: 1px solid var(--background-modifier-border);
@@ -3345,7 +2690,7 @@ Author: sugar
 	-ms-overflow-style: none; /* IE 10+ */
 }
 
-.gc-gantt-view__header-container::-webkit-scrollbar {
+.gc-gantt-view__header::-webkit-scrollbar {
 	display: none; /* Chrome, Safari, Opera */
 }
 
@@ -3354,7 +2699,7 @@ Author: sugar
 }
 
 /* 左侧任务列表容器 */
-.gc-gantt-view__tasklist-container {
+.gc-gantt-view__tasklist {
 	grid-area: tasklist;
 	overflow-x: hidden;
 	overflow-y: auto;
@@ -3366,7 +2711,7 @@ Author: sugar
 	-ms-overflow-style: none; /* IE 10+ */
 }
 
-.gc-gantt-view__tasklist-container::-webkit-scrollbar {
+.gc-gantt-view__tasklist::-webkit-scrollbar {
 	display: none; /* Chrome, Safari, Opera */
 }
 
@@ -3374,40 +2719,43 @@ Author: sugar
 	display: block;
 }
 
-/* 右侧甘特图容器 */
-.gc-gantt-view__chart-container {
+/* 右侧甘特图容器（双向滚动） */
+.gc-gantt-view__chart {
 	grid-area: chart;
 	overflow: auto;
 	background-color: var(--background-primary);
 	min-height: 0;
 }
 
-.gc-gantt-view__chart-container::-webkit-scrollbar {
+.gc-gantt-view__chart::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
 }
 
-.gc-gantt-view__chart-container::-webkit-scrollbar-track {
+.gc-gantt-view__chart::-webkit-scrollbar-track {
 	background: var(--background-primary);
 }
 
-.gc-gantt-view__chart-container::-webkit-scrollbar-thumb {
+.gc-gantt-view__chart::-webkit-scrollbar-thumb {
 	background: var(--background-modifier-border);
 	border-radius: 4px;
 }
 
-.gc-gantt-view__chart-container::-webkit-scrollbar-thumb:hover {
+.gc-gantt-view__chart::-webkit-scrollbar-thumb:hover {
 	background: var(--text-muted);
 }
 
-/* 分隔条 - 可拖动调整左右布局宽度 */
+/* 分隔条 - 覆盖在 Grid 上，使用绝对定位配合 CSS 变量 */
 .gc-gantt-view__resizer {
-	grid-area: resizer;
+	position: absolute;
+	left: var(--task-column-width);
+	top: 0;
+	bottom: 0;
+	width: 4px;
 	background-color: var(--background-modifier-border);
 	cursor: col-resize;
 	transition: background-color 0.2s ease;
-	position: relative;
-	z-index: 10;
+	z-index: 60;
 }
 
 .gc-gantt-view__resizer:hover {
@@ -3420,6 +2768,102 @@ Author: sugar
 
 .gc-gantt-view__chart-svg {
 	display: block;
+}
+
+/* ========================================
+   旧样式兼容（保留以避免破坏现有功能）
+   ======================================== */
+
+/* 甘特图容器 */
+.gc-gantt-view__container {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: visible;
+	width: 100%;
+	height: 100%;
+}
+
+/* 甘特图根容器 */
+.gc-gantt-view__root {
+	flex: 1 1 auto;
+	min-height: 500px;
+	min-width: 100%;
+	position: relative;
+	overflow: visible;
+	background-color: var(--background-primary);
+	border-radius: 8px;
+	padding: 8px;
+}
+
+/* Sticky 时间线容器（旧版，保留兼容） */
+.gc-gantt-view__sticky-header {
+	display: grid;
+	grid-template-columns: 240px 4px 1fr;
+	grid-template-areas: "corner resizer header";
+	position: sticky;
+	top: 8px;
+	z-index: 50;
+	background-color: var(--background-secondary);
+	border-radius: 8px 8px 0 0;
+	height: 50px;
+	flex-shrink: 0;
+}
+
+/* Sticky 区域的分隔条不响应鼠标事件 */
+.gc-gantt-view__sticky-header .gc-gantt-view__resizer {
+	pointer-events: none;
+}
+
+/* 主布局容器（旧版，保留兼容） */
+.gc-gantt-view__layout {
+	display: grid;
+	grid-template-columns: 240px 4px 1fr;
+	grid-template-areas: "tasklist resizer chart";
+	width: 100%;
+	min-height: 400px;
+	gap: 0;
+	overflow: hidden;
+}
+
+/* 旧版类名兼容 */
+.gc-gantt-view__header-container {
+	grid-area: header;
+	overflow-x: auto;
+	overflow-y: hidden;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	min-height: 0;
+	min-width: 0;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.gc-gantt-view__header-container::-webkit-scrollbar {
+	display: none;
+}
+
+.gc-gantt-view__tasklist-container {
+	grid-area: tasklist;
+	overflow-x: hidden;
+	overflow-y: auto;
+	border-right: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	min-height: 0;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.gc-gantt-view__tasklist-container::-webkit-scrollbar {
+	display: none;
+}
+
+.gc-gantt-view__chart-container {
+	grid-area: chart;
+	overflow: auto;
+	background-color: var(--background-primary);
+	min-height: 0;
 }
 
 /* ============================================
@@ -3486,26 +2930,6 @@ Author: sugar
 	pointer-events: none;
 }
 
-/* 任务列表项 */
-.gantt-task-list-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	height: 100%;
-	font-size: 12px;
-	color: var(--text-normal);
-}
-
-.gantt-task-list-item__text {
-	flex: 1;
-	white-space: nowrap;
-	cursor: pointer;
-}
-
-.gantt-task-list-item__text:hover {
-	color: var(--interactive-accent);
-}
-
 /* 任务复选框 */
 .gc-gantt-view__task-checkbox {
 	flex-shrink: 0;
@@ -3526,14 +2950,6 @@ Author: sugar
 .gc-gantt-view__bar-group:hover .gc-gantt-view__handle-left,
 .gc-gantt-view__bar-group:hover .gc-gantt-view__handle-right {
 	opacity: 1;
-}
-
-/* 今天标记线 */
-.gantt-today-line {
-	stroke: var(--interactive-accent);
-	stroke-width: 2;
-	stroke-dasharray: 4 2;
-	pointer-events: none;
 }
 
 
@@ -3619,38 +3035,6 @@ Author: sugar
 	color: var(--tag-color);
 	border-radius: 4px;
 	font-size: 11px;
-}
-
-/* 日期头部样式 */
-.gantt-date-header {
-	font-size: 11px;
-	fill: var(--text-muted);
-}
-
-.gantt-date-header.today {
-	font-weight: 600;
-	fill: var(--interactive-accent);
-}
-
-/* 今天标记线 */
-.gantt-today-line {
-	stroke: var(--interactive-accent);
-	stroke-width: 2;
-	stroke-dasharray: 4 2;
-	pointer-events: none;
-}
-
-/* 依赖箭头 */
-.gantt-dependency-arrow {
-	stroke: var(--text-muted);
-	stroke-width: 1.5;
-	fill: none;
-	pointer-events: none;
-}
-
-.gantt-dependency-arrow:hover {
-	stroke: var(--interactive-accent);
-	stroke-width: 2;
 }
 
 /* 响应式适配 */
@@ -3785,3 +3169,17 @@ Author: sugar
 	min-width: 32px;
 }
 
+/* ============================================
+   甘特图行悬停高亮样式
+   ============================================ */
+
+/* 基础行背景 */
+.gc-gantt-view__row-bg {
+	transition: fill 0.15s ease, opacity 0.15s ease;
+}
+
+/* 行高亮状态 */
+.gc-gantt-view__row-highlight {
+	fill: var(--background-modifier-hover) !important;
+	opacity: 1 !important;
+}

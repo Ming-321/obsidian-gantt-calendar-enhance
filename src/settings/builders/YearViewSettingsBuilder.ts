@@ -71,6 +71,19 @@ export class YearViewSettingsBuilder extends BaseBuilder {
 					});
 					heatmapPicker.render();
 				});
+
+				// 热力图3D效果开关
+				addSetting(setting =>
+					setting.setName('热力图3D效果')
+						.setDesc('为热力图颜色格子添加玻璃水珠质感效果')
+						.addToggle(toggle => toggle
+							.setValue(this.plugin.settings.yearHeatmap3DEnabled)
+							.onChange(async (value) => {
+								this.plugin.settings.yearHeatmap3DEnabled = value;
+								await this.saveAndRefresh();
+								this.plugin.refreshCalendarViews();
+							}))
+				);
 			}
 
 			// ===== 节日颜色设置 =====
