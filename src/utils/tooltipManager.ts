@@ -194,7 +194,7 @@ export class TooltipManager {
 			const hasTimeProperties = task.createdDate || task.startDate || task.scheduledDate ||
 				task.dueDate || task.cancelledDate || task.completionDate;
 
-			if (hasTimeProperties) {
+			if (hasTimeProperties || task.repeat) {
 				const timeHtml: string[] = [];
 
 				if (task.createdDate) {
@@ -217,6 +217,11 @@ export class TooltipManager {
 				}
 				if (task.completionDate) {
 					timeHtml.push(`<div class="gc-task-tooltip__time-item">✅ 完成: ${formatDate(task.completionDate, 'yyyy-MM-dd')}</div>`);
+				}
+
+				// 周期任务显示
+				if (task.repeat) {
+					timeHtml.push(`<div class="gc-task-tooltip__time-item gc-task-tooltip__repeat">🔁 重复: ${this.escapeHtml(task.repeat)}</div>`);
 				}
 
 				this.cachedElements.times.innerHTML = timeHtml.join('');
@@ -325,6 +330,7 @@ export class TooltipManager {
 		if (this.currentTask.dueDate) height += 20;
 		if (this.currentTask.cancelledDate) height += 20;
 		if (this.currentTask.completionDate) height += 20;
+		if (this.currentTask.repeat) height += 20;
 		if (this.currentTask.tags && this.currentTask.tags.length > 0) height += 30;
 
 		return Math.min(height, 400); // 最大高度限制

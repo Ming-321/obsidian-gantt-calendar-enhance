@@ -395,7 +395,7 @@ export class RegularExpressions {
          * @example
          * "[priority:: high] [due:: 2024-01-15]" -> 可多次匹配
          */
-        anyFieldRegex: /\[(priority|created|start|scheduled|due|cancelled|completion)::\s*([^\]]+)\]/gi,
+        anyFieldRegex: /\[(priority|created|start|scheduled|due|cancelled|completion|repeat)::\s*([^\]]+)\]/gi,
 
         /**
          * 格式检测正则
@@ -445,7 +445,7 @@ export class RegularExpressions {
          * "任务 [priority:: high] 内容" -> "任务  内容"
          * "[due:: 2024-01-15]" -> ""
          */
-        removeDataviewField: /\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/gi,
+        removeDataviewField: /\s*\[(priority|created|start|scheduled|due|cancelled|completion|repeat)::[^\]]+\]\s*/gi,
 
         /**
          * 移除 Tasks 周期任务属性
@@ -455,7 +455,7 @@ export class RegularExpressions {
          * "任务 🔁 every day 内容" -> "任务  内容"
          * "🔁every week" -> ""
          */
-        removeTasksRepeat: /\s*🔁\s+every\s+.+?\s*/gi,
+        removeTasksRepeat: /\s*🔁\s+every\s+(?:(?!🔺|⏫|🔼|🔽|⏬|➕|🛫|⏳|📅|❌|✅|\[).)+?(?=\s*(?:🔺|⏫|🔼|🔽|⏬|➕|🛫|⏳|📅|❌|✅|\[|$))/gi,
 
         /**
          * 移除 Dataview 周期任务字段
@@ -465,7 +465,7 @@ export class RegularExpressions {
          * "任务 [repeat:: every day] 内容" -> "任务  内容"
          * "[repeat:: every week]" -> ""
          */
-        removeDataviewRepeat: /\s*\[repeat::\s+every\s+.+?\]\s*/gi,
+        removeDataviewRepeat: /\s*\[repeat::\s+every\s+(?:(?!\]).)+?](?=\s*(?:\[|$))/gi,
 
         /**
          * 折叠多余空格

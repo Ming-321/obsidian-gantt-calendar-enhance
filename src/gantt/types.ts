@@ -66,6 +66,8 @@ export interface GanttChartTask {
 	cancelledDate?: Date;
 	/** 完成日期 */
 	completionDate?: Date;
+	/** 周期规则，如 "every day" */
+	repeat?: string;
 }
 
 /**

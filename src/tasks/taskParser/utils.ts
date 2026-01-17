@@ -51,6 +51,9 @@ export function extractTaskDescription(content: string): string {
     // 移除 Tasks emoji 日期属性
     text = text.replace(RegularExpressions.DescriptionExtraction.removeTasksDate, ' ');
 
+    // 移除 Tasks 周期任务属性
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeTasksRepeat, ' ');
+
     // 移除 Dataview [field:: value] 块
     text = text.replace(RegularExpressions.DescriptionExtraction.removeDataviewField, ' ');
 
@@ -88,6 +91,9 @@ export function extractTasksDescription(content: string): string {
 
     // 移除 Tasks emoji 日期属性
     text = text.replace(RegularExpressions.DescriptionExtraction.removeTasksDate, ' ');
+
+    // 移除 Tasks 周期任务属性
+    text = text.replace(RegularExpressions.DescriptionExtraction.removeTasksRepeat, ' ');
 
     // 移除标签（使用统一正则入口）
     text = text.replace(RegularExpressions.DescriptionExtraction.removeTags, ' ');

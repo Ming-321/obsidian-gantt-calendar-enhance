@@ -49,6 +49,9 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	private currentGlobalTasks: GCTask[] = [];
 	private currentGanttTasks: import('../gantt').GanttChartTask[] = [];
 
+	// 刷新后是否滚动到今天（用户主动点击刷新按钮时为true）
+	private shouldScrollToTodayOnRefresh = false;
+
 	// Getter 方法（供工具栏调用）- 从插件设置读取
 	public getStartField(): DateFieldType { return this.plugin.settings.ganttStartField; }
 	public setStartField(value: DateFieldType): void {
@@ -202,6 +205,8 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	 */
 	private refresh(): void {
 		if (this.currentContainer && this.currentContainer.isConnected) {
+			// 设置标志位：刷新后滚动到今天
+			this.shouldScrollToTodayOnRefresh = true;
 			this.render(this.currentContainer, new Date());
 		}
 	}
@@ -301,10 +306,18 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 10. 渲染甘特图
 			await this.ganttWrapper.init(ganttTasks);
 
-			// 11. 恢复滚动位置（而不是滚动到今天）
+			// 11. 根据标志位决定滚动位置
 			if (this.ganttWrapper) {
-				this.restoreScrollPosition();
+				if (this.shouldScrollToTodayOnRefresh) {
+					// 用户主动刷新，滚动到今天
+					this.ganttWrapper.scrollToToday();
+				} else {
+					// 其他情况（如筛选、排序变更），恢复之前的滚动位置
+					this.restoreScrollPosition();
+				}
 			}
+			// 重置标志位
+			this.shouldScrollToTodayOnRefresh = false;
 
 		} catch (error) {
 			Logger.error('GanttView', 'Error rendering gantt:', error);

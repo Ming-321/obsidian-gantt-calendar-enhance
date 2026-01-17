@@ -1,22 +1,19 @@
 /**
  * 任务创建弹窗
  *
- * 提供快速创建任务的界面，包含三大板块：
- * - 任务描述编辑板块
- * - 任务优先级设置板块
- * - 任务时间设置板块
- * - 标签选择器
+ * 提供快速创建任务的界面，基于 BaseTaskModal 基类。
  *
- * 默认值：创建时间和截止时间为当天，其他时间为空
+ * @fileoverview 任务创建弹窗
+ * @module modals/CreateTaskModal
  */
 
-import { App, Modal, Notice } from 'obsidian';
+import { App, Notice } from 'obsidian';
 import type GanttCalendarPlugin from '../../main';
-import type { GCTask } from '../types';
-import { createTaskInDailyNote, type CreateTaskData } from '../utils/dailyNoteHelper';
-import { EditTaskModalClasses } from '../utils/bem';
-import { TagSelector } from '../components/TagSelector';
+import type { CreateTaskData } from '../utils/dailyNoteHelper';
+import { createTaskInDailyNote } from '../utils/dailyNoteHelper';
 import { Logger } from '../utils/logger';
+import type { GCTask } from '../types';
+import { BaseTaskModal, type PriorityOption } from './BaseTaskModal';
 
 /**
  * 任务创建弹窗选项
@@ -29,50 +26,15 @@ export interface CreateTaskModalOptions {
 }
 
 /**
- * 优先级选项
- */
-interface PriorityOption {
-	value: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
-	label: string;
-	icon: string;
-}
-
-/**
- * 周期任务配置
- */
-interface RepeatConfig {
-	frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | '';
-	interval: number;
-	days?: number[];  // 0-6, 周日到周六
-	monthDay?: number | 'last';  // 1-31 或 'last'
-	whenDone: boolean;
-}
-
-/**
  * 任务创建弹窗
  */
-export class CreateTaskModal extends Modal {
+export class CreateTaskModal extends BaseTaskModal {
 	private plugin: GanttCalendarPlugin;
 	private targetDate: Date;
 	private onSuccess: () => void;
 
-	// 表单状态
-	private priority: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
-	private repeat: string | null = null;
-	private createdDate: Date;
-	private startDate: Date | null;
-	private scheduledDate: Date | null;
-	private dueDate: Date;
-	private cancelledDate: Date | null;
-	private completionDate: Date | null;
-	private selectedTags: string[] = [];
-
-	// UI 组件引用
+	// 独有状态
 	private descriptionInput: HTMLTextAreaElement;
-	private tagSelector: TagSelector;
-
-	// 样式元素
-	private styleEl: HTMLStyleElement;
 
 	constructor(options: CreateTaskModalOptions) {
 		super(options.app);
@@ -94,57 +56,20 @@ export class CreateTaskModal extends Modal {
 		this.priority = this.plugin.settings.defaultTaskPriority || 'normal';
 	}
 
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass(EditTaskModalClasses.block);
-
-		// 添加样式
-		this.addStyles();
-
-		// 标题
-		contentEl.createEl('h2', {
-			text: '创建新任务',
-			cls: EditTaskModalClasses.elements.title
-		});
-
-		// 1. 任务描述板块
-		this.renderDescriptionSection(contentEl);
-
-		// 2. 优先级设置板块
-		this.renderPrioritySection(contentEl);
-
-		// 3. 时间设置板块
-		this.renderDatesSection(contentEl);
-
-		// 3.5. 周期设置板块
-		this.renderRepeatSection(contentEl);
-
-		// 4. 标签选择器
-		this.renderTagsSection(contentEl);
-
-		// 操作按钮
-		this.renderButtons(contentEl);
+	onOpen(): void {
+		this.renderModalContent('创建新任务');
 
 		// 自动聚焦到描述输入框
 		setTimeout(() => this.descriptionInput.focus(), 100);
 	}
 
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.removeClass(EditTaskModalClasses.block);
-
-		// 移除样式
-		if (this.styleEl && this.styleEl.parentNode) {
-			this.styleEl.parentNode.removeChild(this.styleEl);
-		}
-	}
+	// ==================== 实现抽象方法 ====================
 
 	/**
 	 * 渲染任务描述板块
 	 */
-	private renderDescriptionSection(container: HTMLElement): void {
+	protected renderDescriptionSection(container: HTMLElement): void {
+		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
 		const section = container.createDiv(EditTaskModalClasses.elements.section);
 
 		const descContainer = section.createDiv(EditTaskModalClasses.elements.descContainer);
@@ -176,456 +101,9 @@ export class CreateTaskModal extends Modal {
 	}
 
 	/**
-	 * 渲染优先级设置板块
-	 */
-	private renderPrioritySection(container: HTMLElement): void {
-		const section = container.createDiv(EditTaskModalClasses.elements.section);
-
-		const priorityContainer = section.createDiv(EditTaskModalClasses.elements.priorityContainer);
-		priorityContainer.createEl('label', {
-			text: '优先级',
-			cls: EditTaskModalClasses.elements.sectionLabel
-		});
-
-		const priorityGrid = priorityContainer.createDiv(EditTaskModalClasses.elements.priorityGrid);
-
-		const priorityOptions: PriorityOption[] = [
-			{ value: 'highest', label: '最高', icon: '🔺' },
-			{ value: 'high', label: '高', icon: '⏫' },
-			{ value: 'medium', label: '中', icon: '🔼' },
-			{ value: 'normal', label: '普通', icon: '◽' },
-			{ value: 'low', label: '低', icon: '🔽' },
-			{ value: 'lowest', label: '最低', icon: '⏬' },
-		];
-
-		priorityOptions.forEach(option => {
-			const btn = priorityGrid.createEl('button', {
-				cls: EditTaskModalClasses.elements.priorityBtn,
-				text: `${option.icon} ${option.label}`
-			});
-			btn.dataset.value = option.value;
-
-			// 默认选中普通优先级
-			if (option.value === this.priority) {
-				btn.addClass(EditTaskModalClasses.elements.priorityBtnSelected);
-			}
-
-			btn.addEventListener('click', () => {
-				// 移除所有按钮的选中状态
-				priorityGrid.querySelectorAll(`.${EditTaskModalClasses.elements.priorityBtn}`)
-					.forEach(b => b.removeClass(EditTaskModalClasses.elements.priorityBtnSelected));
-				// 添加当前按钮的选中状态
-				btn.addClass(EditTaskModalClasses.elements.priorityBtnSelected);
-				this.priority = option.value;
-			});
-		});
-	}
-
-	/**
-	 * 渲染时间设置板块
-	 */
-	private renderDatesSection(container: HTMLElement): void {
-		const section = container.createDiv(EditTaskModalClasses.elements.section);
-
-		const dateContainer = section.createDiv(EditTaskModalClasses.elements.datesContainer);
-		dateContainer.createEl('label', {
-			text: '日期设置',
-			cls: EditTaskModalClasses.elements.sectionLabel
-		});
-
-		const datesGrid = dateContainer.createDiv(EditTaskModalClasses.elements.datesGrid);
-
-		// 创建日期（默认值为当天）
-		this.renderDateField(datesGrid, '➕ 创建', this.createdDate, (d) => this.createdDate = d as Date);
-		// 开始日期（默认为空）
-		this.renderDateField(datesGrid, '🛫 开始', null, (d) => this.startDate = d);
-		// 计划日期（默认为空）
-		this.renderDateField(datesGrid, '⏳ 计划', null, (d) => this.scheduledDate = d);
-		// 截止日期（默认值为当天）
-		this.renderDateField(datesGrid, '📅 截止', this.dueDate, (d) => this.dueDate = d as Date);
-		// 完成日期（默认为空）
-		this.renderDateField(datesGrid, '✅ 完成', null, (d) => this.completionDate = d);
-		// 取消日期（默认为空）
-		this.renderDateField(datesGrid, '❌ 取消', null, (d) => this.cancelledDate = d);
-	}
-
-	/**
-	 * 渲染单个日期字段
-	 */
-	private renderDateField(
-		container: HTMLElement,
-		label: string,
-		current: Date | null,
-		onChange: (d: Date | null) => void
-	): void {
-		const dateItem = container.createDiv(EditTaskModalClasses.elements.dateItem);
-		const labelEl = dateItem.createEl('label', {
-			text: label,
-			cls: EditTaskModalClasses.elements.dateLabel
-		});
-
-		const inputContainer = dateItem.createDiv(EditTaskModalClasses.elements.dateInputContainer);
-		const input = inputContainer.createEl('input', {
-			type: 'date',
-			cls: EditTaskModalClasses.elements.dateInput
-		});
-
-		const initStr = current ? this.formatDateForInput(current) : '';
-		if (initStr) input.value = initStr;
-
-		input.addEventListener('change', () => {
-			if (!input.value) {
-				onChange(null);
-				return;
-			}
-			const parsed = this.parseDate(input.value);
-			if (parsed) onChange(parsed);
-		});
-
-		const clearBtn = inputContainer.createEl('button', {
-			cls: EditTaskModalClasses.elements.dateClear,
-			text: '×'
-		});
-		clearBtn.addEventListener('click', () => {
-			input.value = '';
-			onChange(null);
-		});
-	}
-
-	/**
-	 * 渲染周期设置板块
-	 */
-	private renderRepeatSection(container: HTMLElement): void {
-		const section = container.createDiv(EditTaskModalClasses.elements.section);
-
-		const repeatContainer = section.createDiv(EditTaskModalClasses.elements.repeatSection);
-		repeatContainer.createEl('label', {
-			text: '周期设置',
-			cls: EditTaskModalClasses.elements.sectionLabel
-		});
-
-		const repeatGrid = repeatContainer.createDiv(EditTaskModalClasses.elements.repeatGrid);
-
-		// 第一行：频率选择 + 间隔输入 + 清除按钮
-		const row1 = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatRow);
-
-		// 频率选择
-		const freqSelect = row1.createEl('select', {
-			cls: EditTaskModalClasses.elements.repeatFreqSelect
-		});
-		[
-			{ value: '', label: '不重复' },
-			{ value: 'daily', label: '每天' },
-			{ value: 'weekly', label: '每周' },
-			{ value: 'monthly', label: '每月' },
-			{ value: 'yearly', label: '每年' },
-		].forEach(opt => {
-			freqSelect.createEl('option', { value: opt.value, text: opt.label });
-		});
-
-		// 间隔输入
-		const intervalContainer = row1.createEl('div');
-		intervalContainer.style.display = 'flex';
-		intervalContainer.style.alignItems = 'center';
-		intervalContainer.style.gap = '4px';
-		const intervalInput = intervalContainer.createEl('input', {
-			type: 'number',
-			value: '1',
-			cls: EditTaskModalClasses.elements.repeatIntervalInput
-		});
-		intervalInput.min = '1';
-		intervalInput.style.width = '60px';
-		intervalContainer.createEl('span', { text: '次' });
-
-		// 清除按钮
-		const clearBtn = row1.createEl('button', {
-			cls: EditTaskModalClasses.elements.repeatClearBtn,
-			text: '× 清除'
-		});
-		clearBtn.style.marginLeft = 'auto';
-
-		// 星期选择（仅每周模式显示）
-		const daysContainer = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatDaysContainer);
-		daysContainer.style.display = 'none';
-		daysContainer.style.flexWrap = 'wrap';
-		daysContainer.style.gap = '8px';
-
-		const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-		const dayCheckboxes: HTMLInputElement[] = [];
-
-		dayNames.forEach((name, idx) => {
-			const label = daysContainer.createEl('label', {
-				cls: EditTaskModalClasses.elements.repeatDayLabel
-			});
-			label.style.display = 'flex';
-			label.style.alignItems = 'center';
-			label.style.gap = '4px';
-			label.style.fontSize = 'var(--font-ui-small)';
-
-			const checkbox = label.createEl('input', {
-				type: 'checkbox',
-				cls: EditTaskModalClasses.elements.repeatDayCheckbox
-			});
-			checkbox.dataset.dayIdx = String(idx);
-			label.appendChild(document.createTextNode('周' + name));
-			dayCheckboxes.push(checkbox);
-		});
-
-		// 月日期选择（仅每月模式显示）
-		const monthContainer = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatMonthContainer);
-		monthContainer.style.display = 'none';
-
-		const monthSelect = monthContainer.createEl('select', {
-			cls: EditTaskModalClasses.elements.repeatMonthSelect
-		});
-		for (let i = 1; i <= 31; i++) {
-			monthSelect.createEl('option', { value: String(i), text: `${i}号` });
-		}
-		monthSelect.createEl('option', { value: 'last', text: '最后一天' });
-
-		// when done 开关
-		const whenDoneContainer = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatWhenDoneContainer);
-		whenDoneContainer.style.display = 'none';
-		whenDoneContainer.style.display = 'flex';
-		whenDoneContainer.style.alignItems = 'center';
-		whenDoneContainer.style.gap = '8px';
-
-		const whenDoneToggle = whenDoneContainer.createEl('input', {
-			type: 'checkbox',
-			cls: EditTaskModalClasses.elements.repeatWhenDoneToggle
-		});
-		whenDoneContainer.createEl('label', { text: '完成后重新计算（when done）' });
-
-		// 错误提示
-		const errorMsg = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatErrorMsg);
-		errorMsg.style.display = 'none';
-		errorMsg.style.color = 'var(--text-error)';
-		errorMsg.style.fontSize = 'var(--font-ui-smaller)';
-		errorMsg.style.marginTop = '4px';
-
-		// 事件处理
-		this.setupRepeatEvents(freqSelect, intervalInput, dayCheckboxes, monthSelect, whenDoneToggle, daysContainer, monthContainer, whenDoneContainer, errorMsg, clearBtn);
-	}
-
-	/**
-	 * 设置 repeat 事件
-	 */
-	private setupRepeatEvents(
-		freqSelect: HTMLSelectElement,
-		intervalInput: HTMLInputElement,
-		dayCheckboxes: HTMLInputElement[],
-		monthSelect: HTMLSelectElement,
-		whenDoneToggle: HTMLInputElement,
-		daysContainer: HTMLElement,
-		monthContainer: HTMLElement,
-		whenDoneContainer: HTMLElement,
-		errorMsg: HTMLElement,
-		clearBtn: HTMLElement
-	): void {
-		const updateRepeat = () => {
-			const freq = freqSelect.value;
-			const interval = parseInt(intervalInput.value) || 1;
-			const whenDone = whenDoneToggle.checked;
-
-			if (!freq) {
-				this.repeat = null;
-				this.toggleRepeatContainers('', daysContainer, monthContainer, whenDoneContainer);
-				errorMsg.style.display = 'none';
-				return;
-			}
-
-			let days: number[] | undefined;
-			if (freq === 'weekly') {
-				days = dayCheckboxes
-					.map((cb, idx) => cb.checked ? idx : undefined)
-					.filter((d): d is number => d !== undefined);
-				if (days.length === 0) days = undefined;
-			}
-
-			let monthDay: number | 'last' | undefined;
-			if (freq === 'monthly') {
-				const val = monthSelect.value;
-				monthDay = val === 'last' ? 'last' : parseInt(val);
-			}
-
-			const config: RepeatConfig = {
-				frequency: freq as 'daily' | 'weekly' | 'monthly' | 'yearly',
-				interval,
-				days,
-				monthDay,
-				whenDone
-			};
-
-			const rule = this.buildRepeatRule(config);
-
-			if (this.validateRepeatRule(rule)) {
-				this.repeat = rule;
-				errorMsg.style.display = 'none';
-			} else {
-				errorMsg.textContent = '周期规则格式不正确';
-				errorMsg.style.display = 'block';
-			}
-		};
-
-		freqSelect.addEventListener('change', () => {
-			this.toggleRepeatContainers(freqSelect.value, daysContainer, monthContainer, whenDoneContainer);
-			updateRepeat();
-		});
-
-		intervalInput.addEventListener('input', updateRepeat);
-		monthSelect.addEventListener('change', updateRepeat);
-		whenDoneToggle.addEventListener('change', updateRepeat);
-		dayCheckboxes.forEach(cb => cb.addEventListener('change', updateRepeat));
-
-		clearBtn.addEventListener('click', () => {
-			freqSelect.value = '';
-			intervalInput.value = '1';
-			dayCheckboxes.forEach(cb => cb.checked = false);
-			monthSelect.value = '1';
-			whenDoneToggle.checked = false;
-			this.repeat = null;
-			this.toggleRepeatContainers('', daysContainer, monthContainer, whenDoneContainer);
-		});
-	}
-
-	/**
-	 * 切换 repeat 容器显示
-	 */
-	private toggleRepeatContainers(
-		frequency: string,
-		daysContainer: HTMLElement,
-		monthContainer: HTMLElement,
-		whenDoneContainer: HTMLElement
-	): void {
-		daysContainer.style.display = frequency === 'weekly' ? 'flex' : 'none';
-		monthContainer.style.display = frequency === 'monthly' ? 'block' : 'none';
-		whenDoneContainer.style.display = frequency ? 'flex' : 'none';
-	}
-
-	/**
-	 * 构建规则字符串
-	 */
-	private buildRepeatRule(config: RepeatConfig): string {
-		const { frequency, interval, days, monthDay, whenDone } = config;
-
-		let rule = '';
-
-		switch (frequency) {
-			case 'daily':
-				rule = interval === 1 ? 'every day' : `every ${interval} days`;
-				break;
-			case 'weekly':
-				if (interval === 1 && !days) {
-					rule = 'every week';
-				} else if (days && days.length > 0) {
-					const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-					const daysStr = days.map(d => dayNames[d]).join(', ');
-					rule = interval === 1 ? `every week on ${daysStr}` : `every ${interval} weeks on ${daysStr}`;
-				} else {
-					rule = interval === 1 ? 'every week' : `every ${interval} weeks`;
-				}
-				break;
-			case 'monthly':
-				if (monthDay === 'last') {
-					rule = interval === 1 ? 'every month on the last' : `every ${interval} months on the last`;
-				} else if (monthDay) {
-					rule = interval === 1 ? `every month on the ${monthDay}${this.getOrdinalSuffix(monthDay)}` : `every ${interval} months on the ${monthDay}${this.getOrdinalSuffix(monthDay)}`;
-				} else {
-					rule = interval === 1 ? 'every month' : `every ${interval} months`;
-				}
-				break;
-			case 'yearly':
-				rule = interval === 1 ? 'every year' : `every ${interval} years`;
-				break;
-		}
-
-		if (whenDone && rule) {
-			rule += ' when done';
-		}
-
-		return rule;
-	}
-
-	private getOrdinalSuffix(n: number): string {
-		if (n >= 11 && n <= 13) return 'th';
-		switch (n % 10) {
-			case 1: return 'st';
-			case 2: return 'nd';
-			case 3: return 'rd';
-			default: return 'th';
-		}
-	}
-
-	/**
-	 * 验证周期规则
-	 */
-	private validateRepeatRule(rule: string): boolean {
-		if (!rule) return true;
-		const trimmed = rule.trim().toLowerCase();
-		if (!trimmed.startsWith('every ')) return false;
-
-		const validEndings = [
-			/^every\s+day\s*(when\s+done)?$/,
-			/^every\s+\d+\s+days?\s*(when\s+done)?$/,
-			/^every\s+week\s*(when\s+done)?$/,
-			/^every\s+\d+\s+weeks?\s*(when\s+done)?$/,
-			/^every\s+week\s+on\s+.+\s*(when\s+done)?$/,
-			/^every\s+\d+\s+weeks?\s+on\s+.+\s*(when\s+done)?$/,
-			/^every\s+month\s*(when\s+done)?$/,
-			/^every\s+\d+\s+months?\s*(when\s+done)?$/,
-			/^every\s+month\s+on\s+.+\s*(when\s+done)?$/,
-			/^every\s+\d+\s+months?\s+on\s+.+\s*(when\s+done)?$/,
-			/^every\s+year\s*(when\s+done)?$/,
-			/^every\s+\d+\s+years?\s*(when\s+done)?$/,
-		];
-
-		for (const pattern of validEndings) {
-			if (pattern.test(trimmed)) return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * 渲染标签选择器板块
-	 */
-	private renderTagsSection(container: HTMLElement): void {
-		const section = container.createDiv(EditTaskModalClasses.elements.section);
-		const tagsContainer = section.createDiv(EditTaskModalClasses.elements.tagsSection);
-
-		this.tagSelector = new TagSelector({
-			container: tagsContainer,
-			allTasks: this.plugin.taskCache.getAllTasks(),
-			initialTags: [],
-			compact: false,
-			onChange: (tags) => {
-				this.selectedTags = tags;
-			}
-		});
-	}
-
-	/**
-	 * 渲染操作按钮
-	 */
-	private renderButtons(container: HTMLElement): void {
-		const buttonContainer = container.createDiv(EditTaskModalClasses.elements.buttons);
-
-		const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
-		cancelBtn.addEventListener('click', () => this.close());
-
-		const saveBtn = buttonContainer.createEl('button', {
-			cls: 'mod-cta',
-			text: '创建'
-		});
-		saveBtn.addEventListener('click', async () => {
-			await this.saveTask();
-		});
-	}
-
-	/**
 	 * 保存任务
 	 */
-	private async saveTask(): Promise<void> {
+	protected async saveTask(): Promise<void> {
 		// 验证描述
 		const description = this.descriptionInput.value.trim().replace(/[\r\n]+/g, ' ');
 		if (!description) {
@@ -645,10 +123,10 @@ export class CreateTaskModal extends Modal {
 				description,
 				priority: this.priority === 'normal' ? undefined : this.priority,
 				repeat: this.repeat || undefined,
-				createdDate: this.createdDate,
+				createdDate: this.createdDate!,
 				startDate: this.startDate,
 				scheduledDate: this.scheduledDate,
-				dueDate: this.dueDate,
+				dueDate: this.dueDate!,
 				completionDate: this.completionDate,
 				cancelledDate: this.cancelledDate,
 				tags: this.selectedTags.length > 0 ? this.selectedTags : undefined
@@ -666,239 +144,26 @@ export class CreateTaskModal extends Modal {
 	}
 
 	/**
-	 * 添加弹窗样式
+	 * 获取初始标签列表（创建任务时为空）
 	 */
-	private addStyles(): void {
-		this.styleEl = document.createElement('style');
-		this.styleEl.textContent = `
-			.${EditTaskModalClasses.block} {
-				max-width: 500px;
-			}
-			.${EditTaskModalClasses.elements.title} {
-				font-size: var(--font-ui-large);
-				font-weight: 600;
-				margin-bottom: 20px;
-				color: var(--text-normal);
-			}
-			.${EditTaskModalClasses.elements.section} {
-				margin-bottom: 20px;
-			}
-			.${EditTaskModalClasses.elements.sectionLabel} {
-				display: block;
-				font-weight: 600;
-				margin-bottom: 8px;
-				font-size: var(--font-ui-small);
-				color: var(--text-normal);
-			}
-			.${EditTaskModalClasses.elements.sectionHint} {
-				font-size: var(--font-ui-smaller);
-				color: var(--text-muted);
-				margin-bottom: 8px;
-			}
-
-			/* 任务描述板块 */
-			.${EditTaskModalClasses.elements.descTextarea} {
-				width: 100%;
-				min-height: 60px;
-				max-height: 60px;
-				padding: 8px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-normal);
-				resize: none;
-				overflow: auto;
-				font-family: var(--font-interface);
-				font-size: var(--font-ui-small);
-			}
-			.${EditTaskModalClasses.elements.descTextarea}:focus {
-				outline: 2px solid var(--interactive-accent);
-				border-color: var(--interactive-accent);
-			}
-
-			/* 优先级板块 */
-			.${EditTaskModalClasses.elements.priorityGrid} {
-				display: grid;
-				grid-template-columns: repeat(3, 1fr);
-				gap: 8px;
-				margin-top: 8px;
-			}
-			.${EditTaskModalClasses.elements.priorityBtn} {
-				padding: 8px 12px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-normal);
-				cursor: pointer;
-				font-size: var(--font-ui-small);
-				transition: all 0.2s;
-			}
-			.${EditTaskModalClasses.elements.priorityBtn}:hover {
-				background: var(--background-modifier-hover);
-			}
-			.${EditTaskModalClasses.elements.priorityBtnSelected} {
-				background: var(--interactive-accent) !important;
-				color: var(--text-on-accent) !important;
-				border-color: var(--interactive-accent) !important;
-			}
-
-			/* 日期板块 */
-			.${EditTaskModalClasses.elements.datesGrid} {
-				display: grid;
-				grid-template-columns: repeat(2, 1fr);
-				gap: 12px;
-			}
-			.${EditTaskModalClasses.elements.dateItem} {
-				display: flex;
-				flex-direction: column;
-				gap: 4px;
-			}
-			.${EditTaskModalClasses.elements.dateLabel} {
-				font-size: var(--font-ui-smaller);
-				color: var(--text-muted);
-				font-weight: 500;
-			}
-			.${EditTaskModalClasses.elements.dateInputContainer} {
-				display: flex;
-				gap: 4px;
-				align-items: center;
-			}
-			.${EditTaskModalClasses.elements.dateInput} {
-				flex: 1;
-				padding: 6px 8px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-normal);
-				font-size: var(--font-ui-small);
-			}
-			.${EditTaskModalClasses.elements.dateInput}:focus {
-				outline: 2px solid var(--interactive-accent);
-				border-color: var(--interactive-accent);
-			}
-			.${EditTaskModalClasses.elements.dateClear} {
-				width: 32px;
-				height: 32px;
-				padding: 0;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-muted);
-				cursor: pointer;
-				font-size: 20px;
-				line-height: 1;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				flex-shrink: 0;
-			}
-			.${EditTaskModalClasses.elements.dateClear}:hover {
-				background: var(--background-modifier-hover);
-				color: var(--text-normal);
-			}
-
-			/* 标签选择器板块 */
-			.${EditTaskModalClasses.elements.tagsSection} {
-				margin-top: 8px;
-			}
-
-			/* 标签选择器样式 */
-			.gc-tag-selector-label {
-				display: block;
-				font-weight: 600;
-				margin-bottom: 8px;
-				font-size: var(--font-ui-small);
-				color: var(--text-normal);
-			}
-			.gc-tag-selector-recommended-section,
-			.gc-tag-selector-selected-section {
-				margin-bottom: 12px;
-			}
-			.gc-tag-selector-grid {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 6px;
-				margin-top: 6px;
-			}
-			.gc-tag-selector-new-section {
-				display: flex;
-				gap: 6px;
-				margin-top: 8px;
-			}
-			.gc-tag-selector-new-input {
-				flex: 1;
-				padding: 6px 10px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-normal);
-				font-size: var(--font-ui-small);
-			}
-			.gc-tag-selector-new-input:focus {
-				outline: 2px solid var(--interactive-accent);
-				border-color: var(--interactive-accent);
-			}
-			.gc-tag-selector-new-button {
-				padding: 6px 12px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-normal);
-				cursor: pointer;
-				font-size: var(--font-ui-small);
-			}
-			.gc-tag-selector-new-button:hover {
-				background: var(--background-modifier-hover);
-			}
-
-			/* 操作按钮 */
-			.${EditTaskModalClasses.elements.buttons} {
-				display: flex;
-				gap: 12px;
-				justify-content: flex-end;
-				margin-top: 24px;
-			}
-			.${EditTaskModalClasses.elements.buttons} button {
-				padding: 8px 16px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background: var(--background-secondary);
-				color: var(--text-normal);
-				cursor: pointer;
-				font-size: var(--font-ui-small);
-			}
-			.${EditTaskModalClasses.elements.buttons} button:hover {
-				background: var(--background-modifier-hover);
-			}
-			.${EditTaskModalClasses.elements.buttons} button.mod-cta {
-				background: var(--interactive-accent);
-				color: var(--text-on-accent);
-				border-color: var(--interactive-accent);
-			}
-			.${EditTaskModalClasses.elements.buttons} button.mod-cta:hover {
-				background: var(--interactive-accent-hover);
-			}
-		`;
-		document.head.appendChild(this.styleEl);
+	protected getInitialTags(): string[] {
+		return [];
 	}
 
 	/**
-	 * 格式化日期为 input[type="date"] 所需格式 (YYYY-MM-DD)
+	 * 获取所有任务（用于标签推荐）
 	 */
-	private formatDateForInput(date: Date): string {
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const day = String(date.getDate()).padStart(2, '0');
-		return `${year}-${month}-${day}`;
+	protected getAllTasksForTags(): GCTask[] {
+		return this.plugin.taskCache.getAllTasks();
 	}
 
 	/**
-	 * 解析日期字符串
+	 * 获取按钮文本
 	 */
-	private parseDate(dateStr: string): Date | null {
-		const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-		if (!match) return null;
-		const date = new Date(dateStr);
-		return isNaN(date.getTime()) ? null : date;
+	protected getButtonTexts(): { cancel: string; save: string } {
+		return { cancel: '取消', save: '创建' };
 	}
 }
+
+// 导出类型
+export type { PriorityOption, RepeatConfig } from './BaseTaskModal';

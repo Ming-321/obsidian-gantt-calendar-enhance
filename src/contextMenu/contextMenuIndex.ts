@@ -7,7 +7,7 @@ import { App, Menu, setIcon } from 'obsidian';
 import type { GCTask } from '../types';
 import { createNoteFromTask } from './commands/createNoteFromTask';
 import { createNoteFromTaskAlias } from './commands/createNoteFromTaskAlias';
-import { openEditTaskModal } from './commands/editTask';
+import { openEditTaskModal } from '../modals/EditTaskModal';
 import { deleteTask } from './commands/deleteTask';
 import { cancelTask } from './commands/cancelTask';
 import { restoreTask } from './commands/restoreTask';

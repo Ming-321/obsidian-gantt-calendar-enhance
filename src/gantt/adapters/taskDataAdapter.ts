@@ -71,6 +71,7 @@ export class TaskDataAdapter {
 			dueDate: task.dueDate,
 			cancelledDate: task.cancelledDate,
 			completionDate: task.completionDate,
+			repeat: task.repeat,
 		};
 	}
 

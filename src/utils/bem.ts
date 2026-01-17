@@ -530,6 +530,34 @@ export const EditTaskModalClasses = {
 		repeatWhenDoneToggle: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-when-done-toggle'),
 		repeatClearBtn: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-clear-btn'),
 		repeatErrorMsg: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-error-msg'),
+		repeatManualInput: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-manual-input'),
+		repeatRulesHint: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-rules-hint'),
+		repeatRulesHintTitle: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-rules-hint-title'),
+		repeatRulesHintList: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-rules-hint-list'),
+		repeatWhenDoneHint: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-when-done-hint'),
+
+		// 预设按钮
+		repeatPresetContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-preset-container'),
+		repeatPresetBtn: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-preset-btn'),
+		repeatPresetBtnActive: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-preset-btn', 'active'),
+
+		// 自定义设置
+		repeatCustomSection: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-custom-section'),
+		repeatCustomRow: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-custom-row'),
+		repeatCustomInterval: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-custom-interval'),
+		repeatCustomUnit: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-custom-unit'),
+
+		// 预览摘要
+		repeatPreview: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-preview'),
+		repeatPreviewText: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-preview-text'),
+
+		// 高级选项
+		repeatAdvancedSection: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-advanced-section'),
+		repeatAdvancedHeader: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-advanced-header'),
+		repeatAdvancedContent: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-advanced-content'),
+		repeatWeekdayQuickBtn: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-weekday-quick-btn'),
+		repeatMonthDateOption: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-month-date-option'),
+		repeatMonthDateRadio: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-month-date-radio'),
 
 		// 按钮
 		buttons: bem(BLOCKS.EDIT_TASK_MODAL, 'buttons'),
