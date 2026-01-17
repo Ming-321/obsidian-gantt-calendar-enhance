@@ -875,17 +875,22 @@ Author: sugar
 	z-index: 1000;
 	min-width: 200px;
 	max-width: 240px;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--background-primary) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	border-radius: 8px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.12),
+		0 2px 6px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
 	padding: 0;
 	overflow: hidden;
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .gc-toolbar__status-filter-dropdown-header {
 	padding: 12px 16px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 	font-size: 13px;
 	font-weight: 600;
 	color: var(--text-normal);
@@ -893,7 +898,7 @@ Author: sugar
 
 .gc-toolbar__status-filter-dropdown-actions {
 	padding: 8px 16px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 	display: flex;
 	justify-content: flex-end;
 }
@@ -924,6 +929,10 @@ Author: sugar
 	width: 6px;
 }
 
+.gc-toolbar__status-filter-list::-webkit-scrollbar-track {
+	background: transparent;
+}
+
 .gc-toolbar__status-filter-list::-webkit-scrollbar-thumb {
 	background: var(--background-modifier-border);
 	border-radius: 3px;
@@ -940,11 +949,13 @@ Author: sugar
 }
 
 .gc-toolbar__status-filter-item:hover {
-	background: var(--background-modifier-hover);
+	background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+	backdrop-filter: blur(8px);
 }
 
 .gc-toolbar__status-filter-item--selected {
-	background: rgba(var(--interactive-accent-rgb, 0.1), var(--interactive-accent));
+	background: color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* 复选框 */
@@ -1062,19 +1073,24 @@ Author: sugar
 .gc-toolbar__sort-dropdown {
 	position: fixed;
 	z-index: 1000;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--background-primary) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	border-radius: 6px;
 	padding: 4px 0;
 	min-width: 160px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.12),
+		0 2px 6px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .gc-toolbar__sort-dropdown-header {
 	padding: 8px 12px;
 	font-size: 11px;
 	color: var(--text-muted);
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 	margin-bottom: 4px;
 }
 
@@ -1084,17 +1100,19 @@ Author: sugar
 	gap: 8px;
 	padding: 8px 12px;
 	cursor: pointer;
-	transition: background-color 0.15s ease;
+	transition: all 0.15s ease;
 	user-select: none;
 }
 
 .gc-toolbar__sort-menu-item:hover {
-	background-color: var(--background-modifier-hover);
+	background: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+	backdrop-filter: blur(8px);
 }
 
 .gc-toolbar__sort-menu-item--active {
-	background-color: var(--background-modifier-hover);
+	background: color-mix(in srgb, var(--interactive-accent) 25%, transparent);
 	color: var(--interactive-accent);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .gc-toolbar__sort-option-icon {
@@ -1130,15 +1148,20 @@ Author: sugar
 .gc-toolbar__tag-filter-pane {
 	position: fixed;
 	z-index: 1000;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--background-primary) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 	border-radius: 6px;
 	padding: 4px 6px;
 	min-width: 140px;
 	max-width: 180px;
 	max-height: 280px;
 	overflow-y: auto;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.12),
+		0 2px 6px rgba(0, 0, 0, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .gc-toolbar__tag-filter-pane::-webkit-scrollbar {
@@ -1163,7 +1186,7 @@ Author: sugar
 	gap: 1px;
 	padding-bottom: 3px;
 	margin-bottom: 4px;
-	border-bottom: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 40%, transparent);
 }
 
 .gc-toolbar__tag-filter-operator-btn {
@@ -2604,6 +2627,7 @@ Author: sugar
 
 /* ============================================
    BEM 布局结构
+   gantt__sticky-header - 固定时间线容器
    gantt__layout - 主布局容器
    gantt__corner - 左上角空白区域
    gantt__header-container - 顶部时间轴容器
@@ -2611,14 +2635,28 @@ Author: sugar
    gantt__chart-container - 右侧甘特图容器
    ============================================ */
 
-/* 主布局容器 - 使用 Grid 布局实现冻结效果 */
+/* Sticky 时间线容器 - 包含 corner 和 header，固定在工具栏下方 */
+.gc-gantt-view__sticky-header {
+	display: grid;
+	grid-template-columns: 200px 4px 1fr;
+	grid-template-areas: "corner resizer header";
+	position: sticky;
+	top: calc(8px + 52px + 8px); /* 工具栏top + 工具栏高度 + gap */
+	z-index: 50;
+	background-color: var(--background-secondary);
+	border-radius: 8px 8px 0 0;
+}
+
+/* Sticky 区域的分隔条不响应鼠标事件（实际拖动由主体区域的分隔条处理） */
+.gc-gantt-view__sticky-header .gc-gantt-view__resizer {
+	pointer-events: none;
+}
+
+/* 主布局容器 - 使用 Grid 布局（只包含主体内容区域） */
 .gc-gantt-view__layout {
 	display: grid;
 	grid-template-columns: 200px 4px 1fr;
-	grid-template-rows: 50px 1fr;
-	grid-template-areas:
-		"corner resizer header"
-		"tasklist resizer chart";
+	grid-template-areas: "tasklist resizer chart";
 	width: 100%;
 	height: 100%;
 	gap: 0;
