@@ -71,9 +71,9 @@ export interface GanttChartTask {
 }
 
 /**
- * 甘特图视图模式（仅支持日视图）
+ * 甘特图视图模式（仅支持周视图）
  */
-export type GanttViewMode = 'day' | 'quarter_day' | 'half_day';
+export type GanttViewMode = 'week' | 'quarter_week' | 'half_week';
 
 /**
  * 甘特图配置选项
@@ -144,8 +144,8 @@ export interface GanttViewState {
 	endField: DateFieldType;
 	/** 状态筛选 */
 	statusFilter: StatusFilterState;
-	/** 时间颗粒度（仅支持日视图） */
-	timeGranularity: 'day';
+	/** 时间颗粒度（仅支持周视图） */
+	timeGranularity: 'week';
 	/** 当前视图模式 */
 	viewMode: GanttViewMode;
 }
@@ -169,10 +169,10 @@ export interface GanttStyleConfig {
 }
 
 /**
- * 时间颗粒度枚举（仅支持日视图）
+ * 时间颗粒度枚举（仅支持周视图）
  */
 export enum TimeGranularity {
-	DAY = 'day'
+	WEEK = 'week'
 }
 
 /**
@@ -190,11 +190,11 @@ export interface GranularityConfig {
 }
 
 /**
- * 颗粒度配置映射表（仅日视图）
+ * 颗粒度配置映射表（仅周视图）
  */
 export const GRANULARITY_CONFIGS: Record<TimeGranularity, GranularityConfig> = {
-	[TimeGranularity.DAY]: {
-		granularity: TimeGranularity.DAY,
+	[TimeGranularity.WEEK]: {
+		granularity: TimeGranularity.WEEK,
 		milliseconds: 24 * 60 * 60 * 1000,
 		labelFormatter: (date: Date) => `${date.getMonth() + 1}/${date.getDate()}`,
 		gridAligner: (date: Date) => {

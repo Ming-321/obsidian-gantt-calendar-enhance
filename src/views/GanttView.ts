@@ -34,8 +34,8 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	private scrollLeftPosition = 0;
 	private scrollTopPosition = 0;
 
-	// 视图模式（仅支持日视图）
-	private ganttViewMode: GanttChartConfig['view_mode'] = 'day';
+	// 视图模式（仅支持周视图）
+	private ganttViewMode: GanttChartConfig['view_mode'] = 'week';
 
 	// 排序状态（默认按截止时间升序）
 	private sortState: SortState = { field: 'dueDate', order: 'asc' };
@@ -275,7 +275,7 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 8. 配置 甘特图
 			const config: GanttChartConfig = {
 				view_mode: this.ganttViewMode,
-				granularity: TimeGranularity.DAY,  // 固定为日视图
+				granularity: TimeGranularity.WEEK,  // 固定为周视图
 				language: 'zh',
 				header_height: 50,
 				column_width: 40,

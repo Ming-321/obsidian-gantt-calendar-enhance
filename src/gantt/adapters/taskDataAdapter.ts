@@ -235,37 +235,15 @@ export class TaskDataAdapter {
 	}
 
 	/**
-	 * 根据时间颗粒度调整日期
+	 * 根据时间颗粒度调整日期（仅支持周视图）
 	 *
 	 * @param date - 原始日期
-	 * @param granularity - 时间颗粒度
 	 * @returns 调整后的日期
 	 */
-	static adjustDateByGranularity(
-		date: Date,
-		granularity: 'day' | 'week' | 'month'
-	): Date {
+	static adjustDateByGranularity(date: Date): Date {
 		const adjusted = new Date(date);
-
-		switch (granularity) {
-			case 'day':
-				// 按天对齐
-				adjusted.setHours(0, 0, 0, 0);
-				break;
-			case 'week':
-				// 按周对齐（周一）
-				const dayOfWeek = adjusted.getDay();
-				const diff = adjusted.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-				adjusted.setDate(diff);
-				adjusted.setHours(0, 0, 0, 0);
-				break;
-			case 'month':
-				// 按月对齐（月初）
-				adjusted.setDate(1);
-				adjusted.setHours(0, 0, 0, 0);
-				break;
-		}
-
+		// 按天对齐
+		adjusted.setHours(0, 0, 0, 0);
 		return adjusted;
 	}
 

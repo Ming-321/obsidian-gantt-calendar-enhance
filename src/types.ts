@@ -3,8 +3,8 @@ import { TaskStatusType } from './tasks/taskStatus';
 
 export type CalendarViewType = 'year' | 'month' | 'week' | 'day' | 'task' | 'gantt';
 
-// 甘特图时间颗粒度类型（仅支持日视图）
-export type GanttTimeGranularity = 'day';
+// 甘特图时间颗粒度类型（仅支持周视图）
+export type GanttTimeGranularity = 'week';
 
 export interface CalendarDate {
 	year: number;           // 年份（如：2025）

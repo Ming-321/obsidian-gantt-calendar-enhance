@@ -32,7 +32,6 @@ export { renderRefreshButton } from './refresh-button';
 export { renderSortButton, type SortButtonOptions } from './sort-button';
 export { renderStatusFilterButton, type StatusFilterButtonOptions } from './status-filter';
 export { renderTagFilterButton, type TagFilterOptions } from './tag-filter';
-export { renderTimeGranularity, type TimeGranularityOptions as LegacyTimeGranularityOptions } from './time-granularity';
 export { renderGanttScrollButtons, type GanttScrollButtonsOptions } from './gantt-scroll-buttons';
 
 // === 组合组件 ===

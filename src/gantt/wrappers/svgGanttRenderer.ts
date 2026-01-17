@@ -51,7 +51,7 @@ export class SvgGanttRenderer {
 	private app: any;  // Obsidian App 实例
 
 	// 时间颗粒度
-	private granularity: TimeGranularity = TimeGranularity.DAY;
+	private granularity: TimeGranularity = TimeGranularity.WEEK;
 
 	// 尺寸相关
 	private headerHeight = 50;
@@ -116,7 +116,7 @@ export class SvgGanttRenderer {
 		this.padding = config.padding ?? 18;
 
 		// 初始化时间颗粒度
-		this.granularity = config.granularity ?? TimeGranularity.DAY;
+		this.granularity = config.granularity ?? TimeGranularity.WEEK;
 	}
 
 	/**
@@ -992,20 +992,20 @@ export class SvgGanttRenderer {
 	}
 
 	/**
-	 * 判断两个日期是否在同一颗粒度单元 - 辅助方法（仅日视图）
+	 * 判断两个日期是否在同一颗粒度单元 - 辅助方法（仅周视图）
 	 */
 	private isSameUnit(date1: Date, date2: Date, _granularity: TimeGranularity): boolean {
-		// 只支持日视图
+		// 只支持周视图
 		return date1.getFullYear() === date2.getFullYear() &&
 			   date1.getMonth() === date2.getMonth() &&
 			   date1.getDate() === date2.getDate();
 	}
 
 	/**
-	 * 判断是否为主要网格线 - 辅助方法（仅日视图）
+	 * 判断是否为主要网格线 - 辅助方法（仅周视图）
 	 */
 	private isMajorGridLine(unitIndex: number, _granularity: TimeGranularity): boolean {
-		// 只支持日视图，每7天（每周）加粗
+		// 只支持周视图，每7天（每周）加粗
 		return unitIndex % 7 === 0;
 	}
 

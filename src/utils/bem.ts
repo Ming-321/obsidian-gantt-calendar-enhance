@@ -275,8 +275,6 @@ export const GanttClasses = {
 	/** Modifiers */
 	modifiers: {
 		dayView: bem(BLOCKS.GANTT, undefined, 'day-view'),
-		weekView: bem(BLOCKS.GANTT, undefined, 'week-view'),
-		monthView: bem(BLOCKS.GANTT, undefined, 'month-view'),
 	},
 };
 
@@ -323,15 +321,6 @@ export const ToolbarClasses = {
 
 		/** 日期显示 */
 		titleDisplay: bem(BLOCKS.TOOLBAR, 'title-display'),
-
-		/** 时间颗粒度按钮组 */
-		timeGranularity: {
-			group: bem(BLOCKS.TOOLBAR, 'time-granularity-group'),
-			groupGantt: bem(BLOCKS.TOOLBAR, 'time-granularity-group', 'gantt'),
-			todayBtn: bem(BLOCKS.TOOLBAR, 'today-btn'),
-			btn: bem(BLOCKS.TOOLBAR, 'time-granularity-btn'),
-			btnActive: bem(BLOCKS.TOOLBAR, 'time-granularity-btn', 'active'),
-		},
 
 		/** 状态筛选（复选框多选模式） */
 		statusFilter: {
