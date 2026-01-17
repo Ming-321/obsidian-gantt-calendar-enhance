@@ -16,6 +16,7 @@ import { Logger } from './logger';
 export interface CreateTaskData {
 	description: string;
 	priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest';
+	repeat?: string;
 	createdDate: Date;
 	startDate?: Date | null;
 	scheduledDate?: Date | null;
@@ -225,6 +226,15 @@ function serializeNewTask(taskData: CreateTaskData, app: App): string {
 			if (priorityEmoji) parts.push(priorityEmoji);
 		} else {
 			parts.push(`[priority:: ${taskData.priority}]`);
+		}
+	}
+
+	// 周期任务
+	if (taskData.repeat) {
+		if (format === 'tasks') {
+			parts.push(`🔁 ${taskData.repeat}`);
+		} else {
+			parts.push(`[repeat:: ${taskData.repeat}]`);
 		}
 	}
 

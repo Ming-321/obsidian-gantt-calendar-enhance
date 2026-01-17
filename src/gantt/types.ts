@@ -107,6 +107,8 @@ export interface GanttChartConfig {
 	on_date_change?: (task: GanttChartTask, start: Date, end: Date) => void;
 	/** 进度变更回调 */
 	on_progress_change?: (task: GanttChartTask, progress: number) => void;
+	/** 任务更新完成回调（用于增量更新视图） */
+	on_task_updated?: (filePath: string) => void;
 }
 
 /**

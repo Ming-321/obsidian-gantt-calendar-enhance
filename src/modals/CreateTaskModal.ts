@@ -38,6 +38,17 @@ interface PriorityOption {
 }
 
 /**
+ * 周期任务配置
+ */
+interface RepeatConfig {
+	frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | '';
+	interval: number;
+	days?: number[];  // 0-6, 周日到周六
+	monthDay?: number | 'last';  // 1-31 或 'last'
+	whenDone: boolean;
+}
+
+/**
  * 任务创建弹窗
  */
 export class CreateTaskModal extends Modal {
@@ -47,6 +58,7 @@ export class CreateTaskModal extends Modal {
 
 	// 表单状态
 	private priority: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
+	private repeat: string | null = null;
 	private createdDate: Date;
 	private startDate: Date | null;
 	private scheduledDate: Date | null;
@@ -104,6 +116,9 @@ export class CreateTaskModal extends Modal {
 
 		// 3. 时间设置板块
 		this.renderDatesSection(contentEl);
+
+		// 3.5. 周期设置板块
+		this.renderRepeatSection(contentEl);
 
 		// 4. 标签选择器
 		this.renderTagsSection(contentEl);
@@ -278,6 +293,300 @@ export class CreateTaskModal extends Modal {
 	}
 
 	/**
+	 * 渲染周期设置板块
+	 */
+	private renderRepeatSection(container: HTMLElement): void {
+		const section = container.createDiv(EditTaskModalClasses.elements.section);
+
+		const repeatContainer = section.createDiv(EditTaskModalClasses.elements.repeatSection);
+		repeatContainer.createEl('label', {
+			text: '周期设置',
+			cls: EditTaskModalClasses.elements.sectionLabel
+		});
+
+		const repeatGrid = repeatContainer.createDiv(EditTaskModalClasses.elements.repeatGrid);
+
+		// 第一行：频率选择 + 间隔输入 + 清除按钮
+		const row1 = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatRow);
+
+		// 频率选择
+		const freqSelect = row1.createEl('select', {
+			cls: EditTaskModalClasses.elements.repeatFreqSelect
+		});
+		[
+			{ value: '', label: '不重复' },
+			{ value: 'daily', label: '每天' },
+			{ value: 'weekly', label: '每周' },
+			{ value: 'monthly', label: '每月' },
+			{ value: 'yearly', label: '每年' },
+		].forEach(opt => {
+			freqSelect.createEl('option', { value: opt.value, text: opt.label });
+		});
+
+		// 间隔输入
+		const intervalContainer = row1.createEl('div');
+		intervalContainer.style.display = 'flex';
+		intervalContainer.style.alignItems = 'center';
+		intervalContainer.style.gap = '4px';
+		const intervalInput = intervalContainer.createEl('input', {
+			type: 'number',
+			value: '1',
+			cls: EditTaskModalClasses.elements.repeatIntervalInput
+		});
+		intervalInput.min = '1';
+		intervalInput.style.width = '60px';
+		intervalContainer.createEl('span', { text: '次' });
+
+		// 清除按钮
+		const clearBtn = row1.createEl('button', {
+			cls: EditTaskModalClasses.elements.repeatClearBtn,
+			text: '× 清除'
+		});
+		clearBtn.style.marginLeft = 'auto';
+
+		// 星期选择（仅每周模式显示）
+		const daysContainer = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatDaysContainer);
+		daysContainer.style.display = 'none';
+		daysContainer.style.flexWrap = 'wrap';
+		daysContainer.style.gap = '8px';
+
+		const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+		const dayCheckboxes: HTMLInputElement[] = [];
+
+		dayNames.forEach((name, idx) => {
+			const label = daysContainer.createEl('label', {
+				cls: EditTaskModalClasses.elements.repeatDayLabel
+			});
+			label.style.display = 'flex';
+			label.style.alignItems = 'center';
+			label.style.gap = '4px';
+			label.style.fontSize = 'var(--font-ui-small)';
+
+			const checkbox = label.createEl('input', {
+				type: 'checkbox',
+				cls: EditTaskModalClasses.elements.repeatDayCheckbox
+			});
+			checkbox.dataset.dayIdx = String(idx);
+			label.appendChild(document.createTextNode('周' + name));
+			dayCheckboxes.push(checkbox);
+		});
+
+		// 月日期选择（仅每月模式显示）
+		const monthContainer = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatMonthContainer);
+		monthContainer.style.display = 'none';
+
+		const monthSelect = monthContainer.createEl('select', {
+			cls: EditTaskModalClasses.elements.repeatMonthSelect
+		});
+		for (let i = 1; i <= 31; i++) {
+			monthSelect.createEl('option', { value: String(i), text: `${i}号` });
+		}
+		monthSelect.createEl('option', { value: 'last', text: '最后一天' });
+
+		// when done 开关
+		const whenDoneContainer = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatWhenDoneContainer);
+		whenDoneContainer.style.display = 'none';
+		whenDoneContainer.style.display = 'flex';
+		whenDoneContainer.style.alignItems = 'center';
+		whenDoneContainer.style.gap = '8px';
+
+		const whenDoneToggle = whenDoneContainer.createEl('input', {
+			type: 'checkbox',
+			cls: EditTaskModalClasses.elements.repeatWhenDoneToggle
+		});
+		whenDoneContainer.createEl('label', { text: '完成后重新计算（when done）' });
+
+		// 错误提示
+		const errorMsg = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatErrorMsg);
+		errorMsg.style.display = 'none';
+		errorMsg.style.color = 'var(--text-error)';
+		errorMsg.style.fontSize = 'var(--font-ui-smaller)';
+		errorMsg.style.marginTop = '4px';
+
+		// 事件处理
+		this.setupRepeatEvents(freqSelect, intervalInput, dayCheckboxes, monthSelect, whenDoneToggle, daysContainer, monthContainer, whenDoneContainer, errorMsg, clearBtn);
+	}
+
+	/**
+	 * 设置 repeat 事件
+	 */
+	private setupRepeatEvents(
+		freqSelect: HTMLSelectElement,
+		intervalInput: HTMLInputElement,
+		dayCheckboxes: HTMLInputElement[],
+		monthSelect: HTMLSelectElement,
+		whenDoneToggle: HTMLInputElement,
+		daysContainer: HTMLElement,
+		monthContainer: HTMLElement,
+		whenDoneContainer: HTMLElement,
+		errorMsg: HTMLElement,
+		clearBtn: HTMLElement
+	): void {
+		const updateRepeat = () => {
+			const freq = freqSelect.value;
+			const interval = parseInt(intervalInput.value) || 1;
+			const whenDone = whenDoneToggle.checked;
+
+			if (!freq) {
+				this.repeat = null;
+				this.toggleRepeatContainers('', daysContainer, monthContainer, whenDoneContainer);
+				errorMsg.style.display = 'none';
+				return;
+			}
+
+			let days: number[] | undefined;
+			if (freq === 'weekly') {
+				days = dayCheckboxes
+					.map((cb, idx) => cb.checked ? idx : undefined)
+					.filter((d): d is number => d !== undefined);
+				if (days.length === 0) days = undefined;
+			}
+
+			let monthDay: number | 'last' | undefined;
+			if (freq === 'monthly') {
+				const val = monthSelect.value;
+				monthDay = val === 'last' ? 'last' : parseInt(val);
+			}
+
+			const config: RepeatConfig = {
+				frequency: freq as 'daily' | 'weekly' | 'monthly' | 'yearly',
+				interval,
+				days,
+				monthDay,
+				whenDone
+			};
+
+			const rule = this.buildRepeatRule(config);
+
+			if (this.validateRepeatRule(rule)) {
+				this.repeat = rule;
+				errorMsg.style.display = 'none';
+			} else {
+				errorMsg.textContent = '周期规则格式不正确';
+				errorMsg.style.display = 'block';
+			}
+		};
+
+		freqSelect.addEventListener('change', () => {
+			this.toggleRepeatContainers(freqSelect.value, daysContainer, monthContainer, whenDoneContainer);
+			updateRepeat();
+		});
+
+		intervalInput.addEventListener('input', updateRepeat);
+		monthSelect.addEventListener('change', updateRepeat);
+		whenDoneToggle.addEventListener('change', updateRepeat);
+		dayCheckboxes.forEach(cb => cb.addEventListener('change', updateRepeat));
+
+		clearBtn.addEventListener('click', () => {
+			freqSelect.value = '';
+			intervalInput.value = '1';
+			dayCheckboxes.forEach(cb => cb.checked = false);
+			monthSelect.value = '1';
+			whenDoneToggle.checked = false;
+			this.repeat = null;
+			this.toggleRepeatContainers('', daysContainer, monthContainer, whenDoneContainer);
+		});
+	}
+
+	/**
+	 * 切换 repeat 容器显示
+	 */
+	private toggleRepeatContainers(
+		frequency: string,
+		daysContainer: HTMLElement,
+		monthContainer: HTMLElement,
+		whenDoneContainer: HTMLElement
+	): void {
+		daysContainer.style.display = frequency === 'weekly' ? 'flex' : 'none';
+		monthContainer.style.display = frequency === 'monthly' ? 'block' : 'none';
+		whenDoneContainer.style.display = frequency ? 'flex' : 'none';
+	}
+
+	/**
+	 * 构建规则字符串
+	 */
+	private buildRepeatRule(config: RepeatConfig): string {
+		const { frequency, interval, days, monthDay, whenDone } = config;
+
+		let rule = '';
+
+		switch (frequency) {
+			case 'daily':
+				rule = interval === 1 ? 'every day' : `every ${interval} days`;
+				break;
+			case 'weekly':
+				if (interval === 1 && !days) {
+					rule = 'every week';
+				} else if (days && days.length > 0) {
+					const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+					const daysStr = days.map(d => dayNames[d]).join(', ');
+					rule = interval === 1 ? `every week on ${daysStr}` : `every ${interval} weeks on ${daysStr}`;
+				} else {
+					rule = interval === 1 ? 'every week' : `every ${interval} weeks`;
+				}
+				break;
+			case 'monthly':
+				if (monthDay === 'last') {
+					rule = interval === 1 ? 'every month on the last' : `every ${interval} months on the last`;
+				} else if (monthDay) {
+					rule = interval === 1 ? `every month on the ${monthDay}${this.getOrdinalSuffix(monthDay)}` : `every ${interval} months on the ${monthDay}${this.getOrdinalSuffix(monthDay)}`;
+				} else {
+					rule = interval === 1 ? 'every month' : `every ${interval} months`;
+				}
+				break;
+			case 'yearly':
+				rule = interval === 1 ? 'every year' : `every ${interval} years`;
+				break;
+		}
+
+		if (whenDone && rule) {
+			rule += ' when done';
+		}
+
+		return rule;
+	}
+
+	private getOrdinalSuffix(n: number): string {
+		if (n >= 11 && n <= 13) return 'th';
+		switch (n % 10) {
+			case 1: return 'st';
+			case 2: return 'nd';
+			case 3: return 'rd';
+			default: return 'th';
+		}
+	}
+
+	/**
+	 * 验证周期规则
+	 */
+	private validateRepeatRule(rule: string): boolean {
+		if (!rule) return true;
+		const trimmed = rule.trim().toLowerCase();
+		if (!trimmed.startsWith('every ')) return false;
+
+		const validEndings = [
+			/^every\s+day\s*(when\s+done)?$/,
+			/^every\s+\d+\s+days?\s*(when\s+done)?$/,
+			/^every\s+week\s*(when\s+done)?$/,
+			/^every\s+\d+\s+weeks?\s*(when\s+done)?$/,
+			/^every\s+week\s+on\s+.+\s*(when\s+done)?$/,
+			/^every\s+\d+\s+weeks?\s+on\s+.+\s*(when\s+done)?$/,
+			/^every\s+month\s*(when\s+done)?$/,
+			/^every\s+\d+\s+months?\s*(when\s+done)?$/,
+			/^every\s+month\s+on\s+.+\s*(when\s+done)?$/,
+			/^every\s+\d+\s+months?\s+on\s+.+\s*(when\s+done)?$/,
+			/^every\s+year\s*(when\s+done)?$/,
+			/^every\s+\d+\s+years?\s*(when\s+done)?$/,
+		];
+
+		for (const pattern of validEndings) {
+			if (pattern.test(trimmed)) return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * 渲染标签选择器板块
 	 */
 	private renderTagsSection(container: HTMLElement): void {
@@ -335,6 +644,7 @@ export class CreateTaskModal extends Modal {
 			const taskData: CreateTaskData = {
 				description,
 				priority: this.priority === 'normal' ? undefined : this.priority,
+				repeat: this.repeat || undefined,
 				createdDate: this.createdDate,
 				startDate: this.startDate,
 				scheduledDate: this.scheduledDate,

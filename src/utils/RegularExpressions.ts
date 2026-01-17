@@ -138,6 +138,15 @@ export class RegularExpressions {
         } as const,
 
         /**
+         * 周期任务符号常量
+         * 用于匹配和序列化任务周期规则
+         */
+        repeatSymbols: {
+            /** 周期任务 🔁 */
+            repeat: '🔁',
+        } as const,
+
+        /**
          * 优先级匹配正则
          * 捕获组1为优先级 emoji 符号
          * 使用全局匹配以查找所有优先级标记（虽然任务只应有一个）
@@ -214,6 +223,19 @@ export class RegularExpressions {
         completionDateRegex: /✅\s*(\d{4}-\d{2}-\d{2})/g,
 
         /**
+         * 周期任务规则正则
+         * 匹配：🔁 every <规则>
+         * 规则必须以 every 开头，支持 when done 后缀
+         * 捕获组1为完整规则字符串
+         *
+         * @example
+         * "🔁 every day" -> 匹配，捕获 "every day"
+         * "🔁every week on Monday" -> 匹配，捕获 "every week on Monday"
+         * "🔁 every 3 days when done" -> 匹配，捕获 "every 3 days when done"
+         */
+        repeatRegex: /🔁\s*(every\s+.+?)(?=\s*(?:➕|🛫|⏳|📅|❌|✅|⏫|🔺|🔼|🔽|⏬|$))/gi,
+
+        /**
          * 任意日期字段正则
          * 用于快速检测任务是否包含 Tasks 格式的日期标记
          * 捕获组1为日期 emoji，捕获组2为日期值
@@ -237,14 +259,15 @@ export class RegularExpressions {
         /**
          * 格式检测正则
          * 综合检测任务是否包含 Tasks 格式标记
-         * 匹配任意日期字段或优先级 emoji
+         * 匹配任意日期字段、优先级 emoji 或周期任务标记
          * 用于快速判断任务是否使用 Tasks 格式
          *
          * @example
          * "- [ ] 任务 ⏫ 📅 2024-01-15" -> 匹配（Tasks 格式）
+         * "- [ ] 任务 🔁 every day" -> 匹配（Tasks 格式）
          * "- [ ] 普通任务" -> 不匹配
          */
-        formatDetectionRegex: /([➕🛫⏳📅❌✅])\s*\d{4}-\d{2}-\d{2}|[🔺⏫🔼🔽⏬]/,
+        formatDetectionRegex: /([➕🛫⏳📅❌✅])\s*\d{4}-\d{2}-\d{2}|[🔺⏫🔼🔽⏬]|🔁\s+every/,
     } as const;
 
     // ==================== Dataview 格式正则表达式 ====================
@@ -354,6 +377,17 @@ export class RegularExpressions {
         completionDateRegex: /\[completion::\s*(\d{4}-\d{2}-\d{2})\]/gi,
 
         /**
+         * 周期任务字段正则
+         * 匹配：[repeat:: every <规则>]
+         * 捕获组1为规则字符串
+         *
+         * @example
+         * "[repeat:: every day]" -> 匹配，捕获 "every day"
+         * "[repeat::every week on Monday when done]" -> 匹配，捕获 "every week on Monday when done"
+         */
+        repeatRegex: /\[repeat::\s*(every\s+.+?)\]/gi,
+
+        /**
          * 综合字段正则
          * 匹配任意 Dataview 字段
          * 捕获组1为字段名，捕获组2为字段值
@@ -370,9 +404,10 @@ export class RegularExpressions {
          *
          * @example
          * "- [ ] 任务 [priority:: high] [due:: 2024-01-15]" -> 匹配（Dataview 格式）
+         * "- [ ] 任务 [repeat:: every day]" -> 匹配（Dataview 格式）
          * "- [ ] 普通任务" -> 不匹配
          */
-        formatDetectionRegex: /\[(priority|created|start|scheduled|due|cancelled|completion)::\s*[^\]]+\]/i,
+        formatDetectionRegex: /\[(priority|created|start|scheduled|due|cancelled|completion|repeat)::\s*[^\]]+\]/i,
     } as const;
 
     // ==================== 描述提取正则 ====================
@@ -411,6 +446,26 @@ export class RegularExpressions {
          * "[due:: 2024-01-15]" -> ""
          */
         removeDataviewField: /\s*\[(priority|created|start|scheduled|due|cancelled|completion)::[^\]]+\]\s*/gi,
+
+        /**
+         * 移除 Tasks 周期任务属性
+         * 匹配 🔁 every <规则> 及其周围的空格
+         *
+         * @example
+         * "任务 🔁 every day 内容" -> "任务  内容"
+         * "🔁every week" -> ""
+         */
+        removeTasksRepeat: /\s*🔁\s+every\s+.+?\s*/gi,
+
+        /**
+         * 移除 Dataview 周期任务字段
+         * 匹配 [repeat:: every <规则>] 及其周围的空格
+         *
+         * @example
+         * "任务 [repeat:: every day] 内容" -> "任务  内容"
+         * "[repeat:: every week]" -> ""
+         */
+        removeDataviewRepeat: /\s*\[repeat::\s+every\s+.+?\]\s*/gi,
 
         /**
          * 折叠多余空格

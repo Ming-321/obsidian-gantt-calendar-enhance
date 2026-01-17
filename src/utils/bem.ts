@@ -513,6 +513,24 @@ export const EditTaskModalClasses = {
 		// 标签选择器板块
 		tagsSection: bem(BLOCKS.EDIT_TASK_MODAL, 'tags-section'),
 
+		// 周期设置板块
+		repeatSection: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-section'),
+		repeatLabel: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-label'),
+		repeatHint: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-hint'),
+		repeatGrid: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-grid'),
+		repeatRow: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-row'),
+		repeatFreqSelect: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-freq-select'),
+		repeatIntervalInput: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-interval'),
+		repeatDaysContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-days-container'),
+		repeatDayCheckbox: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-day-checkbox'),
+		repeatDayLabel: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-day-label'),
+		repeatMonthContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-month-container'),
+		repeatMonthSelect: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-month-select'),
+		repeatWhenDoneContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-when-done-container'),
+		repeatWhenDoneToggle: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-when-done-toggle'),
+		repeatClearBtn: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-clear-btn'),
+		repeatErrorMsg: bem(BLOCKS.EDIT_TASK_MODAL, 'repeat-error-msg'),
+
 		// 按钮
 		buttons: bem(BLOCKS.EDIT_TASK_MODAL, 'buttons'),
 	},

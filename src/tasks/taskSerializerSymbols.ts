@@ -49,6 +49,9 @@ export interface TaskSymbolMapping {
 
     /** 日期字段符号映射 */
     dates: Readonly<Record<DateFieldType, string>>;
+
+    /** 周期任务符号映射 */
+    repeat?: string;
 }
 
 /**
@@ -61,6 +64,9 @@ export interface TaskRegexMapping {
 
     /** 日期字段正则映射 */
     dates: Readonly<Record<DateFieldType, RegExp>>;
+
+    /** 周期任务匹配正则 */
+    repeat?: RegExp;
 
     /** 格式检测正则（快速判断是否包含该格式的标记） */
     formatDetection: RegExp;
@@ -114,6 +120,7 @@ export const TASKS_FORMAT_CONFIG: TaskFormatConfig = {
             cancelledDate: RegularExpressions.Tasks.dateSymbols.cancelled,
             completionDate: RegularExpressions.Tasks.dateSymbols.completion,
         },
+        repeat: RegularExpressions.Tasks.repeatSymbols.repeat,
     },
 
     regex: {
@@ -126,6 +133,7 @@ export const TASKS_FORMAT_CONFIG: TaskFormatConfig = {
             cancelledDate: RegularExpressions.Tasks.cancelledDateRegex,
             completionDate: RegularExpressions.Tasks.completionDateRegex,
         },
+        repeat: RegularExpressions.Tasks.repeatRegex,
         formatDetection: RegularExpressions.Tasks.formatDetectionRegex,
     },
 } as const;
@@ -160,6 +168,7 @@ export const DATAVIEW_FORMAT_CONFIG: TaskFormatConfig = {
             cancelledDate: '[cancelled::',
             completionDate: '[completion::',
         },
+        repeat: '[repeat::',
     },
 
     regex: {
@@ -172,6 +181,7 @@ export const DATAVIEW_FORMAT_CONFIG: TaskFormatConfig = {
             cancelledDate: RegularExpressions.Dataview.cancelledDateRegex,
             completionDate: RegularExpressions.Dataview.completionDateRegex,
         },
+        repeat: RegularExpressions.Dataview.repeatRegex,
         formatDetection: RegularExpressions.Dataview.formatDetectionRegex,
     },
 } as const;

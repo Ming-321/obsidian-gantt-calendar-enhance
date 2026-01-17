@@ -56,6 +56,9 @@ export interface ParsedTaskAttributes {
 
     /** 是否存在取消日期（用于设置 cancelled 状态） */
     hasCancelledDate: boolean;
+
+    /** 周期任务规则 */
+    repeat?: string;
 }
 
 // ==================== 复选框状态解析 ====================
@@ -247,11 +250,13 @@ export function parseTasksDates(content: string): ParsedDates {
 export function parseTasksAttributes(content: string): ParsedTaskAttributes {
     const priority = parseTasksPriority(content) || 'normal'; // 未指定优先级时默认为 normal
     const dates = parseTasksDates(content);
+    const repeat = parseTasksRepeat(content);
 
     return {
         priority,
         dates,
         hasCancelledDate: !!dates.cancelledDate,
+        repeat,
     };
 }
 
@@ -348,11 +353,13 @@ export function parseDataviewDates(content: string): ParsedDates {
 export function parseDataviewAttributes(content: string): ParsedTaskAttributes {
     const priority = parseDataviewPriority(content) || 'normal'; // 未指定优先级时默认为 normal
     const dates = parseDataviewDates(content);
+    const repeat = parseDataviewRepeat(content);
 
     return {
         priority,
         dates,
         hasCancelledDate: !!dates.cancelledDate,
+        repeat,
     };
 }
 
@@ -436,4 +443,139 @@ export function parseDateField(
     }
 
     return undefined;
+}
+
+// ==================== Repeat 字段解析 ====================
+
+/**
+ * 解析 Tasks 格式的周期规则
+ *
+ * 从任务内容中提取周期任务规则。
+ *
+ * @param content - 任务内容
+ * @returns 周期规则字符串，未找到则返回 undefined
+ *
+ * @example
+ * ```ts
+ * parseTasksRepeat("任务 🔁 every day")
+ * // 返回: "every day"
+ *
+ * parseTasksRepeat("任务 🔁every week on Monday when done")
+ * // 返回: "every week on Monday when done"
+ * ```
+ */
+export function parseTasksRepeat(content: string): string | undefined {
+    const { TASKS_FORMAT_CONFIG } = require('../taskSerializerSymbols');
+    const regex = TASKS_FORMAT_CONFIG.regex.repeat;
+    regex.lastIndex = 0;
+    const match = regex.exec(content);
+    return match?.[1]?.trim();
+}
+
+/**
+ * 解析 Dataview 格式的周期规则
+ *
+ * 从任务内容中提取周期任务规则。
+ *
+ * @param content - 任务内容
+ * @returns 周期规则字符串，未找到则返回 undefined
+ *
+ * @example
+ * ```ts
+ * parseDataviewRepeat("任务 [repeat:: every day]")
+ * // 返回: "every day"
+ *
+ * parseDataviewRepeat("任务 [repeat::every week when done]")
+ * // 返回: "every week when done"
+ * ```
+ */
+export function parseDataviewRepeat(content: string): string | undefined {
+    const { DATAVIEW_FORMAT_CONFIG } = require('../taskSerializerSymbols');
+    const regex = DATAVIEW_FORMAT_CONFIG.regex.repeat;
+    regex.lastIndex = 0;
+    const match = regex.exec(content);
+    return match?.[1]?.trim();
+}
+
+/**
+ * 解析周期规则（统一接口）
+ *
+ * 根据格式自动选择正确的解析方法，返回周期规则字符串。
+ *
+ * @param content - 任务内容
+ * @param format - 任务格式类型
+ * @returns 周期规则字符串或 undefined
+ *
+ * @example
+ * ```ts
+ * // Tasks 格式
+ * parseRepeat("任务 🔁 every day", 'tasks')
+ * // 返回: "every day"
+ *
+ * // Dataview 格式
+ * parseRepeat("任务 [repeat:: every week]", 'dataview')
+ * // 返回: "every week"
+ * ```
+ */
+export function parseRepeat(content: string, format: TaskFormatType): string | undefined {
+    if (format === 'tasks') {
+        return parseTasksRepeat(content);
+    } else if (format === 'dataview') {
+        return parseDataviewRepeat(content);
+    }
+    return undefined;
+}
+
+/**
+ * 验证周期规则格式
+ *
+ * 检查规则是否以 "every" 开头且符合基本格式要求。
+ *
+ * @param rule - 周期规则字符串
+ * @returns 是否为有效的周期规则
+ *
+ * @example
+ * ```ts
+ * validateRepeatRule("every day")
+ * // 返回: true
+ *
+ * validateRepeatRule("every week on Monday when done")
+ * // 返回: true
+ *
+ * validateRepeatRule("invalid rule")
+ * // 返回: false
+ * ```
+ */
+export function validateRepeatRule(rule: string): boolean {
+    if (!rule || typeof rule !== 'string') return false;
+    const trimmed = rule.trim().toLowerCase();
+    if (!trimmed.startsWith('every ')) return false;
+
+    // 基本结构检查 - 必须以 every 开头，后跟有效关键字
+    const validPatterns = [
+        /^every\s+day\s*(when\s+done)?$/,
+        /^every\s+\d+\s+days?\s*(when\s+done)?$/,
+        /^every\s+week\s*(when\s+done)?$/,
+        /^every\s+\d+\s+weeks?\s*(when\s+done)?$/,
+        /^every\s+week\s+on\s+.+\s*(when\s+done)?$/,
+        /^every\s+\d+\s+weeks?\s+on\s+.+\s*(when\s+done)?$/,
+        /^every\s+month\s*(when\s+done)?$/,
+        /^every\s+\d+\s+months?\s*(when\s+done)?$/,
+        /^every\s+month\s+on\s+.+\s*(when\s+done)?$/,
+        /^every\s+\d+\s+months?\s+on\s+.+\s*(when\s+done)?$/,
+        /^every\s+year\s*(when\s+done)?$/,
+        /^every\s+\d+\s+years?\s*(when\s+done)?$/,
+    ];
+
+    // 移除 when done 后缀进行基本检查
+    const baseRule = trimmed.replace(/\s*when\s+done\s*$/, '');
+
+    for (const pattern of validPatterns) {
+        if (pattern.test(trimmed)) return true;
+    }
+
+    // 检查是否至少包含有效的频率关键字
+    const hasValidFrequency = /^(every\s+)(day|days|week|weeks|month|months|year|years|weekday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i.test(baseRule);
+
+    return hasValidFrequency;
 }

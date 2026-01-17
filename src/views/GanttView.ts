@@ -146,6 +146,14 @@ export class GanttViewRenderer extends BaseViewRenderer {
 	 * 当外部文件变更时调用此方法执行增量更新
 	 */
 	public refreshTasks(): void {
+		this.performRefreshWithRetry(0);
+	}
+
+	/**
+	 * 执行刷新
+	 * 依赖 TaskStore 的事件通知系统，确保缓存已更新
+	 */
+	private performRefreshWithRetry(_retryCount: number): void {
 		try {
 			// 如果甘特图还未初始化，跳过
 			if (!this.ganttWrapper || !this.currentContainer) {
@@ -266,10 +274,6 @@ export class GanttViewRenderer extends BaseViewRenderer {
 			// 7. 初始化更新处理器
 			if (!this.updateHandler) {
 				this.updateHandler = new TaskUpdateHandler(this.app, this.plugin);
-				// 设置增量更新回调（当甘特图内部操作触发任务更新时）
-				this.updateHandler.onTaskUpdated = (_filePath: string) => {
-					this.refreshTasks();
-				};
 			}
 
 			// 8. 配置 甘特图

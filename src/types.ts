@@ -111,6 +111,7 @@ export interface GCTask {
 	dueDate?: Date;                // 截止日期
 	cancelledDate?: Date;          // 取消日期
 	completionDate?: Date;         // 完成日期
+	repeat?: string;               // 周期规则，如 "every day", "every week on Monday when done"
 	warning?: string;              // 警告信息：显示任务格式问题或缺失的关键属性
 }
 

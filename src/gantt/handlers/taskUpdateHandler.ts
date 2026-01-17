@@ -72,14 +72,8 @@ export class TaskUpdateHandler {
 				this.plugin.settings.enabledTaskFormats
 			);
 
-			// 静默更新缓存（不触发全局刷新）
-			await this.plugin.taskCache.updateFileCache(ganttTask.filePath, true, true);
-
 			// 显示通知
 			new Notice(`任务时间已更新: ${formatDate(newStart, 'yyyy-MM-dd')} - ${formatDate(newEnd, 'yyyy-MM-dd')}`);
-
-			// 通知视图进行增量更新
-			this.onTaskUpdated?.(ganttTask.filePath);
 
 		} catch (error) {
 			Logger.error('TaskUpdateHandler', 'Error updating task:', error);
@@ -119,13 +113,7 @@ export class TaskUpdateHandler {
 				this.plugin.settings.enabledTaskFormats
 			);
 
-			// 静默更新缓存（不触发全局刷新）
-			await this.plugin.taskCache.updateFileCache(ganttTask.filePath, true, true);
-
 			new Notice(completed ? '任务已标记为完成' : '任务已标记为未完成');
-
-			// 通知视图进行增量更新
-			this.onTaskUpdated?.(ganttTask.filePath);
 
 		} catch (error) {
 			Logger.error('TaskUpdateHandler', 'Error updating progress:', error);

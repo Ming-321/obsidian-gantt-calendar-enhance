@@ -11,6 +11,7 @@ export interface TaskUpdates {
 	cancelled?: boolean;  // 取消状态，使用 [-] 复选框
 	status?: TaskStatusType;  // 任务状态类型
 	priority?: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal';
+	repeat?: string | null;  // 周期规则，null 表示清除
 	createdDate?: Date | null;
 	startDate?: Date | null;
 	scheduledDate?: Date | null;
@@ -220,6 +221,19 @@ export function serializeTask(
 			// 使用 updates.priority 或回退到 task.priority
 			const priorityValue = updates.priority !== undefined ? updates.priority : task.priority;
 			parts.push(`[priority:: ${priorityValue}]`);
+		}
+	}
+
+	// 周期任务规则（放在优先级后、日期前）
+	const repeatValue = updates.repeat !== undefined
+		? (updates.repeat || undefined)
+		: task.repeat;
+
+	if (repeatValue) {
+		if (format === 'tasks') {
+			parts.push(`🔁 ${repeatValue}`);
+		} else {
+			parts.push(`[repeat:: ${repeatValue}]`);
 		}
 	}
 

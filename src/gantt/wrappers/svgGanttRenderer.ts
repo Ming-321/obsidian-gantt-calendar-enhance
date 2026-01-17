@@ -238,7 +238,7 @@ export class SvgGanttRenderer {
 
 		// 计算尺寸
 		const ganttWidth = totalUnits * this.columnWidth + this.padding * 2;
-		const ganttHeight = this.headerHeight + this.tasks.length * this.rowHeight + this.padding * 2;
+		const ganttHeight = this.headerHeight + this.tasks.length * this.rowHeight;
 		// 任务列表使用足够大的宽度来显示完整任务描述
 		const taskListWidth = 2040; // taskNumberColumnWidth (40) + contentWidth (2000)
 		const taskListHeight = ganttHeight;
@@ -910,18 +910,25 @@ export class SvgGanttRenderer {
 		svg.appendChild(headerBg);
 
 		// 绘制时间单元标签
+		// 文本应该居中显示在格子内（两条竖线之间），指示当天的格子范围
+		// 网格竖线从 x=0 开始（i * columnWidth），所以文本也需要从 x=0 开始计算
 		for (let i = 0; i < totalUnits; i++) {
 			const unitDate = this.getDateForUnit(minDate, i, granularity);
-			const x = this.padding + i * this.columnWidth;
+			// 第 i 个格子的左竖线在 i * columnWidth，右竖线在 (i+1) * columnWidth
+			// 格子中心在两者中间：i * columnWidth + columnWidth / 2
+			// 注意：不使用 this.padding，与网格竖线保持一致
+			const gridLineX = i * this.columnWidth;
+			const cellCenterX = gridLineX + this.columnWidth / 2;
 			const y = this.headerHeight / 2;
 
 			// 判断是否是今天所在的单元
 			const today = new Date();
 			const isCurrentUnit = this.isSameUnit(unitDate, today, granularity);
 
-			// 绘制标签
+			// 绘制标签 - 居中于格子内（两条竖线之间）
 			const text = document.createElementNS(ns, 'text');
-			text.setAttribute('x', String(x + this.columnWidth / 2));
+			// x 坐标在格子中心：左竖线位置 + 半个格子宽度
+			text.setAttribute('x', String(cellCenterX));
 			text.setAttribute('y', String(y + 6));
 			text.setAttribute('text-anchor', 'middle');
 			text.setAttribute('font-size', '11');
@@ -1016,6 +1023,63 @@ export class SvgGanttRenderer {
 				return unitIndex % 3 === 0; // 每季度加粗
 		}
 		return false;
+	}
+
+	/**
+	 * 根据开始日期查找对应的网格单元索引
+	 * 向上取整确保任务条从正确的网格线开始
+	 *
+	 * @param startDate - 开始日期
+	 * @param minDate - 最小日期（网格起点）
+	 * @returns 网格单元索引（整数，与 renderGrid 中的 i 对应）
+	 */
+	private findStartGridUnitIndex(startDate: Date, minDate: Date): number {
+		const config = GRANULARITY_CONFIGS[this.granularity];
+
+		// 规范化开始日期到当天的 00:00:00
+		const normalized = new Date(startDate);
+		normalized.setHours(0, 0, 0, 0);
+
+		// 计算偏移的单元数
+		const offsetUnits = (normalized.getTime() - minDate.getTime()) / config.milliseconds;
+
+		// 向上取整，确保任务从正确的网格单元开始
+		return Math.ceil(offsetUnits);
+	}
+
+	/**
+	 * 根据结束日期查找对应的网格单元索引
+	 * 结束日期应该对齐到下一个网格单元的开始，确保包含结束日期当天
+	 *
+	 * @param endDate - 结束日期
+	 * @param minDate - 最小日期（网格起点）
+	 * @returns 网格单元索引（整数，表示结束网格线的位置）
+	 */
+	private findEndGridUnitIndex(endDate: Date, minDate: Date): number {
+		const config = GRANULARITY_CONFIGS[this.granularity];
+
+		// 规范化结束日期到当天的 00:00:00，然后加一天
+		// 这样确保任务条覆盖到结束日期当天的结束位置
+		const normalized = new Date(endDate);
+		normalized.setHours(0, 0, 0, 0);
+		normalized.setDate(normalized.getDate() + 1);  // 加一天，包含结束日期当天
+
+		// 计算偏移的单元数
+		const offsetUnits = (normalized.getTime() - minDate.getTime()) / config.milliseconds;
+
+		// 向上取整，确保包含完整的结束日期
+		return Math.ceil(offsetUnits);
+	}
+
+	/**
+	 * 根据网格单元索引计算精确的 x 坐标
+	 * 与 renderGrid 中的计算方式完全一致：x = i * this.columnWidth
+	 *
+	 * @param unitIndex - 网格单元索引
+	 * @returns x 坐标
+	 */
+	private getGridUnitX(unitIndex: number): number {
+		return unitIndex * this.columnWidth;
 	}
 
 	/**
@@ -1147,18 +1211,20 @@ export class SvgGanttRenderer {
 			const taskStart = new Date(task.start);
 			const taskEnd = new Date(task.end);
 
-			// 计算任务在当前颗粒度下的精确位置和宽度
-			const startOffset = (taskStart.getTime() - minDate.getTime()) / config.milliseconds;
-			const duration = (taskEnd.getTime() - taskStart.getTime()) / config.milliseconds;
+			// 使用网格单元索引定位（依赖于网格）
+			const startUnitIndex = this.findStartGridUnitIndex(taskStart, minDate);
+			const endUnitIndex = this.findEndGridUnitIndex(taskEnd, minDate);
 
-			const x = startOffset * this.columnWidth;
+			// 计算位置（与网格垂直线使用相同的计算方式）
+			const x = this.getGridUnitX(startUnitIndex);
 			const y = index * this.rowHeight + (this.rowHeight - 24) / 2;
-			const barWidth = duration * this.columnWidth - 8;
+			const duration = endUnitIndex - startUnitIndex;
+			const barWidth = Math.max(duration * this.columnWidth, 20);  // 不减 8，确保右端对齐网格线
 
 			// 任务条组
 			const barGroup = document.createElementNS(ns, 'g');
 			addSvgClass(barGroup, GanttClasses.elements.barGroup);
-			barGroup.setAttribute('data-task-id', task.id);
+			barGroup.setAttribute('data-task-bar', task.id);
 
 			// 任务条背景
 			const bar = document.createElementNS(ns, 'rect');
@@ -1309,9 +1375,13 @@ export class SvgGanttRenderer {
 	private showPopup(task: GanttChartTask, targetElement: Element, mousePosition?: MousePosition): void {
 		if (!this.plugin || !task.filePath) return;
 
-		// 直接使用 GanttChartTask（已包含完整任务信息）
+		// 从 this.tasks 中获取最新的任务对象（避免使用闭包中的旧对象）
+		// 因为 updateTasks 只更新视觉属性，不更新事件监听器引用的任务对象
+		const latestTask = this.tasks.find(t => t.id === task.id);
+		if (!latestTask) return;
+
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
-		tooltipManager.show(task as any, targetElement as HTMLElement, mousePosition);
+		tooltipManager.show(latestTask as any, targetElement as HTMLElement, mousePosition);
 	}
 
 	/**
@@ -1388,13 +1458,21 @@ export class SvgGanttRenderer {
 		leftHandle: SVGRectElement | null,
 		rightHandle: SVGRectElement | null
 	): void {
+		// 从 this.tasks 中获取最新的任务对象（避免使用闭包中的旧对象）
+		// 因为 updateTasks 只更新视觉属性，不更新事件监听器引用的任务对象
+		const latestTask = this.tasks.find(t => t.id === task.id);
+		if (!latestTask) {
+			Logger.warn('SvgGanttRenderer', `Task ${task.id} not found in current tasks during drag start`);
+			return;
+		}
+
 		this.taskDragState = {
 			isDragging: true,
 			dragType,
-			task,
+			task: latestTask,
 			startX,
-			originalStart: new Date(task.start),
-			originalEnd: new Date(task.end),
+			originalStart: new Date(latestTask.start),
+			originalEnd: new Date(latestTask.end),
 			taskMinDate: minDate,
 			hasMoved: false,
 			barElement: bar,
@@ -1405,11 +1483,26 @@ export class SvgGanttRenderer {
 			justFinishedDragging: false,
 		};
 
-		// 保存视觉元素引用
+		// 保存视觉元素引用（小白点，通过 pointer-events: none 识别）
 		const barGroup = bar.parentElement;
 		if (barGroup) {
-			this.taskDragState.leftVisualElement = barGroup.querySelector('.gc-gantt-view__handle-left + rect + *') as SVGRectElement;
-			this.taskDragState.rightVisualElement = barGroup.querySelector('.gc-gantt-view__handle-right + rect + *') as SVGRectElement;
+			// 获取所有 rect 元素，找到小白点（pointer-events: none）
+			const allRects = Array.from(barGroup.querySelectorAll('rect'));
+			const visuals = allRects.filter(r => (r as any).style?.pointerEvents === 'none');
+
+			// 根据位置区分左侧和右侧小白点
+			const barX = parseFloat(bar.getAttribute('x') || '0');
+			const barWidth = parseFloat(bar.getAttribute('width') || '0');
+
+			this.taskDragState.leftVisualElement = visuals.find(v => {
+				const vx = parseFloat(v.getAttribute('x') || '0');
+				return vx < barX + barWidth / 2;  // 左侧的小白点
+			}) as SVGRectElement || null;
+
+			this.taskDragState.rightVisualElement = visuals.find(v => {
+				const vx = parseFloat(v.getAttribute('x') || '0');
+				return vx >= barX + barWidth / 2;  // 右侧的小白点
+			}) as SVGRectElement || null;
 		}
 
 		// 设置全局光标
@@ -1433,11 +1526,16 @@ export class SvgGanttRenderer {
 		if (!this.taskDragState.isDragging) return;
 
 		const deltaX = e.clientX - this.taskDragState.startX;
+
+		// 只要鼠标移动了就标记为已移动（区分拖动和点击）
+		if (Math.abs(deltaX) > 3) {  // 移动超过 3px 视为拖动
+			this.taskDragState.hasMoved = true;
+		}
+
 		const daysDelta = Math.round(deltaX / this.columnWidth);
 
+		// 如果 daysDelta 为 0，不需要更新视觉
 		if (daysDelta === 0) return;
-
-		this.taskDragState.hasMoved = true;
 
 		const { dragType, originalStart, originalEnd, taskMinDate } = this.taskDragState;
 		let newStart: Date;
@@ -1484,6 +1582,7 @@ export class SvgGanttRenderer {
 		if (!this.taskDragState.isDragging) return;
 
 		const { task, dragType, originalStart, originalEnd, startX, hasMoved } = this.taskDragState;
+		Logger.debug('SvgGanttRenderer', 'handleDragEnd start', { dragType, hasMoved, taskId: task?.id, hasTask: !!task });
 
 		// 重置状态
 		this.taskDragState.isDragging = false;
@@ -1507,7 +1606,9 @@ export class SvgGanttRenderer {
 		}, 100); // 100ms 后恢复点击功能
 
 		const daysDelta = Math.round((e.clientX - startX) / this.columnWidth);
+		Logger.debug('SvgGanttRenderer', 'handleDragEnd: daysDelta calculated', { daysDelta, dragType });
 		if (daysDelta === 0) {
+			Logger.debug('SvgGanttRenderer', 'handleDragEnd: daysDelta is 0, refreshing only');
 			this.refresh(this.tasks);
 			return;
 		}
@@ -1543,17 +1644,11 @@ export class SvgGanttRenderer {
 
 		// 调用相应的更新方法
 		try {
-			if (dragType === 'move') {
-				// 整体拖动：使用现有的 onDateChange 回调
-				if (this.onDateChange && task!) {
-					await this.onDateChange(task!, newStart, newEnd);
-				}
-			} else if (dragType === 'resize-left') {
-				// 左侧拖动：只更新开始时间
-				if (task!) await this.handleStartDateChange(task!, newStart);
-			} else if (dragType === 'resize-right') {
-				// 右侧拖动：只更新结束时间
-				if (task!) await this.handleEndDateChange(task!, newEnd);
+			Logger.debug('SvgGanttRenderer', 'handleDragEnd: calling update method', { dragType, taskId: task?.id, newStart, newEnd });
+			if (this.onDateChange && task!) {
+				// 统一使用 onDateChange 回调处理所有拖动类型
+				// TaskUpdateHandler 会检测哪个字段被修改并正确更新
+				await this.onDateChange(task!, newStart, newEnd);
 			}
 		} catch (error) {
 			Logger.error('SvgGanttRenderer', 'Error updating task dates:', error);
@@ -1576,69 +1671,44 @@ export class SvgGanttRenderer {
 		if (!this.taskDragState.task) return;
 
 		const { barElement, leftHandleElement, rightHandleElement, leftVisualElement, rightVisualElement } = this.taskDragState;
+		const HANDLE_HIT_AREA = 12;
+		const HANDLE_VISUAL_SIZE = 4;
 
-		// 计算新的位置和宽度
-		const startOffset = Math.floor((newStart.getTime() - minDate.getTime()) / (24 * 60 * 60 * 1000));
-		const duration = Math.ceil((newEnd.getTime() - newStart.getTime()) / (24 * 60 * 60 * 1000)) + 1;
-		const x = startOffset * this.columnWidth;
-		const barWidth = duration * this.columnWidth - 8;
+		// 使用网格单元索引定位（依赖于网格）
+		const startUnitIndex = this.findStartGridUnitIndex(newStart, minDate);
+		const endUnitIndex = this.findEndGridUnitIndex(newEnd, minDate);
+		const rowIndex = this.tasks.findIndex(t => t.id === this.taskDragState.task?.id) ?? 0;
+
+		// 计算位置（与网格垂直线使用相同的计算方式）
+		const x = this.getGridUnitX(startUnitIndex);
+		const y = rowIndex * this.rowHeight + (this.rowHeight - 24) / 2;
+		const duration = endUnitIndex - startUnitIndex;
+		const barWidth = Math.max(duration * this.columnWidth, 20);  // 不减 8，确保右端对齐网格线
 
 		// 更新任务条
 		barElement!.setAttribute('x', String(x));
-		barElement!.setAttribute('width', String(Math.max(barWidth, 20)));
+		barElement!.setAttribute('y', String(y));
+		barElement!.setAttribute('width', String(barWidth));
 
-		// 更新手柄位置
+		// 更新左手柄
 		if (leftHandleElement) {
 			leftHandleElement.setAttribute('x', String(x));
+			leftHandleElement.setAttribute('y', String(y));
 		}
 		if (leftVisualElement) {
 			leftVisualElement.setAttribute('x', String(x + 2));
+			leftVisualElement.setAttribute('y', String(y + 8));
 		}
 
-		const rightHandleX = x + Math.max(barWidth, 20) - 12; // HANDLE_HIT_AREA
+		// 更新右手柄
+		const rightHandleX = x + barWidth - HANDLE_HIT_AREA;
 		if (rightHandleElement) {
 			rightHandleElement.setAttribute('x', String(rightHandleX));
+			rightHandleElement.setAttribute('y', String(y));
 		}
 		if (rightVisualElement) {
-			rightVisualElement.setAttribute('x', String(rightHandleX + 12 - 2 - 4)); // HANDLE_HIT_AREA - 2 - HANDLE_VISUAL_SIZE
-		}
-	}
-
-	/**
-	 * 单独更新开始时间（左侧拖动）
-	 */
-	private async handleStartDateChange(task: GanttChartTask, newStart: Date): Promise<void> {
-		if (!this.plugin || !task.filePath) return;
-
-		const { updateTaskProperties } = require('../../tasks/taskUpdater');
-		const updates: Record<string, Date> = {};
-		updates[this.startField] = newStart;
-
-		try {
-			// 直接使用 task（已包含完整任务信息）
-			await updateTaskProperties(this.app, task as any, updates, this.plugin.settings.enabledTaskFormats);
-			await this.plugin.taskCache.updateFileCache(task.filePath);
-		} catch (error) {
-			Logger.error('SvgGanttRenderer', 'Error updating start date:', error);
-		}
-	}
-
-	/**
-	 * 单独更新结束时间（右侧拖动）
-	 */
-	private async handleEndDateChange(task: GanttChartTask, newEnd: Date): Promise<void> {
-		if (!this.plugin || !task.filePath) return;
-
-		const { updateTaskProperties } = require('../../tasks/taskUpdater');
-		const updates: Record<string, Date> = {};
-		updates[this.endField] = newEnd;
-
-		try {
-			// 直接使用 task（已包含完整任务信息）
-			await updateTaskProperties(this.app, task as any, updates, this.plugin.settings.enabledTaskFormats);
-			await this.plugin.taskCache.updateFileCache(task.filePath);
-		} catch (error) {
-			Logger.error('SvgGanttRenderer', 'Error updating end date:', error);
+			rightVisualElement.setAttribute('x', String(rightHandleX + HANDLE_HIT_AREA - 2 - HANDLE_VISUAL_SIZE));
+			rightVisualElement.setAttribute('y', String(y + 8));
 		}
 	}
 
@@ -1718,7 +1788,7 @@ export class SvgGanttRenderer {
 		if (added.length > 0) {
 			if (this.ganttSvg) {
 				const { minDate, totalUnits, granularity } = this.calculateDateRange();
-				const ganttHeight = this.tasks.length * this.rowHeight + 10;
+				const ganttHeight = this.headerHeight + this.tasks.length * this.rowHeight;
 				this.renderGanttChart(this.ganttSvg, minDate, totalUnits, ganttHeight, granularity);
 			}
 		}
@@ -1728,26 +1798,28 @@ export class SvgGanttRenderer {
 	 * 更新单个任务条元素 - 支持颗粒度
 	 */
 	private updateTaskBarElement(barGroup: SVGGElement, task: GanttChartTask): void {
-		const ns = 'http://www.w3.org/2000/svg';
-		const { minDate, granularity } = this.calculateDateRange();
-		const config = GRANULARITY_CONFIGS[granularity];
-
+		const { minDate } = this.calculateDateRange();
 		const startDate = new Date(task.start);
 		const endDate = new Date(task.end);
+		const rowIndex = this.tasks.findIndex(t => t.id === task.id);
+		const HANDLE_HIT_AREA = 12;
+		const HANDLE_VISUAL_SIZE = 4;
 
-		// 计算任务在当前颗粒度下的精确位置和宽度
-		const startOffset = (startDate.getTime() - minDate.getTime()) / config.milliseconds;
-		const duration = (endDate.getTime() - startDate.getTime()) / config.milliseconds;
+		// 使用网格单元索引定位（依赖于网格）
+		const startUnitIndex = this.findStartGridUnitIndex(startDate, minDate);
+		const endUnitIndex = this.findEndGridUnitIndex(endDate, minDate);
 
-		const x = startOffset * this.columnWidth;
-		const y = this.tasks.findIndex(t => t.id === task.id) * this.rowHeight + 10; // 10px top padding
-		const width = duration * this.columnWidth;
+		// 计算位置（与网格垂直线使用相同的计算方式）
+		const x = this.getGridUnitX(startUnitIndex);
+		const y = rowIndex * this.rowHeight + (this.rowHeight - 24) / 2;
+		const duration = endUnitIndex - startUnitIndex;
+		const barWidth = Math.max(duration * this.columnWidth, 20);  // 不减 8，确保右端对齐网格线
 
 		// 更新任务条位置和宽度
 		const bar = barGroup.querySelector('.task-bar') as SVGRectElement;
 		if (bar) {
 			bar.setAttribute('x', String(x));
-			bar.setAttribute('width', String(Math.max(width, 20)));
+			bar.setAttribute('width', String(barWidth));
 			bar.setAttribute('y', String(y));
 
 			// 更新颜色（根据完成状态）
@@ -1772,10 +1844,46 @@ export class SvgGanttRenderer {
 		// 更新进度条
 		const progressRect = barGroup.querySelector('.task-progress') as SVGRectElement;
 		if (progressRect) {
-			const progressWidth = width * (task.progress / 100);
+			const progressWidth = barWidth * (task.progress / 100);
 			progressRect.setAttribute('x', String(x));
 			progressRect.setAttribute('y', String(y));
 			progressRect.setAttribute('width', String(progressWidth));
+		}
+
+		// === 更新手柄和小白点位置 ===
+		// 左侧手柄
+		const leftHandle = barGroup.querySelector('.gc-gantt-view__handle-left') as SVGRectElement;
+		if (leftHandle) {
+			leftHandle.setAttribute('x', String(x));
+			leftHandle.setAttribute('y', String(y));
+		}
+
+		// 左侧小白点（使用 style 选择器，因为创建时设置了 pointerEvents）
+		const leftVisual = Array.from(barGroup.querySelectorAll('rect')).find(
+			r => (r as any).style?.pointerEvents === 'none' &&
+				parseFloat(r.getAttribute('x') || '0') < x + barWidth / 2  // 左侧的小白点
+		) as SVGRectElement;
+		if (leftVisual) {
+			leftVisual.setAttribute('x', String(x + 2));
+			leftVisual.setAttribute('y', String(y + 8));
+		}
+
+		// 右侧手柄
+		const rightHandleX = x + barWidth - HANDLE_HIT_AREA;
+		const rightHandle = barGroup.querySelector('.gc-gantt-view__handle-right') as SVGRectElement;
+		if (rightHandle) {
+			rightHandle.setAttribute('x', String(rightHandleX));
+			rightHandle.setAttribute('y', String(y));
+		}
+
+		// 右侧小白点（使用 style 选择器，因为创建时设置了 pointerEvents）
+		const rightVisual = Array.from(barGroup.querySelectorAll('rect')).find(
+			r => (r as any).style?.pointerEvents === 'none' &&
+				parseFloat(r.getAttribute('x') || '0') >= x + barWidth / 2  // 右侧的小白点
+		) as SVGRectElement;
+		if (rightVisual) {
+			rightVisual.setAttribute('x', String(rightHandleX + HANDLE_HIT_AREA - 2 - HANDLE_VISUAL_SIZE));
+			rightVisual.setAttribute('y', String(y + 8));
 		}
 	}
 
