@@ -953,11 +953,16 @@ Author: sugar
 	flex-shrink: 0;
 }
 
-/* 状态标签 */
+/* 状态标签 - 胶囊样式 */
 .gc-toolbar__status-label {
-	flex: 1;
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 12px;
 	font-size: 13px;
-	color: var(--text-normal);
+	line-height: 1;
+	white-space: nowrap;
 }
 
 /* 空状态 */
