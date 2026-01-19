@@ -15,7 +15,7 @@ import { Logger } from '../../../../utils/logger';
 const AUTH_URL = 'https://accounts.feishu.cn/open-apis/authen/v1/authorize';
 const TOKEN_URL = 'https://open.feishu.cn/open-apis/authen/v1/oidc/access_token';
 const REFRESH_URL = 'https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token';
-const USER_INFO_URL = 'https://open.feishu.cn/open-apis/contact/v3/users/me';
+const USER_INFO_URL = 'https://open.feishu.cn/open-apis/authen/v1/user_info';
 const DEFAULT_REDIRECT_URI = 'https://open.feishu.cn/api-explorer/loading';
 
 /**
@@ -74,19 +74,21 @@ export interface FeishuTokenResponse {
 }
 
 /**
- * 飞书用户信息响应
+ * 飞书用户信息响应（authen/v1/user_info）
  */
 export interface FeishuUserInfoResponse {
     code: number;
     msg: string;
     data?: {
-        user: {
-            user_id: string;
-            name: string;
-            en_name: string;
-            email: string;
-            avatar: string;
-        };
+        name: string;
+        en_name: string;
+        email: string;
+        avatar_url: string;
+        avatar_middle?: string;
+        avatar_thumb?: string;
+        user_id: string;
+        open_id: string;
+        union_id?: string;
     };
 }
 
@@ -320,7 +322,7 @@ export class FeishuOAuth {
 
         const data = await this.parseResponse<FeishuUserInfoResponse>(response);
 
-        if (data.code !== 0 || !data.data?.user) {
+        if (data.code !== 0 || !data.data) {
             console.error('=== 获取用户信息失败 ===');
             console.error('错误码:', data.code);
             console.error('错误信息:', data.msg);
@@ -329,13 +331,13 @@ export class FeishuOAuth {
             throw new Error(`获取用户信息失败: ${data.msg}`);
         }
 
-        const user = data.data.user;
+        const userInfo = data.data;
         return {
-            userId: user.user_id,
-            name: user.name,
-            enName: user.en_name,
-            email: user.email,
-            avatar: user.avatar,
+            userId: userInfo.user_id,
+            name: userInfo.name,
+            enName: userInfo.en_name,
+            email: userInfo.email,
+            avatar: userInfo.avatar_url || userInfo.avatar_middle || userInfo.avatar_thumb || '',
         };
     }
 
