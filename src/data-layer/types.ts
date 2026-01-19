@@ -34,13 +34,40 @@ export interface TaskDates {
  * 数据源配置
  */
 export interface DataSourceConfig {
-	enabled: boolean;
+	enabled?: boolean;
 	syncDirection: 'bidirectional' | 'import-only' | 'export-only';
-	autoSync: boolean;
+	autoSync?: boolean;
 	syncInterval?: number;
-	conflictResolution: 'local-win' | 'remote-win' | 'manual';
+	conflictResolution: 'local-win' | 'remote-win' | 'newest-win' | 'manual';
 	globalFilter?: string;
 	enabledFormats?: string[];
+	// API 配置（用于第三方同步）
+	api?: {
+		provider: 'feishu' | 'microsoft-todo' | 'custom';
+		apiKey?: string;
+		endpoint?: string;
+		tenantId?: string;
+		appId?: string;
+		appSecret?: string;
+		accessToken?: string;
+		refreshToken?: string;
+		clientId?: string;
+		clientSecret?: string;
+		redirectUri?: string;
+	};
+	// CalDAV 配置
+	caldav?: {
+		provider: 'google' | 'outlook' | 'apple' | 'custom';
+		url?: string;
+		username?: string;
+		password?: string;
+		clientId?: string;
+		clientSecret?: string;
+		redirectUri?: string;
+		accessToken?: string;
+		refreshToken?: string;
+		calendarPath?: string;
+	};
 }
 
 /**
@@ -114,5 +141,5 @@ export interface QueryOptions {
 export interface SyncStatus {
 	lastSyncAt?: Date;
 	syncDirection: 'bidirectional' | 'import-only' | 'export-only';
-	conflictResolution: 'local-win' | 'remote-win' | 'manual';
+	conflictResolution: 'local-win' | 'remote-win' | 'newest-win' | 'manual';
 }

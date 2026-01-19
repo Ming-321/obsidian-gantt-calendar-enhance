@@ -113,6 +113,9 @@ export interface GCTask {
 	completionDate?: Date;         // 完成日期
 	repeat?: string;               // 周期规则，如 "every day", "every week on Monday when done"
 	warning?: string;              // 警告信息：显示任务格式问题或缺失的关键属性
+	// 同步相关字段
+	sourceId?: string;             // 数据源特定 ID
+	lastModified?: Date;           // 最后修改时间
 }
 
 /**

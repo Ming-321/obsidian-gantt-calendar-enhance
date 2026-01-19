@@ -8,6 +8,7 @@ import { DayViewSettingsBuilder } from './builders/DayViewSettingsBuilder';
 import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
 import { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
 import { GanttViewSettingsBuilder } from './builders/GanttViewSettingsBuilder';
+import { SyncSettingsBuilder } from './builders/SyncSettingsBuilder';
 import type { BuilderConfig } from './types';
 
 /**
@@ -100,5 +101,13 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			onRefreshSettings: refreshCallback
 		});
 		ganttViewBuilder.render();
+
+		// ===== 同步设置 =====
+		const syncSettingsBuilder = new SyncSettingsBuilder({
+			containerEl,
+			plugin: this.plugin,
+			onRefreshSettings: refreshCallback
+		});
+		syncSettingsBuilder.render();
 	}
 }

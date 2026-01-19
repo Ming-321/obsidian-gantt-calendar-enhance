@@ -80,6 +80,44 @@ export interface GanttCalendarSettings {
 
 	ganttStartField: DateFieldType;  // 甘特图开始时间字段
 	ganttEndField: DateFieldType;    // 甘特图结束时间字段
+
+	// ========== 同步设置 ==========
+	syncConfiguration?: {
+		enabledSources: {
+			api?: boolean;
+			caldav?: boolean;
+		};
+		syncDirection: 'bidirectional' | 'import-only' | 'export-only';
+		syncInterval: number;
+		conflictResolution: 'local-win' | 'remote-win' | 'newest-win' | 'manual';
+		api?: {
+			provider: 'feishu' | 'microsoft-todo' | 'custom';
+			apiKey?: string;
+			endpoint?: string;
+			// 飞书特有配置
+			appId?: string;
+			appSecret?: string;
+			tenantId?: string;
+			// Microsoft To Do 特有配置
+			accessToken?: string;
+			refreshToken?: string;
+		};
+		caldav?: {
+			provider: 'google' | 'outlook' | 'apple' | 'custom';
+			url?: string;
+			username?: string;
+			password?: string;
+			clientId?: string;
+			clientSecret?: string;
+			redirectUri?: string;
+			accessToken?: string;
+			refreshToken?: string;
+		};
+		fieldMergeRules?: Array<{
+			field: 'description' | 'completed' | 'dueDate' | 'startDate' | 'priority' | 'status' | 'tags';
+			winner: 'local' | 'remote' | 'newest';
+		}>;
+	};
 }
 
 /**
