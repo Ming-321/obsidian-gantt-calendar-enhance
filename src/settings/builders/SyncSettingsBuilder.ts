@@ -1029,8 +1029,24 @@ export class SyncSettingsBuilder extends BaseBuilder {
 					headers: result.headers || {},
 					text: result.text || '',
 				};
-			} catch (error) {
-				throw new Error(`请求失败: ${error instanceof Error ? error.message : String(error)}`);
+			} catch (error: any) {
+				// Obsidian requestUrl 在 4xx/5xx 时会抛出错误
+				// 尝试从错误对象中提取响应信息
+				const status = error?.status || 0;
+				const headers = error?.headers || {};
+				const text = error?.text || error?.message || JSON.stringify(error);
+
+				console.error('=== requestUrl 错误详情 ===');
+				console.error('Status:', status);
+				console.error('Headers:', headers);
+				console.error('Text:', text);
+				console.error('========================');
+
+				return {
+					status,
+					headers,
+					text,
+				};
 			}
 		};
 	}
@@ -1175,34 +1191,71 @@ export class SyncSettingsBuilder extends BaseBuilder {
 	 * 测试连接
 	 */
 	private async testConnection(): Promise<void> {
-		new Notice('正在测试连接...');
+		new Notice('正在测试飞书连接...');
 
 		try {
-			// 这里需要调用实际的数据源测试方法
-			// 暂时只做基本验证
 			const config = this.getSyncConfiguration();
 
-			if (config.enabledSources?.api) {
-				const provider = config.api?.provider;
-
-				if (provider === 'feishu') {
-					if (!config.api?.appId || !config.api?.appSecret) {
-						new Notice('请先配置 App ID 和 App Secret');
-						return;
-					}
-					new Notice('飞书连接测试功能开发中...');
-				} else if (provider === 'microsoft-todo') {
-					if (!config.api?.accessToken) {
-						new Notice('请先配置访问令牌');
-						return;
-					}
-					new Notice('Microsoft To Do 连接测试功能开发中...');
-				}
-			} else {
+			if (!config.enabledSources?.api) {
 				new Notice('请先启用同步功能');
+				return;
+			}
+
+			const provider = config.api?.provider;
+
+			if (provider === 'feishu') {
+				await this.testFeishuConnection();
+			} else if (provider === 'microsoft-todo') {
+				new Notice('Microsoft To Do 连接测试功能开发中...');
 			}
 		} catch (error) {
 			new Notice(`连接测试失败: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	/**
+	 * 测试飞书连接
+	 */
+	private async testFeishuConnection(): Promise<void> {
+		const config = this.getSyncConfiguration();
+		const accessToken = config.api?.accessToken;
+
+		// 检查是否已授权
+		if (!accessToken) {
+			new Notice('请先完成飞书授权');
+			return;
+		}
+
+		try {
+			// 创建 requestUrl 包装函数以绕过 CORS
+			const requestFetch = this.createRequestFetch();
+
+			// 调用飞书 API 获取用户信息
+			const userInfo = await FeishuOAuth.getUserInfo(accessToken, requestFetch);
+
+			// 显示成功信息
+			new Notice(`✅ 飞书连接成功！用户: ${userInfo.name} (${userInfo.userId})`);
+
+			// 打印详细信息到控制台
+			console.log('=== 飞书连接测试成功 ===');
+			console.log('用户 ID:', userInfo.userId);
+			console.log('用户名:', userInfo.name);
+			console.log('英文名:', userInfo.enName);
+			console.log('邮箱:', userInfo.email);
+			console.log('========================');
+		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+
+			// 区分错误类型
+			if (errorMsg.includes('401') || errorMsg.includes('403')) {
+				new Notice('❌ 认证失败：Access Token 无效或已过期，请重新授权');
+			} else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+				new Notice('❌ 网络错误：请检查网络连接');
+			} else {
+				new Notice(`❌ 连接失败: ${errorMsg}`);
+			}
+
+			console.error('飞书连接测试失败:', error);
 		}
 	}
 

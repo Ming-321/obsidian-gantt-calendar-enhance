@@ -297,6 +297,13 @@ export class FeishuOAuth {
     ): Promise<FeishuUserInfo> {
         Logger.info('FeishuOAuth', 'Fetching user info');
 
+        // 打印请求信息
+        console.log('=== 飞书获取用户信息请求 ===');
+        console.log('URL:', USER_INFO_URL);
+        console.log('Method: GET');
+        console.log('Headers:', { 'Authorization': `Bearer ${accessToken?.substring(0, 20)}...` });
+        console.log('Token (前20位):', accessToken?.substring(0, 20));
+
         const response = await this.fetch(USER_INFO_URL, {
             method: 'GET',
             headers: {
@@ -304,9 +311,20 @@ export class FeishuOAuth {
             },
         }, fetchFn);
 
+        // 打印响应信息
+        console.log('=== 飞书获取用户信息响应 ===');
+        console.log('Status:', response.status);
+        console.log('Response Headers:', response.headers);
+        console.log('Response Body (原始):', response.text);
+        console.log('==========================');
+
         const data = await this.parseResponse<FeishuUserInfoResponse>(response);
 
         if (data.code !== 0 || !data.data?.user) {
+            console.error('=== 获取用户信息失败 ===');
+            console.error('错误码:', data.code);
+            console.error('错误信息:', data.msg);
+            console.error('完整响应:', JSON.stringify(data, null, 2));
             Logger.error('FeishuOAuth', 'Get user info failed', { code: data.code, msg: data.msg });
             throw new Error(`获取用户信息失败: ${data.msg}`);
         }
