@@ -1,12 +1,16 @@
-import { Setting, SettingGroup, Notice } from 'obsidian';
+import { Setting, SettingGroup, Notice, requestUrl } from 'obsidian';
 import { BaseBuilder } from './BaseBuilder';
 import type { BuilderConfig } from '../types';
+import { FeishuOAuth } from '../../data-layer/sources/api/providers/FeishuOAuth';
 
 /**
  * 同步设置构建器
  * 提供 API 同步和 CalDAV 同步的配置界面
  */
 export class SyncSettingsBuilder extends BaseBuilder {
+	// 临时存储待处理的授权码
+	private pendingAuthCode: string = '';
+
 	constructor(config: BuilderConfig) {
 		super(config);
 	}
@@ -615,47 +619,420 @@ export class SyncSettingsBuilder extends BaseBuilder {
 			}
 		};
 
-		// App ID
+		// 检查连接状态
+		const isConnected = !!(syncConfig.api?.accessToken);
+
+		// ===== 连接状态 + 授权按钮 =====
 		addSetting(setting =>
-			setting.setName('App ID')
-				.setDesc('飞书应用的 App ID')
+			setting.setName('飞书账号')
+				.setDesc(isConnected ? `已连接` : '未连接')
+				.addButton(button => button
+					.setButtonText(isConnected ? '重新授权' : '连接飞书账号')
+					.setClass('mod-cta')
+					.onClick(() => {
+						this.initiateFeishuOAuth(syncConfig);
+					}))
+		);
+
+		// ===== Client ID (App ID) =====
+		addSetting(setting =>
+			setting.setName('App ID (Client ID)')
+				.setDesc('飞书开放平台应用的 App ID')
 				.addText(text => text
 					.setPlaceholder('cli_xxxxxxxxxxxxx')
-					.setValue(syncConfig.api?.appId || '')
+					.setValue(syncConfig.api?.clientId || syncConfig.api?.appId || '')
 					.onChange(async (value: string) => {
 						this.updateSyncConfig({
-							api: { ...syncConfig.api, appId: value }
+							api: { ...syncConfig.api, clientId: value, appId: value }
 						});
+						await this.saveAndRefresh();
 					}))
 		);
 
-		// App Secret
+		// ===== Client Secret (App Secret) =====
 		addSetting(setting =>
-			setting.setName('App Secret')
-				.setDesc('飞书应用的 App Secret')
+			setting.setName('App Secret (Client Secret)')
+				.setDesc('飞书开放平台应用的 App Secret，用于刷新令牌')
 				.addText(text => text
 					.setPlaceholder('xxxxxxxxxxxxxxxx')
-					.setValue(syncConfig.api?.appSecret || '')
+					.setValue(syncConfig.api?.clientSecret || syncConfig.api?.appSecret || '')
 					.onChange(async (value: string) => {
 						this.updateSyncConfig({
-							api: { ...syncConfig.api, appSecret: value }
+							api: { ...syncConfig.api, clientSecret: value, appSecret: value }
 						});
+						await this.saveAndRefresh();
+					}))
+				// 设置为密码类型
+				.then(setting => {
+					const inputEl = setting.controlEl.querySelector('input');
+					if (inputEl) {
+						inputEl.type = 'password';
+					}
+				})
+		);
+
+		// ===== 重定向 URL =====
+		addSetting(setting =>
+			setting.setName('重定向 URL')
+				.setDesc('OAuth 授权完成后的回调地址')
+				.addText(text => text
+					.setPlaceholder('https://open.feishu.cn/api-explorer/loading')
+					.setValue(syncConfig.api?.redirectUri || FeishuOAuth.getDefaultRedirectUri())
+					.onChange(async (value: string) => {
+						this.updateSyncConfig({
+							api: { ...syncConfig.api, redirectUri: value }
+						});
+						await this.saveAndRefresh();
 					}))
 		);
 
-		// Tenant ID (可选)
+		// ===== 授权码输入框 =====
 		addSetting(setting =>
-			setting.setName('Tenant ID (可选)')
-				.setDesc('企业租户 ID，多租户应用需要填写')
+			setting.setName('授权码')
+				.setDesc('从浏览器回调URL中复制 code 参数值并粘贴，然后点击下方按钮获取令牌')
 				.addText(text => text
-					.setPlaceholder('xxxxxxxxxxxxxxxx')
-					.setValue(syncConfig.api?.tenantId || '')
-					.onChange(async (value: string) => {
-						this.updateSyncConfig({
-							api: { ...syncConfig.api, tenantId: value }
-						});
+					.setPlaceholder('粘贴授权码...')
+					.onChange((value: string) => {
+						// 保存授权码到临时变量，供按钮使用
+						this.pendingAuthCode = value.trim();
 					}))
-		);
+				.addButton(button => button
+					.setButtonText('获取令牌')
+					.setClass('mod-cta')
+					.onClick(async () => {
+						if (!this.pendingAuthCode || this.pendingAuthCode.length < 10) {
+							new Notice('请先输入有效的授权码');
+							return;
+						}
+						await this.exchangeFeishuAuthCode(syncConfig, this.pendingAuthCode);
+						// 清空输入框和临时变量
+						this.pendingAuthCode = '';
+						// 使用 setting.name 找到输入框（Setting 控件的名字属性）
+						const nameEl = setting.nameEl;
+						const inputEl = nameEl?.parentElement?.querySelector('input');
+						if (inputEl) {
+							inputEl.value = '';
+						}
+					})
+		));
+
+		// ===== Access Token 显示区域（已授权时显示）=====
+		if (isConnected && syncConfig.api?.accessToken) {
+			// 显示用户信息
+			if (syncConfig.api?.userName || syncConfig.api?.userId) {
+				addSetting(setting =>
+					setting.setName('已授权用户')
+						.setDesc(syncConfig.api.userName ? `${syncConfig.api.userName} (${syncConfig.api.userId || 'Unknown'})` : syncConfig.api.userId || 'Unknown')
+						.addExtraButton(button => button
+							.setIcon('user')
+							.setTooltip('飞书用户')
+						)
+				);
+			}
+
+			// Access Token（部分隐藏）
+			addSetting(setting =>
+				setting.setName('Access Token')
+					.setDesc('⚠️ 请注意保密，不要分享给他人')
+					.addText(text => text
+						.setValue(this.maskToken(syncConfig.api.accessToken))
+						.setDisabled(true))
+					.addExtraButton(button => button
+						.setIcon('copy')
+						.setTooltip('复制完整 Token')
+						.onClick(() => {
+							navigator.clipboard.writeText(syncConfig.api.accessToken);
+							new Notice('已复制到剪贴板');
+						})
+					)
+			);
+
+			// ===== 令牌过期时间 =====
+			if (syncConfig.api?.tokenExpireAt) {
+				const expireTime = new Date(syncConfig.api.tokenExpireAt);
+				const isExpired = Date.now() > syncConfig.api.tokenExpireAt;
+				const remainingText = FeishuOAuth.formatExpireTime(syncConfig.api.tokenExpireAt);
+
+				addSetting(setting =>
+					setting.setName('令牌状态')
+						.setDesc(isExpired ? '令牌已过期，请重新授权' : `过期时间: ${expireTime.toLocaleString()} (${remainingText})`)
+						.addExtraButton(button => button
+							.setIcon(isExpired ? 'alert-triangle' : 'check-circle')
+							.setTooltip(isExpired ? '已过期' : '有效')
+						)
+						.addButton(btn => btn
+							.setButtonText('刷新')
+							.setTooltip(isExpired ? '重新授权' : '尝试刷新令牌')
+							.onClick(() => isExpired ? this.initiateFeishuOAuth(syncConfig) : this.refreshFeishuToken(syncConfig))
+						)
+				);
+			}
+		}
+
+		// ===== 取消授权按钮 =====
+		if (isConnected) {
+			addSetting(setting =>
+				setting.setName('取消授权')
+					.setDesc('清除已保存的飞书授权信息')
+					.addButton(button => button
+						.setButtonText('取消授权')
+						.setWarning()
+						.onClick(async () => {
+							this.updateSyncConfig({
+								api: {
+									...syncConfig.api,
+									accessToken: undefined,
+									refreshToken: undefined,
+									tokenExpireAt: undefined,
+									userId: undefined,
+									userName: undefined,
+								}
+							});
+							await this.saveAndRefresh();
+							this.refreshSettingsPanel();
+							new Notice('已取消飞书授权');
+						}))
+			);
+		}
+	}
+
+	/**
+	 * 发起飞书 OAuth 授权
+	 */
+	private initiateFeishuOAuth(_syncConfig: any): void {
+		// 重新获取最新配置（修复配置缓存问题）
+		const currentSyncConfig = this.getSyncConfiguration();
+		const apiConfig = currentSyncConfig.api;
+
+		// 支持 clientId/appId 两种命名
+		const clientId = apiConfig?.clientId || apiConfig?.appId;
+
+		if (!clientId) {
+			new Notice('请先配置 App ID');
+			return;
+		}
+
+		const authUrl = FeishuOAuth.getAuthUrl({
+			clientId: clientId,
+			clientSecret: apiConfig?.clientSecret || apiConfig?.appSecret || '',
+			redirectUri: apiConfig?.redirectUri || FeishuOAuth.getDefaultRedirectUri(),
+		});
+
+		// 打开浏览器进行授权
+		window.open(authUrl, '_blank');
+		new Notice('请在浏览器中完成飞书授权，然后从回调URL中复制授权码');
+	}
+
+	/**
+	 * 交换飞书授权码
+	 */
+	private async exchangeFeishuAuthCode(_syncConfig: any, code: string): Promise<void> {
+		try {
+			new Notice('正在交换授权码...');
+
+			// 重新获取最新配置（确保使用最新的 App ID 和 Secret）
+			const currentSyncConfig = this.getSyncConfiguration();
+			const apiConfig = currentSyncConfig.api;
+
+			const clientId = apiConfig?.clientId || apiConfig?.appId || '';
+			const clientSecret = apiConfig?.clientSecret || apiConfig?.appSecret || '';
+
+			if (!clientId) {
+				new Notice('请先配置 App ID 和 App Secret');
+				return;
+			}
+
+			// 直接调用飞书 API，不使用 FeishuOAuth 封装
+			// 使用飞书专用的 user_access_token 端点（非 OIDC）
+			const TOKEN_URL = 'https://open.feishu.cn/open-apis/authen/v1/access_token';
+
+			// 打印请求信息
+			console.log('=== 飞书 OAuth Token 交换请求（直接调用）===');
+			console.log('URL:', TOKEN_URL);
+			console.log('App ID:', clientId);
+			console.log('App Secret:', clientSecret);
+			console.log('Authorization Code:', code);
+
+			// 构建请求体
+			const requestBody = {
+				app_id: clientId,
+				app_secret: clientSecret,
+				grant_type: 'authorization_code',
+				code: code,
+			};
+
+			console.log('Request Body:', JSON.stringify(requestBody));
+
+			// 发送请求
+			const tokenResult = await requestUrl({
+				url: TOKEN_URL,
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(requestBody),
+			});
+
+			console.log('=== 响应 ===');
+			console.log('Status:', tokenResult.status);
+			console.log('Response Body:', tokenResult.text);
+			console.log('Response JSON:', JSON.stringify(JSON.parse(tokenResult.text), null, 2));
+
+			const tokenResponse = JSON.parse(tokenResult.text);
+
+			if (tokenResponse.code !== 0) {
+				throw new Error(`飞书 OAuth 错误: ${tokenResponse.message || tokenResponse.msg} (错误码: ${tokenResponse.code})`);
+			}
+
+			// 飞书 API 返回的数据在 data 字段中
+			const tokenData = tokenResponse.data;
+			if (!tokenData) {
+				throw new Error('飞书 API 响应格式错误：缺少 data 字段');
+			}
+
+			// 计算过期时间
+			const expiresIn = tokenData.expires_in || 7200;
+			const tokenExpireAt = Date.now() + expiresIn * 1000;
+
+			// 获取用户信息（直接从 tokenData 中获取）
+			const userId = tokenData.user_id;
+			const userName = tokenData.name;
+
+			// 更新配置
+			this.updateSyncConfig({
+				api: {
+					...apiConfig,
+					accessToken: tokenData.access_token,
+					refreshToken: tokenData.refresh_token,
+					tokenExpireAt: tokenExpireAt,
+					userId,
+					userName,
+				}
+			});
+
+			await this.saveAndRefresh();
+			new Notice('飞书授权成功！');
+			// 重新渲染设置界面以显示 token
+			this.refreshSettingsPanel();
+		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			console.error('授权失败详情:', error);
+			new Notice(`授权失败: ${errorMsg}`);
+		}
+	}
+
+	/**
+	 * 刷新飞书令牌
+	 */
+	private async refreshFeishuToken(_syncConfig: any): Promise<void> {
+		try {
+			new Notice('正在刷新令牌...');
+
+			// 重新获取最新配置
+			const currentSyncConfig = this.getSyncConfiguration();
+			const apiConfig = currentSyncConfig.api;
+
+			const clientId = apiConfig?.clientId || apiConfig?.appId || '';
+			const clientSecret = apiConfig?.clientSecret || apiConfig?.appSecret || '';
+			const refreshToken = apiConfig?.refreshToken;
+
+			if (!clientId) {
+				new Notice('请先配置 App ID');
+				return;
+			}
+
+			if (!refreshToken) {
+				new Notice('没有可用的刷新令牌，请重新授权');
+				return;
+			}
+
+			// 创建 requestUrl 包装函数以绕过 CORS
+			const requestFetch = this.createRequestFetch();
+
+			const tokenResponse = await FeishuOAuth.refreshAccessToken({
+				clientId,
+				clientSecret,
+				refreshToken,
+			}, requestFetch);
+
+			// 访问嵌套的 data 字段
+			const tokenData = tokenResponse.data;
+			if (!tokenData) {
+				throw new Error('飞书 API 响应格式错误：缺少 data 字段');
+			}
+
+			// 计算过期时间
+			const expiresIn = tokenData.expires_in || 7200;
+			const tokenExpireAt = Date.now() + expiresIn * 1000;
+
+			// 更新配置
+			this.updateSyncConfig({
+				api: {
+					...apiConfig,
+					accessToken: tokenData.access_token,
+					refreshToken: tokenData.refresh_token || refreshToken,
+					tokenExpireAt: tokenExpireAt,
+				}
+			});
+
+			await this.saveAndRefresh();
+			new Notice('令牌刷新成功！');
+		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			new Notice(`刷新失败: ${errorMsg}，请重新授权`);
+		}
+	}
+
+	/**
+	 * 隐藏 Token 的部分内容
+	 * @param token 原始 token
+	 * @returns 隐藏后的 token（只显示前8位和后4位）
+	 */
+	private maskToken(token: string): string {
+		if (!token || token.length < 20) {
+			return token;
+		}
+		const prefix = token.substring(0, 8);
+		const suffix = token.substring(token.length - 4);
+		const maskedLength = Math.min(token.length - 12, 20);
+		return `${prefix}${'*'.repeat(maskedLength)}${suffix}`;
+	}
+
+	/**
+	 * 创建 requestUrl 包装函数
+	 * 用于绕过 CORS 限制，将 Obsidian 的 requestUrl API 包装成标准 fetch 函数格式
+	 * @returns FetchFunction 兼容的请求函数
+	 */
+	private createRequestFetch(): (url: string, options?: {
+		method?: string;
+		body?: string;
+		headers?: Record<string, string>;
+	}) => Promise<{
+		status: number;
+		headers: Record<string, string>;
+		text: string;
+	}> {
+		return async (url: string, options?: {
+			method?: string;
+			body?: string;
+			headers?: Record<string, string>;
+		}) => {
+			try {
+				const result = await requestUrl({
+					url,
+					method: options?.method || 'GET',
+					body: options?.body,
+					headers: options?.headers,
+				});
+				return {
+					status: result.status,
+					headers: result.headers || {},
+					text: result.text || '',
+				};
+			} catch (error) {
+				throw new Error(`请求失败: ${error instanceof Error ? error.message : String(error)}`);
+			}
+		};
 	}
 
 	/**
@@ -735,6 +1112,13 @@ export class SyncSettingsBuilder extends BaseBuilder {
 	private updateSyncConfig(updates: any): void {
 		const currentConfig = this.getSyncConfiguration();
 
+		// 打印调试信息
+		if (updates.api) {
+			console.log('=== updateSyncConfig ===');
+			console.log('currentConfig.api:', currentConfig.api);
+			console.log('updates.api:', updates.api);
+		}
+
 		this.plugin.settings.syncConfiguration = {
 			...currentConfig,
 			...updates,
@@ -751,6 +1135,12 @@ export class SyncSettingsBuilder extends BaseBuilder {
 				...updates.caldav,
 			} : currentConfig.caldav,
 		};
+
+		// 打印合并后的结果
+		if (updates.api) {
+			console.log('merged syncConfiguration.api:', this.plugin.settings.syncConfiguration?.api ?? 'undefined');
+			console.log('=====================');
+		}
 	}
 
 	/**

@@ -1,22 +1,14 @@
 /**
  * 飞书（Lark）数据源
  *
- * 实现飞书任务 API 的对接。
+ * 实现飞书任务 API 的对接，使用 user_access_token 进行用户级认证。
  * API 文档: https://open.feishu.cn/document/server-docs/docs/task-v1/task-list
  */
 
 import { APIDataSource, APIResponse, APITaskDTO } from '../APIDataSource';
 import type { DataSourceConfig } from '../../../types';
 import { Logger } from '../../../../utils/logger';
-
-/**
- * 飞书 API 配置
- */
-interface FeishuConfig {
-    appId: string;
-    appSecret: string;
-    tenantId?: string;
-}
+import { FeishuOAuth, FeishuOAuthConfig } from './FeishuOAuth';
 
 /**
  * 飞书任务 DTO
@@ -45,11 +37,12 @@ interface FeishuAPIResponse<T> {
 }
 
 /**
- * 飞书访问令牌响应
+ * 配置更新事件数据
  */
-interface FeishuTokenResponse {
-    tenant_access_token: string;
-    expire: number;
+interface ConfigUpdateData {
+    accessToken?: string;
+    refreshToken?: string;
+    tokenExpireAt?: number;
 }
 
 /**
@@ -59,21 +52,55 @@ export class FeishuProvider extends APIDataSource {
     readonly sourceId = 'feishu';
     readonly sourceName = 'Feishu (Lark)';
 
-    private feishuConfig: FeishuConfig;
-    private accessToken?: string;
+    private oauthConfig: FeishuOAuthConfig;
     private tokenExpireAt?: number;
+    private configUpdateCallback?: (data: ConfigUpdateData) => void;
 
     constructor(config: DataSourceConfig) {
         super(config);
 
-        if (!config.api?.appId || !config.api?.appSecret) {
-            throw new Error('Feishu requires appId and appSecret');
+        // 支持 clientId/appId 两种命名
+        const clientId = config.api?.clientId || config.api?.appId || '';
+        const clientSecret = config.api?.clientSecret || config.api?.appSecret || '';
+
+        if (!clientId) {
+            throw new Error('Feishu requires clientId (App ID)');
         }
 
-        this.feishuConfig = {
-            appId: config.api.appId,
-            appSecret: config.api.appSecret,
-            tenantId: config.api.tenantId,
+        this.oauthConfig = {
+            clientId,
+            clientSecret,
+            redirectUri: config.api?.redirectUri || FeishuOAuth.getDefaultRedirectUri(),
+            accessToken: config.api?.accessToken,
+            refreshToken: config.api?.refreshToken,
+            tokenExpireAt: config.api?.tokenExpireAt,
+        };
+
+        // 同步初始过期时间
+        if (config.api?.tokenExpireAt) {
+            this.tokenExpireAt = config.api.tokenExpireAt;
+        }
+    }
+
+    /**
+     * 设置配置更新回调
+     * 当 token 刷新时，通过此回调通知外部更新配置
+     */
+    setConfigUpdateCallback(callback: (data: ConfigUpdateData) => void): void {
+        this.configUpdateCallback = callback;
+    }
+
+    /**
+     * 获取当前配置（用于保存更新后的 token）
+     */
+    getCurrentConfig(): Partial<DataSourceConfig['api']> {
+        return {
+            clientId: this.oauthConfig.clientId,
+            clientSecret: this.oauthConfig.clientSecret,
+            redirectUri: this.oauthConfig.redirectUri,
+            accessToken: this.oauthConfig.accessToken,
+            refreshToken: this.oauthConfig.refreshToken,
+            tokenExpireAt: this.tokenExpireAt,
         };
     }
 
@@ -237,36 +264,61 @@ export class FeishuProvider extends APIDataSource {
     // ==================== 飞书 API 方法 ====================
 
     /**
-     * 获取访问令牌
+     * 确保 access_token 有效
+     * 使用 user_access_token 而非 tenant_access_token
      */
     private async ensureAccessToken(): Promise<void> {
         const now = Date.now();
 
-        if (this.accessToken && this.tokenExpireAt && now < this.tokenExpireAt) {
+        // 检查现有 token 是否有效
+        if (this.oauthConfig.accessToken &&
+            this.tokenExpireAt &&
+            now < this.tokenExpireAt) {
             return;
         }
 
-        try {
-            const response = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    app_id: this.feishuConfig.appId,
-                    app_secret: this.feishuConfig.appSecret,
-                }),
-            });
+        // 尝试使用 refresh_token 刷新
+        if (this.oauthConfig.refreshToken) {
+            try {
+                Logger.info('FeishuProvider', 'Attempting to refresh access token');
 
-            const data: FeishuTokenResponse = await response.json();
+                const tokenResponse = await FeishuOAuth.refreshAccessToken(this.oauthConfig);
 
-            if (data.tenant_access_token) {
-                this.accessToken = data.tenant_access_token;
-                this.tokenExpireAt = now + (data.expire - 60) * 1000; // 提前1分钟过期
-            } else {
-                throw new Error('Failed to get access token');
+                const tokenData = tokenResponse.data;
+                if (tokenData?.access_token) {
+                    this.oauthConfig.accessToken = tokenData.access_token;
+                    if (tokenData.refresh_token) {
+                        this.oauthConfig.refreshToken = tokenData.refresh_token;
+                    }
+
+                    const expiresIn = tokenData.expires_in || 7200;
+                    this.tokenExpireAt = now + (expiresIn - 60) * 1000; // 提前1分钟过期
+
+                    Logger.info('FeishuProvider', 'Token refreshed successfully');
+
+                    // 通知外部更新配置
+                    this.notifyConfigUpdate();
+                    return;
+                }
+            } catch (error) {
+                Logger.warn('FeishuProvider', 'Token refresh failed', error);
             }
-        } catch (error) {
-            Logger.error('FeishuProvider', 'Get access token failed', error);
-            throw error;
+        }
+
+        // 无法刷新，需要用户重新授权
+        throw new Error('Feishu access token is expired. Please re-authenticate using the authorization flow.');
+    }
+
+    /**
+     * 通知配置更新
+     */
+    private notifyConfigUpdate(): void {
+        if (this.configUpdateCallback) {
+            this.configUpdateCallback({
+                accessToken: this.oauthConfig.accessToken,
+                refreshToken: this.oauthConfig.refreshToken,
+                tokenExpireAt: this.tokenExpireAt,
+            });
         }
     }
 
@@ -278,7 +330,7 @@ export class FeishuProvider extends APIDataSource {
         method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
         body?: any
     ): Promise<T> {
-        if (!this.accessToken) {
+        if (!this.oauthConfig.accessToken) {
             await this.ensureAccessToken();
         }
 
@@ -287,7 +339,7 @@ export class FeishuProvider extends APIDataSource {
         const options: RequestInit = {
             method,
             headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
+                'Authorization': `Bearer ${this.oauthConfig.accessToken}`,
                 'Content-Type': 'application/json',
             },
         };
@@ -326,8 +378,6 @@ export class FeishuProvider extends APIDataSource {
      * 将飞书 DTO 转换为通用 DTO
      */
     private fromFeishuDTO = (feishu: FeishuTaskDTO): APITaskDTO => {
-        const now = Date.now();
-
         return {
             id: feishu.task_key,
             title: feishu.summary,

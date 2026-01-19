@@ -46,14 +46,25 @@ export interface DataSourceConfig {
 		provider: 'feishu' | 'microsoft-todo' | 'custom';
 		apiKey?: string;
 		endpoint?: string;
-		tenantId?: string;
-		appId?: string;
-		appSecret?: string;
+
+		// OAuth 配置
+		clientId?: string;           // App ID (用于 OAuth)
+		clientSecret?: string;       // App Secret (用于 OAuth)
+		redirectUri?: string;        // OAuth 回调地址
+
+		// Token
 		accessToken?: string;
 		refreshToken?: string;
-		clientId?: string;
-		clientSecret?: string;
-		redirectUri?: string;
+		tokenExpireAt?: number;      // token 过期时间戳
+
+		// 用户信息
+		userId?: string;
+		userName?: string;
+
+		// 旧字段保留兼容（飞书）
+		appId?: string;
+		appSecret?: string;
+		tenantId?: string;
 	};
 	// CalDAV 配置
 	caldav?: {
