@@ -8,7 +8,8 @@
 import { APIDataSource, APIResponse, APITaskDTO } from '../APIDataSource';
 import type { DataSourceConfig } from '../../../types';
 import { Logger } from '../../../../utils/logger';
-import { FeishuOAuth, FeishuOAuthConfig } from './FeishuOAuth';
+import { FeishuOAuth } from './feishu/FeishuOAuth';
+import type { FeishuOAuthConfig } from './feishu/FeishuTypes';
 
 /**
  * 飞书任务 DTO

@@ -1,7 +1,11 @@
 import { Setting, SettingGroup, Notice, requestUrl } from 'obsidian';
 import { BaseBuilder } from './BaseBuilder';
 import type { BuilderConfig } from '../types';
-import { FeishuOAuth } from '../../data-layer/sources/api/providers/FeishuOAuth';
+import { FeishuOAuth } from '../../data-layer/sources/api/providers/feishu/FeishuOAuth';
+import { FeishuHttpClient } from '../../data-layer/sources/api/providers/feishu/FeishuHttpClient';
+import { FeishuUserApi } from '../../data-layer/sources/api/providers/feishu/FeishuUserApi';
+import { FeishuCalendarApi } from '../../data-layer/sources/api/providers/feishu/FeishuCalendarApi';
+import type { FeishuCalendar } from '../../data-layer/sources/api/providers/feishu/FeishuTypes';
 
 /**
  * 同步设置构建器
@@ -932,7 +936,7 @@ export class SyncSettingsBuilder extends BaseBuilder {
 			}
 
 			// 使用 FeishuOAuth 的统一方法进行授权码交换
-			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
+			const requestFetch = FeishuHttpClient.createRequestFetch(requestUrl);
 			const tokenResponse = await FeishuOAuth.exchangeCodeForToken({
 				clientId,
 				clientSecret,
@@ -994,7 +998,7 @@ export class SyncSettingsBuilder extends BaseBuilder {
 			}
 
 			// 使用 FeishuOAuth 的统一方法进行令牌刷新
-			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
+			const requestFetch = FeishuHttpClient.createRequestFetch(requestUrl);
 			const tokenResponse = await FeishuOAuth.refreshAccessToken({
 				clientId,
 				clientSecret,
@@ -1220,10 +1224,10 @@ export class SyncSettingsBuilder extends BaseBuilder {
 
 		try {
 			// 使用 FeishuOAuth 的统一方法创建 request fetch
-			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
+			const requestFetch = FeishuHttpClient.createRequestFetch(requestUrl);
 
 			// 调用飞书 API 获取用户信息
-			const userInfo = await FeishuOAuth.getUserInfo(accessToken, requestFetch);
+			const userInfo = await FeishuUserApi.getUserInfo(accessToken, requestFetch);
 
 			// 显示成功信息
 			new Notice(`✅ 飞书连接成功！用户: ${userInfo.name} (${userInfo.userId})`);
@@ -1268,10 +1272,10 @@ export class SyncSettingsBuilder extends BaseBuilder {
 			}
 
 			// 使用 FeishuOAuth 的统一方法创建 request fetch
-			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
+			const requestFetch = FeishuHttpClient.createRequestFetch(requestUrl);
 
 			// 调用飞书 API 获取日历列表
-			const calendarList = await FeishuOAuth.getCalendarList(accessToken, requestFetch);
+			const calendarList = await FeishuCalendarApi.getCalendarList(accessToken, requestFetch);
 
 			// 保存日历列表到配置
 			this.updateSyncConfig({

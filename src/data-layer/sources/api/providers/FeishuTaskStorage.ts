@@ -6,7 +6,7 @@
  */
 
 import { TFile } from 'obsidian';
-import type { FeishuTask } from './FeishuOAuth';
+import type { FeishuTask } from './feishu/FeishuTypes';
 import { Logger } from '../../../../utils/logger';
 
 /** 任务存储配置 */

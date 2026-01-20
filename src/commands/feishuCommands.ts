@@ -6,7 +6,8 @@
 
 import { Notice, requestUrl } from 'obsidian';
 import type GanttCalendarPlugin from '../../main';
-import { FeishuOAuth } from '../data-layer/sources/api/providers/FeishuOAuth';
+import { FeishuHttpClient } from '../data-layer/sources/api/providers/feishu/FeishuHttpClient';
+import { FeishuTaskApi } from '../data-layer/sources/api/providers/feishu/FeishuTaskApi';
 import { FeishuTaskStorage } from '../data-layer/sources/api/providers/FeishuTaskStorage';
 import { Logger } from '../utils/logger';
 
@@ -52,11 +53,11 @@ async function fetchFeishuTasks(plugin: GanttCalendarPlugin): Promise<void> {
         }
 
         // 创建兼容Obsidian的fetch函数
-        const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
+        const requestFetch = FeishuHttpClient.createRequestFetch(requestUrl);
 
         // 获取所有任务
         Logger.info('FeishuCommands', 'Fetching tasks from Feishu');
-        const tasks = await FeishuOAuth.getAllTasks(apiConfig.accessToken, requestFetch);
+        const tasks = await FeishuTaskApi.getAllTasks(apiConfig.accessToken, requestFetch);
 
         if (tasks.length === 0) {
             new Notice('未获取到任何任务');
