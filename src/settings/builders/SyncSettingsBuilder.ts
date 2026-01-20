@@ -931,71 +931,29 @@ export class SyncSettingsBuilder extends BaseBuilder {
 				return;
 			}
 
-			// 直接调用飞书 API，不使用 FeishuOAuth 封装
-			// 使用飞书专用的 user_access_token 端点（非 OIDC）
-			const TOKEN_URL = 'https://open.feishu.cn/open-apis/authen/v1/access_token';
+			// 使用 FeishuOAuth 的统一方法进行授权码交换
+			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
+			const tokenResponse = await FeishuOAuth.exchangeCodeForToken({
+				clientId,
+				clientSecret,
+			}, code, requestFetch);
 
-			// 打印请求信息
-			console.log('=== 飞书 OAuth Token 交换请求（直接调用）===');
-			console.log('URL:', TOKEN_URL);
-			console.log('App ID:', clientId);
-			console.log('App Secret:', clientSecret);
-			console.log('Authorization Code:', code);
-
-			// 构建请求体
-			const requestBody = {
-				app_id: clientId,
-				app_secret: clientSecret,
-				grant_type: 'authorization_code',
-				code: code,
-			};
-
-			console.log('Request Body:', JSON.stringify(requestBody));
-
-			// 发送请求
-			const tokenResult = await requestUrl({
-				url: TOKEN_URL,
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(requestBody),
-			});
-
-			console.log('=== 响应 ===');
-			console.log('Status:', tokenResult.status);
-			console.log('Response Body:', tokenResult.text);
-			console.log('Response JSON:', JSON.stringify(JSON.parse(tokenResult.text), null, 2));
-
-			const tokenResponse = JSON.parse(tokenResult.text);
-
-			if (tokenResponse.code !== 0) {
-				throw new Error(`飞书 OAuth 错误: ${tokenResponse.message || tokenResponse.msg} (错误码: ${tokenResponse.code})`);
-			}
-
-			// 飞书 API 返回的数据在 data 字段中
-			const tokenData = tokenResponse.data;
-			if (!tokenData) {
-				throw new Error('飞书 API 响应格式错误：缺少 data 字段');
+			// v2 API 响应直接包含 token 字段，无 data 包裹层
+			if (!tokenResponse.access_token) {
+				throw new Error('飞书 API 响应格式错误：缺少 access_token');
 			}
 
 			// 计算过期时间
-			const expiresIn = tokenData.expires_in || 7200;
+			const expiresIn = tokenResponse.expires_in || 7200;
 			const tokenExpireAt = Date.now() + expiresIn * 1000;
 
-			// 获取用户信息（直接从 tokenData 中获取）
-			const userId = tokenData.user_id;
-			const userName = tokenData.name;
-
-			// 更新配置
+			// 更新配置（v2 API 不在响应中返回 user_id 和 name，需要单独获取）
 			this.updateSyncConfig({
 				api: {
 					...apiConfig,
-					accessToken: tokenData.access_token,
-					refreshToken: tokenData.refresh_token,
+					accessToken: tokenResponse.access_token,
+					refreshToken: tokenResponse.refresh_token,
 					tokenExpireAt: tokenExpireAt,
-					userId,
-					userName,
 				}
 			});
 
@@ -1035,31 +993,29 @@ export class SyncSettingsBuilder extends BaseBuilder {
 				return;
 			}
 
-			// 创建 requestUrl 包装函数以绕过 CORS
-			const requestFetch = this.createRequestFetch();
-
+			// 使用 FeishuOAuth 的统一方法进行令牌刷新
+			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
 			const tokenResponse = await FeishuOAuth.refreshAccessToken({
 				clientId,
 				clientSecret,
 				refreshToken,
 			}, requestFetch);
 
-			// 访问嵌套的 data 字段
-			const tokenData = tokenResponse.data;
-			if (!tokenData) {
-				throw new Error('飞书 API 响应格式错误：缺少 data 字段');
+			// v2 API 响应直接包含 token 字段，无 data 包裹层
+			if (!tokenResponse.access_token) {
+				throw new Error('飞书 API 响应格式错误：缺少 access_token');
 			}
 
 			// 计算过期时间
-			const expiresIn = tokenData.expires_in || 7200;
+			const expiresIn = tokenResponse.expires_in || 7200;
 			const tokenExpireAt = Date.now() + expiresIn * 1000;
 
 			// 更新配置
 			this.updateSyncConfig({
 				api: {
 					...apiConfig,
-					accessToken: tokenData.access_token,
-					refreshToken: tokenData.refresh_token || refreshToken,
+					accessToken: tokenResponse.access_token,
+					refreshToken: tokenResponse.refresh_token || refreshToken,
 					tokenExpireAt: tokenExpireAt,
 				}
 			});
@@ -1085,58 +1041,6 @@ export class SyncSettingsBuilder extends BaseBuilder {
 		const suffix = token.substring(token.length - 4);
 		const maskedLength = Math.min(token.length - 12, 20);
 		return `${prefix}${'*'.repeat(maskedLength)}${suffix}`;
-	}
-
-	/**
-	 * 创建 requestUrl 包装函数
-	 * 用于绕过 CORS 限制，将 Obsidian 的 requestUrl API 包装成标准 fetch 函数格式
-	 * @returns FetchFunction 兼容的请求函数
-	 */
-	private createRequestFetch(): (url: string, options?: {
-		method?: string;
-		body?: string;
-		headers?: Record<string, string>;
-	}) => Promise<{
-		status: number;
-		headers: Record<string, string>;
-		text: string;
-	}> {
-		return async (url: string, options?: {
-			method?: string;
-			body?: string;
-			headers?: Record<string, string>;
-		}) => {
-			const method = options?.method || 'GET';
-			// Obsidian requestUrl: GET 请求不应传递 body 参数
-			const requestConfig: any = {
-				url,
-				method,
-				headers: options?.headers,
-				// 设置 throw 为 false，这样即使 HTTP 错误也不会抛出异常
-				throw: false,
-			};
-			// 只有非 GET 请求才传递 body
-			if (method !== 'GET' && options?.body) {
-				requestConfig.body = options.body;
-			}
-
-			const result = await requestUrl(requestConfig);
-
-			// 检查状态码，如果是 4xx/5xx，记录错误信息但不抛出异常
-			if (result.status >= 400) {
-				console.error('=== requestUrl HTTP 错误 ===');
-				console.error('Status:', result.status);
-				console.error('Headers:', result.headers);
-				console.error('Body:', result.text);
-				console.error('========================');
-			}
-
-			return {
-				status: result.status,
-				headers: result.headers || {},
-				text: result.text || '',
-			};
-		};
 	}
 
 	/**
@@ -1315,8 +1219,8 @@ export class SyncSettingsBuilder extends BaseBuilder {
 		}
 
 		try {
-			// 创建 requestUrl 包装函数以绕过 CORS
-			const requestFetch = this.createRequestFetch();
+			// 使用 FeishuOAuth 的统一方法创建 request fetch
+			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
 
 			// 调用飞书 API 获取用户信息
 			const userInfo = await FeishuOAuth.getUserInfo(accessToken, requestFetch);
@@ -1363,8 +1267,8 @@ export class SyncSettingsBuilder extends BaseBuilder {
 				return;
 			}
 
-			// 创建 requestUrl 包装函数以绕过 CORS
-			const requestFetch = this.createRequestFetch();
+			// 使用 FeishuOAuth 的统一方法创建 request fetch
+			const requestFetch = FeishuOAuth.createRequestFetch(requestUrl);
 
 			// 调用飞书 API 获取日历列表
 			const calendarList = await FeishuOAuth.getCalendarList(accessToken, requestFetch);

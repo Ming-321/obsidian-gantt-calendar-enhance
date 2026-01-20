@@ -4,20 +4,37 @@
  * 处理飞书用户认证流程，使用 user_access_token
  * API 文档:
  * - 获取授权码: https://open.feishu.cn/document/authentication-management/access-token/obtain-oauth-code
- * - 获取用户令牌: https://open.feishu.cn/document/authentication-management/access-token/obtain-user_access_token
- * - 刷新用户令牌: https://open.feishu.cn/document/authentication-management/access-token/refresh-user_access_token
+ * - 获取用户令牌（传统端点）: https://open.feishu.cn/document/authentication-management/access-token/obtain-user_token
+ * - 刷新用户令牌（传统端点）: https://open.feishu.cn/document/authentication-management/access-token/refresh_user_token
+ * - 获取用户信息: https://open.feishu.cn/document/authentication-management/management/get-user-info
  *
  * 注意：由于 CORS 限制，需要使用 Obsidian 的 requestUrl 方法进行 HTTP 请求
  */
 
 import { Logger } from '../../../../utils/logger';
 
-const AUTH_URL = 'https://accounts.feishu.cn/open-apis/authen/v1/authorize';
-const TOKEN_URL = 'https://open.feishu.cn/open-apis/authen/v1/oidc/access_token';
-const REFRESH_URL = 'https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token';
-const USER_INFO_URL = 'https://open.feishu.cn/open-apis/authen/v1/user_info';
-const CALENDAR_LIST_URL = 'https://open.feishu.cn/open-apis/calendar/v4/calendars';
+// ==================== API 端点常量 ====================
+
+/**
+ * 飞书 API 端点
+ */
+const API_ENDPOINTS = {
+    /** 授权端点 */
+    AUTH: 'https://accounts.feishu.cn/open-apis/authen/v1/authorize',
+    /** 获取令牌端点（v2端点，使用 form-urlencoded 格式） */
+    TOKEN: 'https://open.feishu.cn/open-apis/authen/v2/oauth/token',
+    /** 刷新令牌端点（v2端点，使用 form-urlencoded 格式） */
+    REFRESH: 'https://open.feishu.cn/open-apis/authen/v2/oauth/refresh',
+    /** 获取用户信息端点 */
+    USER_INFO: 'https://open.feishu.cn/open-apis/authen/v1/user_info',
+    /** 获取日历列表端点 */
+    CALENDAR_LIST: 'https://open.feishu.cn/open-apis/calendar/v4/calendars',
+} as const;
+
+/** 默认重定向 URI */
 const DEFAULT_REDIRECT_URI = 'https://open.feishu.cn/api-explorer/loading';
+
+// ==================== 类型定义 ====================
 
 /**
  * HTTP 响应
@@ -54,7 +71,7 @@ export interface FeishuOAuthConfig {
 }
 
 /**
- * 飞书 Token 数据
+ * 飞书 Token 数据（v1 API）
  */
 export interface FeishuTokenData {
     access_token?: string;
@@ -66,12 +83,26 @@ export interface FeishuTokenData {
 }
 
 /**
- * 飞书 Token 响应
+ * 飞书 Token 响应（v1 API）
  */
 export interface FeishuTokenResponse {
     code: number;
     msg: string;
     data?: FeishuTokenData;
+}
+
+/**
+ * 飞书 Token 响应（v2 API，无 data 包裹层）
+ */
+export interface FeishuTokenResponseV2 {
+    code?: number;
+    error?: string;
+    error_description?: string;
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    token_type?: string;
+    scope?: string;
 }
 
 /**
@@ -132,28 +163,132 @@ export interface FeishuCalendarListResponse {
     };
 }
 
+// ==================== 请求构建函数 ====================
+
+/**
+ * 构建授权 URL
+ * @param clientId 应用 ID
+ * @param redirectUri 重定向 URI
+ * @param state 状态参数（防 CSRF）
+ * @param scope 权限范围
+ */
+export function buildAuthUrl(
+    clientId: string,
+    redirectUri: string = DEFAULT_REDIRECT_URI,
+    state?: string,
+    scope?: string
+): string {
+    const params = new URLSearchParams();
+    params.append('app_id', clientId);
+    params.append('redirect_uri', redirectUri);
+    if (state) {
+        params.append('state', state);
+    }
+    if (scope) {
+        params.append('scope', scope);
+    }
+    return `${API_ENDPOINTS.AUTH}?${params.toString()}`;
+}
+
+/**
+ * 构建令牌交换请求体（v2 API，form-urlencoded 格式）
+ * @param clientId 应用 ID (client_id)
+ * @param clientSecret 应用密钥 (client_secret)
+ * @param code 授权码
+ * @param redirectUri 重定向 URI（必须与授权时使用的一致）
+ */
+export function buildTokenRequestBody(
+    clientId: string,
+    clientSecret: string,
+    code: string,
+    redirectUri: string
+): string {
+    const params = new URLSearchParams();
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
+    params.append('grant_type', 'authorization_code');
+    params.append('code', code);
+    params.append('redirect_uri', redirectUri);
+    return params.toString();
+}
+
+/**
+ * 构建令牌刷新请求体（v2 API，form-urlencoded 格式）
+ * @param clientId 应用 ID (client_id)
+ * @param clientSecret 应用密钥 (client_secret)
+ * @param refreshToken 刷新令牌 (refresh_token)
+ */
+export function buildRefreshTokenRequestBody(
+    clientId: string,
+    clientSecret: string,
+    refreshToken: string
+): string {
+    const params = new URLSearchParams();
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', refreshToken);
+    return params.toString();
+}
+
+/**
+ * 构建 Obsidian requestUrl 兼容的请求配置
+ * @param url 请求 URL
+ * @param method 请求方法
+ * @param body 请求体
+ * @param headers 请求头
+ */
+export function buildRequestUrlConfig(
+    url: string,
+    method: string,
+    body?: string,
+    headers?: Record<string, string>
+): {
+    url: string;
+    method: string;
+    headers?: Record<string, string>;
+    body?: string;
+    throw: boolean;
+} {
+    const config: {
+        url: string;
+        method: string;
+        headers?: Record<string, string>;
+        body?: string;
+        throw: boolean;
+    } = {
+        url,
+        method,
+        throw: false,
+    };
+
+    // 设置请求头
+    if (headers) {
+        config.headers = headers;
+    }
+
+    // 只有非 GET 请求才传递 body
+    if (method !== 'GET' && body) {
+        config.body = body;
+    }
+
+    return config;
+}
+
+/**
+ * 生成随机 state（防 CSRF）
+ */
+export function generateState(): string {
+    return Math.random().toString(36).substring(2, 15) +
+           Math.random().toString(36).substring(2, 15);
+}
+
+// ==================== 飞书 OAuth 类 ====================
+
 /**
  * 飞书 OAuth 辅助类
  */
 export class FeishuOAuth {
-    // 可注入的请求函数（用于绕过 CORS）
-    private static customFetch?: FetchFunction;
-
-    /**
-     * 设置自定义请求函数（用于 Obsidian 环境）
-     * @param fetchFn 自定义请求函数
-     */
-    static setFetchFunction(fetchFn: FetchFunction): void {
-        this.customFetch = fetchFn;
-    }
-
-    /**
-     * 重置请求函数（恢复为原生 fetch）
-     */
-    static resetFetchFunction(): void {
-        this.customFetch = undefined;
-    }
-
     /**
      * 获取默认重定向 URI
      */
@@ -167,29 +302,20 @@ export class FeishuOAuth {
      * @returns 授权 URL
      */
     static getAuthUrl(config: FeishuOAuthConfig): string {
-        const state = this.generateState();
-
-        // 构建授权参数
-        const params = new URLSearchParams();
-        params.append('app_id', config.clientId);
-        params.append('redirect_uri', config.redirectUri || DEFAULT_REDIRECT_URI);
-        params.append('state', state);
-
-        // scope 参数：设置需要的权限
-        // 如果配置中指定了 scopes，使用配置的；否则使用默认权限
+        const state = generateState();
         const scopes = config.scopes && config.scopes.length > 0
             ? config.scopes
             : 'calendar:calendar:readonly';
-
-        if (scopes) {
-            params.append('scope', scopes);
-        }
-
-        return `${AUTH_URL}?${params.toString()}`;
+        return buildAuthUrl(
+            config.clientId,
+            config.redirectUri || DEFAULT_REDIRECT_URI,
+            state,
+            scopes
+        );
     }
 
     /**
-     * 交换授权码获取令牌
+     * 交换授权码获取令牌（v2 API）
      * @param config OAuth 配置
      * @param code 授权码
      * @param fetchFn 可选的请求函数（用于绕过 CORS）
@@ -199,64 +325,68 @@ export class FeishuOAuth {
         config: FeishuOAuthConfig,
         code: string,
         fetchFn?: FetchFunction
-    ): Promise<FeishuTokenResponse> {
+    ): Promise<FeishuTokenResponseV2> {
         Logger.info('FeishuOAuth', 'Exchanging authorization code for token');
 
-        // 构建请求体
-        const requestBody = {
-            app_id: config.clientId,
-            app_secret: config.clientSecret,
-            grant_type: 'authorization_code',
-            code: code,
-        };
-
-        const requestBodyStr = JSON.stringify(requestBody);
+        // 使用辅助函数构建请求体
+        const redirectUri = config.redirectUri || DEFAULT_REDIRECT_URI;
+        const requestBodyStr = buildTokenRequestBody(config.clientId, config.clientSecret, code, redirectUri);
 
         // 打印完整请求信息用于调试
         console.log('=== 飞书 OAuth Token 交换请求 ===');
-        console.log('URL:', TOKEN_URL);
+        console.log('URL:', API_ENDPOINTS.TOKEN);
         console.log('Method: POST');
-        console.log('Headers:', { 'Content-Type': 'application/json' });
+        console.log('Content-Type: application/x-www-form-urlencoded');
         console.log('Request Body (完整):', requestBodyStr);
         console.log('App ID:', config.clientId);
-        console.log('App Secret:', config.clientSecret);
         console.log('Authorization Code:', code);
-        console.log('Grant Type: authorization_code');
 
-        const response = await this.fetch(TOKEN_URL, {
+        const response = await this.fetch(API_ENDPOINTS.TOKEN, {
             method: 'POST',
             body: requestBodyStr,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
         }, fetchFn);
 
         // 打印完整响应信息
         console.log('=== 飞书 OAuth Token 交换响应 ===');
         console.log('Status:', response.status);
-        console.log('Response Headers:', response.headers);
         console.log('Response Body (原始):', response.text);
         console.log('==========================');
 
-        const data = await this.parseResponse<FeishuTokenResponse>(response);
+        // v2 API 响应格式直接包含 access_token，无 data 包裹层
+        const data = await this.parseResponse<FeishuTokenResponseV2>(response);
 
-        if (data.code !== 0) {
+        // 检查错误响应（v2 可能返回 error 字段）
+        if (data.error || (data.code !== undefined && data.code !== 0)) {
+            const errorMsg = data.error_description || data.error || '未知错误';
+            const errorCode = data.code || -1;
             console.error('=== Token 交换失败 ===');
-            console.error('错误码:', data.code);
-            console.error('错误信息:', data.msg);
-            console.error('完整响应:', JSON.stringify(data, null, 2));
-            Logger.error('FeishuOAuth', 'Token exchange failed', { code: data.code, msg: data.msg });
-            throw new Error(`飞书 OAuth 错误: ${data.msg} (错误码: ${data.code})`);
+            console.error('错误码:', errorCode);
+            console.error('错误信息:', errorMsg);
+            Logger.error('FeishuOAuth', 'Token exchange failed', { code: errorCode, msg: errorMsg });
+            throw new Error(`飞书 OAuth 错误: ${errorMsg} (错误码: ${errorCode})`);
+        }
+
+        if (!data.access_token) {
+            console.error('=== Token 交换失败 ===');
+            console.error('响应中缺少 access_token');
+            Logger.error('FeishuOAuth', 'Token response missing access_token');
+            throw new Error('飞书 OAuth 错误: 响应中缺少 access_token');
         }
 
         Logger.info('FeishuOAuth', 'Token exchange successful', {
-            hasAccessToken: !!data.data?.access_token,
-            hasRefreshToken: !!data.data?.refresh_token,
-            expiresIn: data.data?.expires_in,
+            hasAccessToken: !!data.access_token,
+            hasRefreshToken: !!data.refresh_token,
+            expiresIn: data.expires_in,
         });
 
         return data;
     }
 
     /**
-     * 刷新访问令牌
+     * 刷新访问令牌（v2 API）
      * @param config OAuth 配置
      * @param fetchFn 可选的请求函数（用于绕过 CORS）
      * @returns Token 响应
@@ -264,59 +394,63 @@ export class FeishuOAuth {
     static async refreshAccessToken(
         config: FeishuOAuthConfig,
         fetchFn?: FetchFunction
-    ): Promise<FeishuTokenResponse> {
+    ): Promise<FeishuTokenResponseV2> {
         Logger.info('FeishuOAuth', 'Refreshing access token');
 
         if (!config.refreshToken) {
             throw new Error('没有可用的刷新令牌，请重新授权');
         }
 
-        // 构建请求体
-        const requestBody = {
-            app_id: config.clientId,
-            app_secret: config.clientSecret,
-            grant_type: 'refresh_token',
-            refresh_token: config.refreshToken,
-        };
-
-        const requestBodyStr = JSON.stringify(requestBody);
+        // 使用辅助函数构建请求体
+        const requestBodyStr = buildRefreshTokenRequestBody(
+            config.clientId,
+            config.clientSecret,
+            config.refreshToken
+        );
 
         // 打印完整请求信息用于调试
         console.log('=== 飞书 OAuth Token 刷新请求 ===');
-        console.log('URL:', REFRESH_URL);
+        console.log('URL:', API_ENDPOINTS.REFRESH);
         console.log('Method: POST');
-        console.log('Headers:', { 'Content-Type': 'application/json' });
+        console.log('Content-Type: application/x-www-form-urlencoded');
         console.log('Request Body (完整):', requestBodyStr);
-        console.log('App ID:', config.clientId);
-        console.log('App Secret:', config.clientSecret);
-        console.log('Refresh Token:', config.refreshToken);
-        console.log('Grant Type: refresh_token');
 
-        const response = await this.fetch(REFRESH_URL, {
+        const response = await this.fetch(API_ENDPOINTS.REFRESH, {
             method: 'POST',
             body: requestBodyStr,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
         }, fetchFn);
 
         // 打印完整响应信息
         console.log('=== 飞书 OAuth Token 刷新响应 ===');
         console.log('Status:', response.status);
-        console.log('Response Headers:', response.headers);
         console.log('Response Body (原始):', response.text);
         console.log('==========================');
 
-        const data = await this.parseResponse<FeishuTokenResponse>(response);
+        // v2 API 响应格式直接包含 access_token，无 data 包裹层
+        const data = await this.parseResponse<FeishuTokenResponseV2>(response);
 
-        if (data.code !== 0) {
+        // 检查错误响应（v2 可能返回 error 字段）
+        if (data.error || (data.code !== undefined && data.code !== 0)) {
+            const errorMsg = data.error_description || data.error || '未知错误';
+            const errorCode = data.code || -1;
             console.error('=== Token 刷新失败 ===');
-            console.error('错误码:', data.code);
-            console.error('错误信息:', data.msg);
-            console.error('完整响应:', JSON.stringify(data, null, 2));
-            Logger.error('FeishuOAuth', 'Token refresh failed', { code: data.code, msg: data.msg });
-            throw new Error(`飞书刷新令牌错误: ${data.msg} (错误码: ${data.code})`);
+            console.error('错误码:', errorCode);
+            console.error('错误信息:', errorMsg);
+            Logger.error('FeishuOAuth', 'Token refresh failed', { code: errorCode, msg: errorMsg });
+            throw new Error(`飞书刷新令牌错误: ${errorMsg} (错误码: ${errorCode})`);
+        }
+
+        if (!data.access_token) {
+            console.error('=== Token 刷新失败 ===');
+            console.error('响应中缺少 access_token');
+            Logger.error('FeishuOAuth', 'Token refresh response missing access_token');
+            throw new Error('飞书刷新令牌错误: 响应中缺少 access_token');
         }
 
         Logger.info('FeishuOAuth', 'Token refresh successful');
-
         return data;
     }
 
@@ -332,24 +466,19 @@ export class FeishuOAuth {
     ): Promise<FeishuUserInfo> {
         Logger.info('FeishuOAuth', 'Fetching user info');
 
-        // 打印请求信息
         console.log('=== 飞书获取用户信息请求 ===');
-        console.log('URL:', USER_INFO_URL);
+        console.log('URL:', API_ENDPOINTS.USER_INFO);
         console.log('Method: GET');
-        console.log('Headers:', { 'Authorization': `Bearer ${accessToken?.substring(0, 20)}...` });
-        console.log('Token (前20位):', accessToken?.substring(0, 20));
 
-        const response = await this.fetch(USER_INFO_URL, {
+        const response = await this.fetch(API_ENDPOINTS.USER_INFO, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
             },
         }, fetchFn);
 
-        // 打印响应信息
         console.log('=== 飞书获取用户信息响应 ===');
         console.log('Status:', response.status);
-        console.log('Response Headers:', response.headers);
         console.log('Response Body (原始):', response.text);
         console.log('==========================');
 
@@ -359,7 +488,6 @@ export class FeishuOAuth {
             console.error('=== 获取用户信息失败 ===');
             console.error('错误码:', data.code);
             console.error('错误信息:', data.msg);
-            console.error('完整响应:', JSON.stringify(data, null, 2));
             Logger.error('FeishuOAuth', 'Get user info failed', { code: data.code, msg: data.msg });
             throw new Error(`获取用户信息失败: ${data.msg}`);
         }
@@ -387,14 +515,11 @@ export class FeishuOAuth {
         Logger.info('FeishuOAuth', 'Fetching calendar list');
 
         // 构建 URL 参数
-        const url = new URL(CALENDAR_LIST_URL);
+        const url = new URL(API_ENDPOINTS.CALENDAR_LIST);
         url.searchParams.append('page_size', '500');
 
-        // 打印请求信息
         console.log('=== 飞书获取日历列表请求 ===');
         console.log('URL:', url.toString());
-        console.log('Method: GET');
-        console.log('Headers:', { 'Authorization': `Bearer ${accessToken?.substring(0, 20)}...` });
 
         const response = await this.fetch(url.toString(), {
             method: 'GET',
@@ -403,7 +528,6 @@ export class FeishuOAuth {
             },
         }, fetchFn);
 
-        // 打印响应信息
         console.log('=== 飞书获取日历列表响应 ===');
         console.log('Status:', response.status);
         console.log('Response Body (原始):', response.text);
@@ -415,7 +539,6 @@ export class FeishuOAuth {
             console.error('=== 获取日历列表失败 ===');
             console.error('错误码:', data.code);
             console.error('错误信息:', data.msg);
-            console.error('完整响应:', JSON.stringify(data, null, 2));
             Logger.error('FeishuOAuth', 'Get calendar list failed', { code: data.code, msg: data.msg });
             throw new Error(`获取日历列表失败: ${data.msg}`);
         }
@@ -431,10 +554,76 @@ export class FeishuOAuth {
     }
 
     /**
-     * 发起 HTTP 请求（支持自定义 fetch 函数以绕过 CORS）
-     * @param url 请求 URL
-     * @param options 请求选项
-     * @param fetchFn 可选的自定义请求函数（优先级高于 static customFetch）
+     * 创建 Obsidian requestUrl 兼容的 fetch 函数
+     *
+     * 用于在 Obsidian 插件环境中绕过 CORS 限制。
+     *
+     * @param requestUrl Obsidian 的 requestUrl 函数
+     * @returns FetchFunction 兼容的请求函数
+     */
+    static createRequestFetch(requestUrl: typeof import('obsidian').requestUrl): FetchFunction {
+        return async (url: string, options?: {
+            method?: string;
+            body?: string;
+            headers?: Record<string, string>;
+        }) => {
+            const method = options?.method || 'GET';
+
+            // 使用辅助函数构建请求配置
+            const config = buildRequestUrlConfig(
+                url,
+                method,
+                options?.body,
+                options?.headers
+            );
+
+            const result = await requestUrl(config);
+
+            // 检查状态码，如果是 4xx/5xx，记录错误信息
+            if (result.status >= 400) {
+                console.error('=== requestUrl HTTP 错误 ===');
+                console.error('Status:', result.status);
+                console.error('Headers:', result.headers);
+                console.error('Body:', result.text);
+                console.error('========================');
+            }
+
+            return {
+                status: result.status,
+                headers: result.headers || {},
+                text: result.text || '',
+            };
+        };
+    }
+
+    /**
+     * 格式化过期时间为可读字符串
+     */
+    static formatExpireTime(expireAt: number): string {
+        const now = Date.now();
+        const remaining = expireAt - now;
+
+        if (remaining <= 0) {
+            return '已过期';
+        }
+
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (hours > 24) {
+            const days = Math.floor(hours / 24);
+            return `${days} 天 ${hours % 24} 小时后过期`;
+        } else if (hours > 0) {
+            return `${hours} 小时 ${minutes} 分钟后过期`;
+        } else {
+            return `${minutes} 分钟后过期`;
+        }
+    }
+
+    // ==================== 私有方法 ====================
+
+    /**
+     * 发起 HTTP 请求
      */
     private static async fetch(
         url: string,
@@ -445,7 +634,7 @@ export class FeishuOAuth {
         } = {},
         fetchFn?: FetchFunction
     ): Promise<HttpResponse> {
-        const actualFetch = fetchFn || this.customFetch || this.defaultFetch;
+        const actualFetch = fetchFn || this.defaultFetch;
         return actualFetch(url, options);
     }
 
@@ -490,37 +679,5 @@ export class FeishuOAuth {
             throw new Error(`HTTP ${response.status}: ${response.text || 'Error'}`);
         }
         return JSON.parse(response.text) as T;
-    }
-
-    /**
-     * 生成随机 state（防 CSRF）
-     */
-    private static generateState(): string {
-        return Math.random().toString(36).substring(2, 15) +
-               Math.random().toString(36).substring(2, 15);
-    }
-
-    /**
-     * 格式化过期时间为可读字符串
-     */
-    static formatExpireTime(expireAt: number): string {
-        const now = Date.now();
-        const remaining = expireAt - now;
-
-        if (remaining <= 0) {
-            return '已过期';
-        }
-
-        const hours = Math.floor(remaining / (1000 * 60 * 60));
-        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
-        if (hours > 24) {
-            const days = Math.floor(hours / 24);
-            return `${days} 天 ${hours % 24} 小时后过期`;
-        } else if (hours > 0) {
-            return `${hours} 小时 ${minutes} 分钟后过期`;
-        } else {
-            return `${minutes} 分钟后过期`;
-        }
     }
 }

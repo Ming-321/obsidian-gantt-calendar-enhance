@@ -284,14 +284,14 @@ export class FeishuProvider extends APIDataSource {
 
                 const tokenResponse = await FeishuOAuth.refreshAccessToken(this.oauthConfig);
 
-                const tokenData = tokenResponse.data;
-                if (tokenData?.access_token) {
-                    this.oauthConfig.accessToken = tokenData.access_token;
-                    if (tokenData.refresh_token) {
-                        this.oauthConfig.refreshToken = tokenData.refresh_token;
+                // v2 API 响应直接包含 token 字段，无 data 包裹层
+                if (tokenResponse?.access_token) {
+                    this.oauthConfig.accessToken = tokenResponse.access_token;
+                    if (tokenResponse.refresh_token) {
+                        this.oauthConfig.refreshToken = tokenResponse.refresh_token;
                     }
 
-                    const expiresIn = tokenData.expires_in || 7200;
+                    const expiresIn = tokenResponse.expires_in || 7200;
                     this.tokenExpireAt = now + (expiresIn - 60) * 1000; // 提前1分钟过期
 
                     Logger.info('FeishuProvider', 'Token refreshed successfully');
