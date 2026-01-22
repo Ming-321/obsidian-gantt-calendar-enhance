@@ -243,9 +243,17 @@ export class WeekViewRenderer extends BaseViewRenderer {
 	 * 渲染周视图任务项（使用统一组件）
 	 */
 	private renderTaskItem(task: GCTask, container: HTMLElement, targetDate: Date): void {
+		// 根据插件设置动态构建配置
+		const config = {
+			...WeekViewConfig,
+			showCheckbox: this.plugin.settings.weekViewShowCheckbox,
+			showTags: this.plugin.settings.weekViewShowTags,
+			showPriority: this.plugin.settings.weekViewShowPriority,
+		};
+
 		new TaskCardComponent({
 			task,
-			config: WeekViewConfig,
+			config,
 			container,
 			app: this.app,
 			plugin: this.plugin,

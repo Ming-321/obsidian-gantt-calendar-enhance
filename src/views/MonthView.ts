@@ -305,9 +305,17 @@ export class MonthViewRenderer extends BaseViewRenderer {
 	 * 渲染月视图任务项（使用统一组件）
 	 */
 	private renderTaskItem(task: GCTask, container: HTMLElement): void {
+		// 根据插件设置动态构建配置
+		const config = {
+			...MonthViewConfig,
+			showCheckbox: this.plugin.settings.monthViewShowCheckbox,
+			showTags: this.plugin.settings.monthViewShowTags,
+			showPriority: this.plugin.settings.monthViewShowPriority,
+		};
+
 		new TaskCardComponent({
 			task,
-			config: MonthViewConfig,
+			config,
 			container,
 			app: this.app,
 			plugin: this.plugin,

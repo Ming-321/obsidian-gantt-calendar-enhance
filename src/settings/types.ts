@@ -66,11 +66,19 @@ export interface GanttCalendarSettings {
 	weekViewSelectedStatuses: string[];
 	weekViewSelectedTags: string[];
 	weekViewTagOperator: TagFilterOperator;
+	// WeekView 卡片显示控制
+	weekViewShowCheckbox: boolean;
+	weekViewShowTags: boolean;
+	weekViewShowPriority: boolean;
 
 	// MonthView 状态
 	monthViewSelectedStatuses: string[];
 	monthViewSelectedTags: string[];
 	monthViewTagOperator: TagFilterOperator;
+	// MonthView 卡片显示控制
+	monthViewShowCheckbox: boolean;
+	monthViewShowTags: boolean;
+	monthViewShowPriority: boolean;
 
 	// YearView 状态
 	yearViewSelectedTags: string[];

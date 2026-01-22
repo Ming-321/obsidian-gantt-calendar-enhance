@@ -5,6 +5,7 @@ import { TaskSettingsBuilder } from './builders/TaskSettingsBuilder';
 import { TaskViewSettingsBuilder } from './builders/TaskViewSettingsBuilder';
 import { CalendarViewSettingsBuilder } from './builders/CalendarViewSettingsBuilder';
 import { DayViewSettingsBuilder } from './builders/DayViewSettingsBuilder';
+import { WeekViewSettingsBuilder } from './builders/WeekViewSettingsBuilder';
 import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
 import { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
 import { GanttViewSettingsBuilder } from './builders/GanttViewSettingsBuilder';
@@ -77,6 +78,14 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			onRefreshSettings: refreshCallback
 		});
 		dayViewBuilder.render();
+
+		// ===== 周视图设置 =====
+		const weekViewBuilder = new WeekViewSettingsBuilder({
+			containerEl,
+			plugin: this.plugin,
+			onRefreshSettings: refreshCallback
+		});
+		weekViewBuilder.render();
 
 		// ===== 月视图设置 =====
 		const monthViewBuilder = new MonthViewSettingsBuilder({

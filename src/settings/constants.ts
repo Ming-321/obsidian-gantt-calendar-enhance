@@ -60,11 +60,19 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	weekViewSelectedStatuses: ['todo'],
 	weekViewSelectedTags: [],
 	weekViewTagOperator: 'OR',
+	// WeekView 卡片显示控制
+	weekViewShowCheckbox: true,
+	weekViewShowTags: true,
+	weekViewShowPriority: true,
 
 	// MonthView
 	monthViewSelectedStatuses: ['todo'],
 	monthViewSelectedTags: [],
 	monthViewTagOperator: 'OR',
+	// MonthView 卡片显示控制
+	monthViewShowCheckbox: true,
+	monthViewShowTags: true,
+	monthViewShowPriority: false,  // 月视图空间有限，默认不显示优先级
 
 	// YearView
 	yearViewSelectedTags: [],
