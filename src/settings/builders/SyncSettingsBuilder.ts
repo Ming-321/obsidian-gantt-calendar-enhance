@@ -24,7 +24,7 @@ export class SyncSettingsBuilder extends BaseBuilder {
 		// 获取同步配置（如果不存在则初始化）
 		const syncConfig = this.getSyncConfiguration();
 
-		this.createSettingGroup('第三方同步', (group) => {
+		this.createSettingGroup('第三方同步(此功能尚未开发,请不要使用,防止数据丢失)', (group) => {
 			const addSetting = (cb: (setting: Setting) => void) => {
 				if (this.isSettingGroupAvailable()) {
 					(group as SettingGroup).addSetting(cb);
@@ -96,7 +96,7 @@ export class SyncSettingsBuilder extends BaseBuilder {
 		});
 
 		// ===== API 同步设置 =====
-		this.createSettingGroup('API 任务同步', (group) => {
+		this.createSettingGroup('任务同步(此功能尚未开发,请不要使用,防止数据丢失)', (group) => {
 			const addSetting = (cb: (setting: Setting) => void) => {
 				if (this.isSettingGroupAvailable()) {
 					(group as SettingGroup).addSetting(cb);
@@ -250,7 +250,7 @@ export class SyncSettingsBuilder extends BaseBuilder {
 		});
 
 		// ===== CalDAV 日历同步设置 =====
-		this.createSettingGroup('日历同步', (group) => {
+		this.createSettingGroup('日历同步(此功能尚未开发,请不要使用,防止数据丢失)', (group) => {
 			const addSetting = (cb: (setting: Setting) => void) => {
 				if (this.isSettingGroupAvailable()) {
 					(group as SettingGroup).addSetting(cb);
