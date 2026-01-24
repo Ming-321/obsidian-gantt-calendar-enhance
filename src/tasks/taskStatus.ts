@@ -339,13 +339,13 @@ export function getStatusColor(
     // 确定主题模式
     const mode = themeMode ?? getCurrentThemeMode();
 
-    // 处理新旧数据格式兼容
+    // 处理新旧数据格式兼容，并使用合理的默认值
     if (status.lightColors && status.darkColors) {
         // 新格式：使用主题分离颜色
         const colors = mode === 'dark' ? status.darkColors : status.lightColors;
         return {
-            bg: colors.backgroundColor,
-            text: colors.textColor,
+            bg: colors.backgroundColor || (mode === 'dark' ? '#2d333b' : '#FFFFFF'),
+            text: colors.textColor || (mode === 'dark' ? '#adbac7' : '#333333'),
         };
     } else if (status.backgroundColor && status.textColor) {
         // 旧格式：使用单一颜色（向后兼容）
@@ -355,7 +355,12 @@ export function getStatusColor(
         };
     }
 
-    return undefined;
+    // 如果没有任何颜色配置，返回基于当前主题的默认值
+    // 这确保了即使状态数据不完整，也能正常显示
+    return {
+        bg: mode === 'dark' ? '#2d333b' : '#FFFFFF',
+        text: mode === 'dark' ? '#adbac7' : '#333333',
+    };
 }
 
 /**

@@ -165,6 +165,9 @@ export class TaskStatusCard {
 	 * 获取指定主题的颜色配置
 	 */
 	private getThemeColors(status: TaskStatus, themeMode: 'light' | 'dark'): ThemeColors | null {
+		// 确保状态有颜色配置
+		this.ensureThemeColors(status);
+
 		// 处理新旧数据格式兼容
 		if (status.lightColors && status.darkColors) {
 			return themeMode === 'dark' ? status.darkColors : status.lightColors;
@@ -366,8 +369,14 @@ export class TaskStatusCard {
 
 	/**
 	 * 确保状态配置有主题颜色对象
+	 * 这个方法确保所有状态都有有效的 lightColors 和 darkColors
 	 */
 	private ensureThemeColors(status: TaskStatus): void {
+		// 如果已经有新格式且完整，就不需要做任何事
+		if (status.lightColors && status.darkColors) {
+			return;
+		}
+
 		// 如果使用旧格式，迁移到新格式
 		if (status.backgroundColor && status.textColor) {
 			if (!status.lightColors) {
@@ -380,14 +389,22 @@ export class TaskStatusCard {
 				// 生成暗色主题默认值
 				status.darkColors = this.generateDarkColors(status.lightColors);
 			}
+			return;
 		}
 
-		// 确保至少有默认值
+		// 如果没有任何颜色配置，初始化默认值
+		// 提供合理的默认值以确保总是有可用的颜色
 		if (!status.lightColors) {
-			status.lightColors = { backgroundColor: '#FFFFFF', textColor: '#333333' };
+			status.lightColors = { 
+				backgroundColor: '#FFFFFF', 
+				textColor: '#333333' 
+			};
 		}
 		if (!status.darkColors) {
-			status.darkColors = { backgroundColor: '#2d333b', textColor: '#adbac7' };
+			status.darkColors = { 
+				backgroundColor: '#2d333b', 
+				textColor: '#adbac7' 
+			};
 		}
 	}
 

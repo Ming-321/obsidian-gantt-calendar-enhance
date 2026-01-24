@@ -151,15 +151,18 @@ export default class GanttCalendarPlugin extends Plugin {
     /**
      * 迁移任务状态颜色格式
      * 将旧的 backgroundColor/textColor 迁移到 lightColors/darkColors
+     * 确保所有状态都有完整的主题颜色配置
      */
     private async migrateTaskStatusColors(): Promise<void> {
         let needsSave = false;
 
         for (const status of this.settings.taskStatuses) {
-            // 如果有旧格式但没有新格式，进行迁移
-            if ((status.backgroundColor || status.textColor) &&
-                (!status.lightColors || !status.darkColors)) {
+            // 检查是否需要迁移或初始化
+            const needsMigration = (status.backgroundColor || status.textColor) &&
+                (!status.lightColors || !status.darkColors);
+            const needsInitialization = !status.lightColors || !status.darkColors;
 
+            if (needsMigration) {
                 // 将旧颜色作为亮色主题的默认值
                 if (!status.lightColors) {
                     status.lightColors = {
@@ -174,6 +177,24 @@ export default class GanttCalendarPlugin extends Plugin {
                         status.lightColors.backgroundColor,
                         status.lightColors.textColor
                     );
+                }
+
+                needsSave = true;
+            } else if (needsInitialization) {
+                // 对于没有颜色配置的状态，初始化为默认值
+                // 这确保了即使状态数据不完整，也能有可用的颜色
+                if (!status.lightColors) {
+                    status.lightColors = {
+                        backgroundColor: '#FFFFFF',
+                        textColor: '#333333'
+                    };
+                }
+
+                if (!status.darkColors) {
+                    status.darkColors = {
+                        backgroundColor: '#2d333b',
+                        textColor: '#adbac7'
+                    };
                 }
 
                 needsSave = true;
