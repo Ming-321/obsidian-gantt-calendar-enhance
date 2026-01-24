@@ -275,25 +275,33 @@ export class TaskStatusCard {
 		labelEl.style.fontSize = '11px';
 		labelEl.style.fontWeight = '500';
 
-		// 隐藏的颜色输入
-		const hiddenInput = labelRow.createEl('input', {
+		// 创建一个包装容器来放置颜色输入和方块
+		const swatchWrapper = labelRow.createEl('div');
+		swatchWrapper.style.position = 'relative';
+		swatchWrapper.style.display = 'inline-block';
+
+		// 隐藏的颜色输入（使用 visibility 而非 absolute 定位）
+		const hiddenInput = swatchWrapper.createEl('input', {
 			type: 'color',
 			cls: 'task-status-color-input'
 		}) as HTMLInputElement;
 		hiddenInput.value = currentColor;
 		hiddenInput.style.position = 'absolute';
+		hiddenInput.style.width = '18px';
+		hiddenInput.style.height = '18px';
 		hiddenInput.style.opacity = '0';
-		hiddenInput.style.pointerEvents = 'none';
+		hiddenInput.style.cursor = 'pointer';
+		hiddenInput.style.zIndex = '1';
 
-		// 颜色方块
-		const swatch = labelRow.createEl('div');
+		// 颜色方块（视觉显示）
+		const swatch = swatchWrapper.createEl('div');
 		swatch.style.width = '18px';
 		swatch.style.height = '18px';
 		swatch.style.borderRadius = '3px';
 		swatch.style.backgroundColor = currentColor;
 		swatch.style.border = '1px solid var(--background-modifier-border)';
 		swatch.style.cursor = 'pointer';
-		swatch.addEventListener('click', () => hiddenInput.click());
+		swatch.style.pointerEvents = 'none'; // 让点击事件穿透到 input
 
 		// 颜色变化处理
 		hiddenInput.addEventListener('change', async () => {
