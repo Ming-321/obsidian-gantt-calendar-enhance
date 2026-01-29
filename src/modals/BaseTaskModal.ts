@@ -124,27 +124,31 @@ export abstract class BaseTaskModal extends Modal {
 
 		this.addStyles();
 
+		// 标题（固定在顶部）
 		contentEl.createEl('h2', {
 			text: title,
 			cls: EditTaskModalClasses.elements.title
 		});
 
+		// 创建滚动容器
+		const scrollContainer = contentEl.createDiv(EditTaskModalClasses.elements.scrollContainer);
+
 		// 1. 任务描述板块
-		this.renderDescriptionSection(contentEl);
+		this.renderDescriptionSection(scrollContainer);
 
 		// 2. 优先级设置板块
-		this.renderPrioritySection(contentEl);
+		this.renderPrioritySection(scrollContainer);
 
 		// 3. 时间设置板块
-		this.renderDatesSection(contentEl);
+		this.renderDatesSection(scrollContainer);
 
 		// 3.5. 周期设置板块
-		this.renderRepeatSection(contentEl);
+		this.renderRepeatSection(scrollContainer);
 
 		// 4. 标签选择器
-		this.renderTagsSection(contentEl);
+		this.renderTagsSection(scrollContainer);
 
-		// 操作按钮
+		// 操作按钮（固定在底部）
 		this.renderButtons(contentEl);
 	}
 
@@ -924,8 +928,36 @@ export abstract class BaseTaskModal extends Modal {
 		this.styleEl = document.createElement('style');
 		this.styleEl.textContent = `
 			.${EditTaskModalClasses.block} {
-				max-width: 500px;
+				width: 100%;
 			}
+
+			/* 滚动容器 - 使用负边距让滚动条贴到模态框右边缘 */
+			.${EditTaskModalClasses.elements.scrollContainer} {
+				max-height: 65vh;
+				overflow-y: auto;
+				overflow-x: hidden;
+				margin-right: -12px;
+				padding-right: 12px;
+			}
+
+			/* 自定义滚动条样式 */
+			.${EditTaskModalClasses.elements.scrollContainer}::-webkit-scrollbar {
+				width: 12px;
+			}
+			.${EditTaskModalClasses.elements.scrollContainer}::-webkit-scrollbar-track {
+				background: transparent;
+			}
+			.${EditTaskModalClasses.elements.scrollContainer}::-webkit-scrollbar-thumb {
+				background: var(--background-modifier-border);
+				border-radius: 6px;
+				border: 2px solid transparent;
+				background-clip: content-box;
+			}
+			.${EditTaskModalClasses.elements.scrollContainer}::-webkit-scrollbar-thumb:hover {
+				background: var(--text-muted);
+				background-clip: content-box;
+			}
+
 			.${EditTaskModalClasses.elements.title} {
 				font-size: var(--font-ui-large);
 				font-weight: 600;

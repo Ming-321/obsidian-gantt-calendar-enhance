@@ -550,6 +550,9 @@ export const EditTaskModalClasses = {
 
 		// 按钮
 		buttons: bem(BLOCKS.EDIT_TASK_MODAL, 'buttons'),
+
+		// 滚动容器
+		scrollContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'scroll-container'),
 	},
 };
 
