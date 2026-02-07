@@ -21,7 +21,7 @@ import { TagSelector } from '../components/TagSelector';
  * 优先级选项
  */
 export interface PriorityOption {
-	value: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
+	value: 'high' | 'normal' | 'low';
 	label: string;
 	icon: string;
 }
@@ -46,25 +46,23 @@ export interface RepeatConfig {
 export abstract class BaseTaskModal extends Modal {
 	// 共同属性
 	protected styleEl: HTMLStyleElement;
+	protected taskType: 'todo' | 'reminder' = 'todo';
 	protected priority: PriorityOption['value'];
 	protected repeat: string | null = null;
 	protected createdDate: Date | null = null;
 	protected startDate: Date | null = null;
-	protected scheduledDate: Date | null = null;
 	protected dueDate: Date | null = null;
 	protected cancelledDate: Date | null = null;
 	protected completionDate: Date | null = null;
+	protected taskTime: string | null = null;
 	protected selectedTags: string[] = [];
 	protected tagSelector: TagSelector;
 
-	// 优先级选项常量
+	// 优先级选项常量（三级）
 	protected readonly priorityOptions: PriorityOption[] = [
-		{ value: 'highest', label: '最高', icon: '🔺' },
-		{ value: 'high', label: '高', icon: '⏫' },
-		{ value: 'medium', label: '中', icon: '🔼' },
-		{ value: 'normal', label: '普通', icon: '◽' },
-		{ value: 'low', label: '低', icon: '🔽' },
-		{ value: 'lowest', label: '最低', icon: '⏬' },
+		{ value: 'high', label: '高', icon: '🔴' },
+		{ value: 'normal', label: '普通', icon: '⚪' },
+		{ value: 'low', label: '低', icon: '🔵' },
 	];
 
 	constructor(app: App) {
@@ -133,19 +131,22 @@ export abstract class BaseTaskModal extends Modal {
 		// 创建滚动容器
 		const scrollContainer = contentEl.createDiv(EditTaskModalClasses.elements.scrollContainer);
 
-		// 1. 任务描述板块
+		// 1. 任务类型选择
+		this.renderTypeSection(scrollContainer);
+
+		// 2. 任务描述板块
 		this.renderDescriptionSection(scrollContainer);
 
-		// 2. 优先级设置板块
+		// 3. 优先级设置板块
 		this.renderPrioritySection(scrollContainer);
 
-		// 3. 时间设置板块
+		// 4. 时间设置板块
 		this.renderDatesSection(scrollContainer);
 
-		// 3.5. 周期设置板块
+		// 4.5. 周期设置板块
 		this.renderRepeatSection(scrollContainer);
 
-		// 4. 标签选择器
+		// 5. 标签选择器
 		this.renderTagsSection(scrollContainer);
 
 		// 操作按钮（固定在底部）
@@ -161,6 +162,48 @@ export abstract class BaseTaskModal extends Modal {
 		if (this.styleEl && this.styleEl.parentNode) {
 			this.styleEl.parentNode.removeChild(this.styleEl);
 		}
+	}
+
+	// ==================== 任务类型选择板块 ====================
+
+	/**
+	 * 渲染任务类型选择板块
+	 */
+	protected renderTypeSection(container: HTMLElement): void {
+		const section = container.createDiv(EditTaskModalClasses.elements.section);
+
+		const typeContainer = section.createDiv(EditTaskModalClasses.elements.priorityContainer);
+		typeContainer.createEl('label', {
+			text: '任务类型',
+			cls: EditTaskModalClasses.elements.sectionLabel
+		});
+
+		const typeGrid = typeContainer.createDiv(EditTaskModalClasses.elements.priorityGrid);
+
+		const typeOptions = [
+			{ value: 'todo' as const, label: '☐ 待办', hint: '截止日前持续显示，需手动完成' },
+			{ value: 'reminder' as const, label: '🔔 提醒', hint: '仅在指定日期显示，到期自动完成' },
+		];
+
+		typeOptions.forEach(option => {
+			const btn = typeGrid.createEl('button', {
+				cls: EditTaskModalClasses.elements.priorityBtn,
+				text: option.label,
+				attr: { title: option.hint }
+			});
+			btn.dataset.value = option.value;
+
+			if (option.value === this.taskType) {
+				btn.addClass(EditTaskModalClasses.elements.priorityBtnSelected);
+			}
+
+			btn.addEventListener('click', () => {
+				typeGrid.querySelectorAll(`.${EditTaskModalClasses.elements.priorityBtn}`)
+					.forEach(b => b.removeClass(EditTaskModalClasses.elements.priorityBtnSelected));
+				btn.addClass(EditTaskModalClasses.elements.priorityBtnSelected);
+				this.taskType = option.value;
+			});
+		});
 	}
 
 	// ==================== 优先级设置板块 ====================
@@ -218,12 +261,33 @@ export abstract class BaseTaskModal extends Modal {
 
 		const datesGrid = dateContainer.createDiv(EditTaskModalClasses.elements.datesGrid);
 
-		this.renderDateField(datesGrid, '➕ 创建', this.createdDate, (d) => this.createdDate = d);
+		this.renderDateField(datesGrid, '📅 截止/提醒', this.dueDate, (d) => this.dueDate = d);
 		this.renderDateField(datesGrid, '🛫 开始', this.startDate, (d) => this.startDate = d);
-		this.renderDateField(datesGrid, '⏳ 计划', this.scheduledDate, (d) => this.scheduledDate = d);
-		this.renderDateField(datesGrid, '📅 截止', this.dueDate, (d) => this.dueDate = d);
-		this.renderDateField(datesGrid, '✅ 完成', this.completionDate, (d) => this.completionDate = d);
-		this.renderDateField(datesGrid, '❌ 取消', this.cancelledDate, (d) => this.cancelledDate = d);
+		this.renderDateField(datesGrid, '➕ 创建', this.createdDate, (d) => this.createdDate = d);
+
+		// 时间字段（可选）
+		const timeItem = datesGrid.createDiv(EditTaskModalClasses.elements.dateItem);
+		timeItem.createEl('label', {
+			text: '🕐 时间（可选）',
+			cls: EditTaskModalClasses.elements.dateLabel
+		});
+		const timeInputContainer = timeItem.createDiv(EditTaskModalClasses.elements.dateInputContainer);
+		const timeInput = timeInputContainer.createEl('input', {
+			type: 'time',
+			cls: EditTaskModalClasses.elements.dateInput
+		});
+		if (this.taskTime) timeInput.value = this.taskTime;
+		timeInput.addEventListener('change', () => {
+			this.taskTime = timeInput.value || null;
+		});
+		const timeClearBtn = timeInputContainer.createEl('button', {
+			cls: EditTaskModalClasses.elements.dateClear,
+			text: '×'
+		});
+		timeClearBtn.addEventListener('click', () => {
+			timeInput.value = '';
+			this.taskTime = null;
+		});
 	}
 
 	/**

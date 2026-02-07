@@ -1,67 +1,76 @@
 /**
  * 编辑任务弹窗
  *
- * 提供编辑任务的界面，基于 BaseTaskModal 基类。
- *
- * @fileoverview 编辑任务弹窗
- * @module modals/EditTaskModal
+ * 提供编辑任务（待办/提醒）的界面，基于 BaseTaskModal 基类。
+ * 通过 TaskStore 更新 JSON 数据。
  */
 
 import { App, Notice } from 'obsidian';
+import type GanttCalendarPlugin from '../../main';
 import type { GCTask } from '../types';
-import { updateTaskProperties } from '../tasks/taskUpdater';
+import type { TaskChanges } from '../data-layer/types';
 import { Logger } from '../utils/logger';
 import { BaseTaskModal, type PriorityOption, type RepeatConfig } from './BaseTaskModal';
 
+/**
+ * 快捷打开编辑弹窗
+ */
 export function openEditTaskModal(
 	app: App,
+	plugin: GanttCalendarPlugin,
 	task: GCTask,
-	enabledFormats: string[],
 	onSuccess: () => void,
-	allowEditContent?: boolean
 ): void {
-	const modal = new EditTaskModal(app, task, enabledFormats, onSuccess, allowEditContent);
+	const modal = new EditTaskModal(app, plugin, task, onSuccess);
 	modal.open();
 }
 
+/**
+ * 编辑任务弹窗
+ */
 class EditTaskModal extends BaseTaskModal {
+	private plugin: GanttCalendarPlugin;
 	private task: GCTask;
-	private enabledFormats: string[];
 	private onSuccess: () => void;
-	private allowEditContent: boolean;
 
-	// 状态缓存（初始化为"未更改"状态）
-	// 使用单独的变量来跟踪是否有修改，而不是覆盖基类属性
-	private priorityChanged: boolean = false;
-	private repeatChanged: boolean = false;
-	private datesChanged: boolean = false;
-	private contentChanged: boolean = false;
-	private tagsChanged: boolean = false;
-	private content: string | undefined = undefined;
+	// 变更跟踪
+	private typeChanged = false;
+	private priorityChanged = false;
+	private repeatChanged = false;
+	private datesChanged = false;
+	private descriptionChanged = false;
+	private detailChanged = false;
+	private tagsChanged = false;
+	private timeChanged = false;
+
+	// 编辑状态
+	private descriptionValue: string;
+	private detailValue: string;
 
 	constructor(
 		app: App,
+		plugin: GanttCalendarPlugin,
 		task: GCTask,
-		enabledFormats: string[],
 		onSuccess: () => void,
-		allowEditContent?: boolean
 	) {
 		super(app);
+		this.plugin = plugin;
 		this.task = task;
-		this.enabledFormats = enabledFormats;
 		this.onSuccess = onSuccess;
-		this.allowEditContent = !!allowEditContent;
 
 		// 从现有任务初始化基类属性
+		this.taskType = task.type || 'todo';
 		this.priority = (task.priority as PriorityOption['value']) || 'normal';
 		this.repeat = task.repeat || null;
 		this.createdDate = task.createdDate || null;
 		this.startDate = task.startDate || null;
-		this.scheduledDate = task.scheduledDate || null;
 		this.dueDate = task.dueDate || null;
 		this.cancelledDate = task.cancelledDate || null;
 		this.completionDate = task.completionDate || null;
-		this.selectedTags = task.tags || [];
+		this.taskTime = task.time || null;
+		this.selectedTags = task.tags ? [...task.tags] : [];
+		this.descriptionValue = task.description || '';
+		this.detailValue = task.detail || '';
 	}
 
 	onOpen(): void {
@@ -74,29 +83,24 @@ class EditTaskModal extends BaseTaskModal {
 	 * 渲染任务描述板块
 	 */
 	protected renderDescriptionSection(container: HTMLElement): void {
-		if (!this.allowEditContent) {
-			return;
-		}
-
 		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
 		const section = container.createDiv(EditTaskModalClasses.elements.section);
 
+		// 标题
 		const descContainer = section.createDiv(EditTaskModalClasses.elements.descContainer);
 		descContainer.createEl('label', {
-			text: '任务描述',
+			text: '任务标题',
 			cls: EditTaskModalClasses.elements.sectionLabel
-		});
-		descContainer.createEl('div', {
-			text: '不支持换行，Enter 键将转为空格',
-			cls: EditTaskModalClasses.elements.sectionHint
 		});
 
 		const textArea = descContainer.createEl('textarea', {
 			cls: EditTaskModalClasses.elements.descTextarea
 		});
-		textArea.value = this.task.description || '';
+		textArea.value = this.descriptionValue;
+		textArea.style.minHeight = '40px';
+		textArea.style.maxHeight = '40px';
 
-		// 阻止换行：Enter 键转为空格
+		// Enter 转空格
 		textArea.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
 				e.preventDefault();
@@ -105,15 +109,33 @@ class EditTaskModal extends BaseTaskModal {
 				const value = textArea.value;
 				textArea.value = value.slice(0, start) + ' ' + value.slice(end);
 				textArea.selectionStart = textArea.selectionEnd = start + 1;
-				this.content = textArea.value;
-				this.contentChanged = true;
+				this.descriptionValue = textArea.value;
+				this.descriptionChanged = true;
 			}
 		});
-
 		textArea.addEventListener('input', () => {
-			// 兜底：将任何换行符替换为空格
-			this.content = textArea.value.replace(/[\r\n]+/g, ' ');
-			this.contentChanged = true;
+			this.descriptionValue = textArea.value.replace(/[\r\n]+/g, ' ');
+			this.descriptionChanged = true;
+		});
+
+		// 详细说明
+		const detailContainer = section.createDiv(EditTaskModalClasses.elements.descContainer);
+		detailContainer.createEl('label', {
+			text: '详细说明（可选）',
+			cls: EditTaskModalClasses.elements.sectionLabel
+		});
+		detailContainer.style.marginTop = '12px';
+
+		const detailTextArea = detailContainer.createEl('textarea', {
+			cls: EditTaskModalClasses.elements.descTextarea
+		});
+		detailTextArea.value = this.detailValue;
+		detailTextArea.style.minHeight = '50px';
+		detailTextArea.style.maxHeight = '80px';
+
+		detailTextArea.addEventListener('input', () => {
+			this.detailValue = detailTextArea.value;
+			this.detailChanged = true;
 		});
 	}
 
@@ -122,43 +144,72 @@ class EditTaskModal extends BaseTaskModal {
 	 */
 	protected async saveTask(): Promise<void> {
 		try {
-			const updates: any = {};
+			const changes: TaskChanges = {};
+			let hasChanges = false;
 
-			// 只添加已修改的字段
+			// 描述变更
+			if (this.descriptionChanged) {
+				const desc = this.descriptionValue.trim().replace(/[\r\n]+/g, ' ');
+				if (!desc) {
+					new Notice('任务标题不能为空');
+					return;
+				}
+				changes.description = desc;
+				hasChanges = true;
+			}
+
+			// 详细说明变更
+			if (this.detailChanged) {
+				changes.detail = this.detailValue.trim() || undefined;
+				hasChanges = true;
+			}
+
+			// 优先级变更
 			if (this.priorityChanged) {
-				updates.priority = this.priority;
-			}
-			if (this.repeatChanged) {
-				updates.repeat = this.repeat;
-			}
-			if (this.datesChanged) {
-				updates.createdDate = this.createdDate;
-				updates.startDate = this.startDate;
-				updates.scheduledDate = this.scheduledDate;
-				updates.dueDate = this.dueDate;
-				updates.completionDate = this.completionDate;
-				updates.cancelledDate = this.cancelledDate;
-			}
-			if (this.contentChanged) {
-				updates.content = this.content;
-			}
-			if (this.tagsChanged) {
-				updates.tags = this.selectedTags;
+				changes.priority = this.priority;
+				hasChanges = true;
 			}
 
-			// 如果没有任何更改，直接关闭
-			if (Object.keys(updates).length === 0) {
+			// 重复规则变更
+			if (this.repeatChanged) {
+				changes.repeat = this.repeat || undefined;
+				hasChanges = true;
+			}
+
+			// 日期变更
+			if (this.datesChanged) {
+				changes.createdDate = this.createdDate || undefined;
+				changes.startDate = this.startDate || undefined;
+				changes.dueDate = this.dueDate || undefined;
+				changes.completionDate = this.completionDate || undefined;
+				changes.cancelledDate = this.cancelledDate || undefined;
+				hasChanges = true;
+			}
+
+			// 时间变更
+			if (this.timeChanged) {
+				changes.time = this.taskTime || undefined;
+				hasChanges = true;
+			}
+
+			// 标签变更
+			if (this.tagsChanged) {
+				changes.tags = this.selectedTags;
+				hasChanges = true;
+			}
+
+			if (!hasChanges) {
 				this.close();
 				return;
 			}
 
-			await updateTaskProperties(this.app, this.task, updates, this.enabledFormats);
+			await this.plugin.taskCache.updateTask(this.task.id, changes);
+			new Notice('任务已更新');
 			this.onSuccess();
 			this.close();
-			new Notice('任务已更新');
 		} catch (err) {
-			Logger.error('editTask', 'Failed to update task', err);
-			new Notice('更新任务失败');
+			Logger.error('EditTaskModal', 'Failed to update task', err);
+			new Notice('更新任务失败: ' + (err as Error).message);
 		}
 	}
 
@@ -173,7 +224,7 @@ class EditTaskModal extends BaseTaskModal {
 	 * 获取所有任务（用于标签推荐）
 	 */
 	protected getAllTasksForTags(): GCTask[] {
-		return this.getAllTasks();
+		return this.plugin.taskCache.getAllTasks();
 	}
 
 	/**
@@ -183,10 +234,29 @@ class EditTaskModal extends BaseTaskModal {
 		return { cancel: '取消', save: '保存' };
 	}
 
-	// ==================== 重写基类方法 ====================
+	// ==================== 重写基类方法以跟踪变更 ====================
 
 	/**
-	 * 重写 renderPrioritySection 以跟踪优先级变化
+	 * 重写类型选择以跟踪变更
+	 */
+	protected renderTypeSection(container: HTMLElement): void {
+		// 调用基类渲染，然后加入变更监听
+		super.renderTypeSection(container);
+
+		// 添加变更监听到类型按钮
+		const originalType = this.task.type || 'todo';
+		const observer = new MutationObserver(() => {
+			if (this.taskType !== originalType) {
+				this.typeChanged = true;
+			}
+		});
+		// 类型变更通过按钮 click 事件已在基类处理，不需要额外观察
+		// 但由于 EditTask 不改变 type（编辑时类型固定），
+		// 这里不做额外跟踪，类型创建后不可更改
+	}
+
+	/**
+	 * 重写优先级选择以跟踪变更
 	 */
 	protected renderPrioritySection(container: HTMLElement): void {
 		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
@@ -207,16 +277,13 @@ class EditTaskModal extends BaseTaskModal {
 			});
 			btn.dataset.value = option.value;
 
-			// 如果是当前优先级，设置为选中状态
 			if (option.value === this.priority) {
 				btn.addClass(EditTaskModalClasses.elements.priorityBtnSelected);
 			}
 
 			btn.addEventListener('click', () => {
-				// 移除所有按钮的选中状态
 				priorityGrid.querySelectorAll(`.${EditTaskModalClasses.elements.priorityBtn}`)
 					.forEach(b => b.removeClass(EditTaskModalClasses.elements.priorityBtnSelected));
-				// 添加当前按钮的选中状态
 				btn.addClass(EditTaskModalClasses.elements.priorityBtnSelected);
 				this.priority = option.value;
 				this.priorityChanged = true;
@@ -225,7 +292,7 @@ class EditTaskModal extends BaseTaskModal {
 	}
 
 	/**
-	 * 重写 renderDateField 以跟踪日期变化
+	 * 重写日期字段以跟踪变更
 	 */
 	protected renderDateField(
 		container: HTMLElement,
@@ -235,7 +302,7 @@ class EditTaskModal extends BaseTaskModal {
 	): void {
 		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
 		const dateItem = container.createDiv(EditTaskModalClasses.elements.dateItem);
-		const labelEl = dateItem.createEl('label', {
+		dateItem.createEl('label', {
 			text: label,
 			cls: EditTaskModalClasses.elements.dateLabel
 		});
@@ -274,7 +341,53 @@ class EditTaskModal extends BaseTaskModal {
 	}
 
 	/**
-	 * 重写 renderTagsSection 以跟踪标签变化
+	 * 重写日期区域以加入时间字段变更跟踪
+	 */
+	protected renderDatesSection(container: HTMLElement): void {
+		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
+		const section = container.createDiv(EditTaskModalClasses.elements.section);
+
+		const datesContainer = section.createDiv(EditTaskModalClasses.elements.datesContainer);
+		datesContainer.createEl('label', {
+			text: '时间设置',
+			cls: EditTaskModalClasses.elements.sectionLabel
+		});
+
+		const datesGrid = datesContainer.createDiv(EditTaskModalClasses.elements.datesGrid);
+
+		this.renderDateField(datesGrid, '📅 截止/提醒', this.dueDate, (d) => this.dueDate = d);
+		this.renderDateField(datesGrid, '🛫 开始', this.startDate, (d) => this.startDate = d);
+		this.renderDateField(datesGrid, '➕ 创建', this.createdDate, (d) => this.createdDate = d);
+
+		// 时间字段（可选）- 带变更跟踪
+		const timeItem = datesGrid.createDiv(EditTaskModalClasses.elements.dateItem);
+		timeItem.createEl('label', {
+			text: '🕐 时间（可选）',
+			cls: EditTaskModalClasses.elements.dateLabel
+		});
+		const timeInputContainer = timeItem.createDiv(EditTaskModalClasses.elements.dateInputContainer);
+		const timeInput = timeInputContainer.createEl('input', {
+			type: 'time',
+			cls: EditTaskModalClasses.elements.dateInput
+		});
+		if (this.taskTime) timeInput.value = this.taskTime;
+		timeInput.addEventListener('change', () => {
+			this.taskTime = timeInput.value || null;
+			this.timeChanged = true;
+		});
+		const timeClearBtn = timeInputContainer.createEl('button', {
+			cls: EditTaskModalClasses.elements.dateClear,
+			text: '×'
+		});
+		timeClearBtn.addEventListener('click', () => {
+			timeInput.value = '';
+			this.taskTime = null;
+			this.timeChanged = true;
+		});
+	}
+
+	/**
+	 * 重写标签区域以跟踪变更
 	 */
 	protected renderTagsSection(container: HTMLElement): void {
 		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
@@ -295,7 +408,7 @@ class EditTaskModal extends BaseTaskModal {
 	}
 
 	/**
-	 * 重写 renderRepeatSection 以跟踪 repeat 变化
+	 * 重写重复设置以跟踪变更
 	 */
 	protected renderRepeatSection(container: HTMLElement): void {
 		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
@@ -325,7 +438,7 @@ class EditTaskModal extends BaseTaskModal {
 
 		const repeatGrid = repeatContainer.createDiv(EditTaskModalClasses.elements.repeatGrid);
 
-		// ========== 频率选择行：每 [间隔输入] [单位下拉] [自定义输入] ==========
+		// 频率选择行
 		const freqSelectRow = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatRow);
 		freqSelectRow.style.display = 'flex';
 		freqSelectRow.style.alignItems = 'center';
@@ -361,7 +474,7 @@ class EditTaskModal extends BaseTaskModal {
 			freqSelect.createEl('option', { value: opt.value, text: opt.label });
 		});
 
-		// ========== 自定义规则输入（选择"自定义"时显示，在同一行） ==========
+		// 自定义输入
 		const manualInput = freqSelectRow.createEl('input', {
 			type: 'text',
 			placeholder: '如: every week on Monday when done',
@@ -372,13 +485,13 @@ class EditTaskModal extends BaseTaskModal {
 		manualInput.style.minWidth = '200px';
 		manualInput.style.padding = '4px 8px';
 
-		// ========== 每周模式：星期选择按钮（默认隐藏，在同一行） ==========
+		// 每周星期选择
 		const weeklyDaysContainer = freqSelectRow.createSpan(EditTaskModalClasses.elements.repeatDaysContainer);
 		weeklyDaysContainer.style.display = 'none';
 		weeklyDaysContainer.style.alignItems = 'center';
 		weeklyDaysContainer.style.gap = '4px';
 
-		const weekDaysLabel = weeklyDaysContainer.createSpan({ text: '  ' });
+		weeklyDaysContainer.createSpan({ text: '  ' });
 		const dayButtons: HTMLButtonElement[] = [];
 		const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
 		dayNames.forEach((dayName) => {
@@ -412,13 +525,13 @@ class EditTaskModal extends BaseTaskModal {
 			dayButtons.push(dayBtn);
 		});
 
-		// ========== 每月模式：日期选择输入框（默认隐藏，在同一行） ==========
+		// 每月日期选择
 		const monthlyDayContainer = freqSelectRow.createSpan(EditTaskModalClasses.elements.repeatMonthContainer);
 		monthlyDayContainer.style.display = 'none';
 		monthlyDayContainer.style.alignItems = 'center';
 		monthlyDayContainer.style.gap = '4px';
 
-		const monthDayLabel = monthlyDayContainer.createSpan({ text: '  ' });
+		monthlyDayContainer.createSpan({ text: '  ' });
 		const monthDayInput = monthlyDayContainer.createEl('input', {
 			type: 'number',
 			cls: EditTaskModalClasses.elements.repeatMonthSelect,
@@ -430,7 +543,7 @@ class EditTaskModal extends BaseTaskModal {
 		monthDayInput.style.padding = '4px 6px';
 		monthDayInput.style.fontSize = 'var(--font-ui-small)';
 
-		// ========== 重复方式选择 ==========
+		// 重复方式
 		const whenDoneRow = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatWhenDoneContainer);
 		whenDoneRow.style.display = 'flex';
 		whenDoneRow.style.alignItems = 'center';
@@ -449,9 +562,7 @@ class EditTaskModal extends BaseTaskModal {
 		whenDoneToggle.id = 'repeat-fixed';
 		whenDoneToggle.checked = true;
 
-		const fixedLabel = whenDoneRow.createEl('label', {
-			text: '按固定日期重复'
-		});
+		const fixedLabel = whenDoneRow.createEl('label', { text: '按固定日期重复' });
 		fixedLabel.setAttribute('for', 'repeat-fixed');
 		fixedLabel.style.fontSize = 'var(--font-ui-small)';
 
@@ -462,14 +573,12 @@ class EditTaskModal extends BaseTaskModal {
 		whenDoneToggle2.setAttribute('name', 'repeat-type');
 		whenDoneToggle2.id = 'repeat-when-done';
 
-		const whenDoneLabel = whenDoneRow.createEl('label', {
-			text: '完成后重新计算'
-		});
+		const whenDoneLabel = whenDoneRow.createEl('label', { text: '完成后重新计算' });
 		whenDoneLabel.setAttribute('for', 'repeat-when-done');
 		whenDoneLabel.style.fontSize = 'var(--font-ui-small)';
-		whenDoneLabel.setAttribute('title', '下次任务的日期从完成当天算起，而不是从原计划日期算起');
+		whenDoneLabel.setAttribute('title', '下次任务的日期从完成当天算起');
 
-		// ========== 预览摘要区域 ==========
+		// 预览
 		const previewBox = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatPreview);
 		previewBox.style.padding = '8px 12px';
 		previewBox.style.backgroundColor = 'var(--background-modifier-hover)';
@@ -486,7 +595,7 @@ class EditTaskModal extends BaseTaskModal {
 			cls: EditTaskModalClasses.elements.repeatPreviewText
 		});
 
-		// ========== 规则说明 ==========
+		// 规则说明
 		const rulesHint = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatRulesHint);
 		rulesHint.style.marginTop = '8px';
 		rulesHint.style.padding = '8px';
@@ -508,32 +617,28 @@ class EditTaskModal extends BaseTaskModal {
 		rulesHintList.style.whiteSpace = 'pre-line';
 		rulesHintList.style.color = 'var(--text-muted)';
 
-		// ========== 错误提示 ==========
+		// 错误提示
 		const errorMsg = repeatGrid.createDiv(EditTaskModalClasses.elements.repeatErrorMsg);
 		errorMsg.style.display = 'none';
 		errorMsg.style.color = 'var(--text-error)';
 		errorMsg.style.fontSize = 'var(--font-ui-smaller)';
 		errorMsg.style.marginTop = '4px';
 
-		// ========== 辅助函数：获取选中的星期 ==========
+		// 辅助函数
 		const getSelectedDays = (): number[] | undefined => {
 			const selected: number[] = [];
 			dayButtons.forEach((btn, idx) => {
-				if (btn.classList.contains('active')) {
-					selected.push(idx);
-				}
+				if (btn.classList.contains('active')) selected.push(idx);
 			});
 			return selected.length > 0 ? selected : undefined;
 		};
 
-		// ========== 更新逻辑 ==========
+		// 更新逻辑
 		const updateRepeat = () => {
 			this.repeatChanged = true;
-
 			const freqValue = freqSelect.value;
 			const interval = parseInt(intervalInput.value) || 1;
 
-			// 不重复
 			if (!freqValue) {
 				this.repeat = null;
 				previewText.textContent = 'no repeat';
@@ -543,11 +648,9 @@ class EditTaskModal extends BaseTaskModal {
 				return;
 			}
 
-			// 自定义模式：直接使用用户输入的规则
 			if (freqValue === 'custom') {
 				const manualRule = manualInput.value.trim();
 				if (manualRule) {
-					// 验证规则格式
 					if (this.validateRepeatRule(manualRule)) {
 						this.repeat = manualRule;
 						previewText.textContent = manualRule;
@@ -565,21 +668,14 @@ class EditTaskModal extends BaseTaskModal {
 				return;
 			}
 
-			// 预设模式：根据选择的频率生成规则
 			const whenDone = whenDoneToggle2.checked;
-
-			// 获取每周模式的选中日期
 			const selectedDays = getSelectedDays();
-
-			// 获取每月模式的日期
-			let monthDayValue: number | string | undefined = undefined;
+			let monthDayValue: number | string | undefined;
 			if (freqValue === 'monthly') {
-				const monthInputVal = monthDayInput.value.trim();
-				if (monthInputVal) {
-					const dayNum = parseInt(monthInputVal);
-					if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
-						monthDayValue = dayNum;
-					}
+				const val = monthDayInput.value.trim();
+				if (val) {
+					const dayNum = parseInt(val);
+					if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) monthDayValue = dayNum;
 				}
 			}
 
@@ -597,17 +693,12 @@ class EditTaskModal extends BaseTaskModal {
 			errorMsg.style.display = 'none';
 		};
 
-		// ========== 事件监听 ==========
-		// 频率下拉选择变化
+		// 事件监听
 		freqSelect.addEventListener('change', () => {
 			const value = freqSelect.value;
-
-			// 重置所有特殊选项显示
 			manualInput.style.display = 'none';
 			weeklyDaysContainer.style.display = 'none';
 			monthlyDayContainer.style.display = 'none';
-
-			// 清除星期选择
 			dayButtons.forEach(btn => {
 				btn.classList.remove('active');
 				btn.style.backgroundColor = 'var(--background-secondary)';
@@ -618,7 +709,6 @@ class EditTaskModal extends BaseTaskModal {
 
 			if (value === 'custom') {
 				manualInput.style.display = 'block';
-				// 预填充简单规则
 				const interval = parseInt(intervalInput.value) || 1;
 				const whenDone = whenDoneToggle2.checked;
 				let defaultRule = interval === 1 ? 'every week' : `every ${interval} weeks`;
@@ -633,22 +723,13 @@ class EditTaskModal extends BaseTaskModal {
 			updateRepeat();
 		});
 
-		// 间隔输入变化
 		intervalInput.addEventListener('input', updateRepeat);
-
-		// 自定义规则输入变化
 		manualInput.addEventListener('input', updateRepeat);
-
-		// 月份日期输入变化
 		monthDayInput.addEventListener('input', updateRepeat);
-
-		// 重复方式变化
 		whenDoneToggle.addEventListener('change', updateRepeat);
 		whenDoneToggle2.addEventListener('change', updateRepeat);
 
-		// ========== 清除按钮事件 ==========
 		clearBtn.addEventListener('click', () => {
-			// 重置UI
 			freqSelect.value = '';
 			intervalInput.value = '1';
 			whenDoneToggle.checked = true;
@@ -664,20 +745,20 @@ class EditTaskModal extends BaseTaskModal {
 				btn.style.color = 'var(--text-normal)';
 				btn.style.borderColor = 'var(--background-modifier-border)';
 			});
-
 			this.repeat = null;
+			this.repeatChanged = true;
 			previewText.textContent = 'no repeat';
 			errorMsg.style.display = 'none';
 		});
 
 		// 初始化当前值
-		this.initRepeatValue(freqSelect, intervalInput, manualInput, whenDoneToggle2, dayButtons, monthDayInput, weeklyDaysContainer, monthlyDayContainer, updateRepeat);
+		this.initRepeatFromTask(freqSelect, intervalInput, manualInput, whenDoneToggle2, dayButtons, monthDayInput, weeklyDaysContainer, monthlyDayContainer, updateRepeat);
 	}
 
 	/**
-	 * 初始化 repeat 值（从现有任务中加载）
+	 * 从当前任务初始化 repeat UI 状态
 	 */
-	protected initRepeatValue(
+	private initRepeatFromTask(
 		freqSelect: HTMLSelectElement,
 		intervalInput: HTMLInputElement,
 		manualInput: HTMLInputElement,
@@ -690,7 +771,6 @@ class EditTaskModal extends BaseTaskModal {
 	): void {
 		const currentRepeat = this.task.repeat;
 		if (!currentRepeat) {
-			// 默认选中"不重复"
 			freqSelect.value = '';
 			intervalInput.value = '1';
 			manualInput.style.display = 'none';
@@ -701,23 +781,17 @@ class EditTaskModal extends BaseTaskModal {
 
 		const config = this.parseRepeatToConfig(currentRepeat);
 		if (config) {
-			// 设置间隔
 			intervalInput.value = String(config.interval);
-
-			// 设置 when done
 			whenDoneToggle2.checked = config.whenDone;
 
-			// 判断是否是标准规则（间隔为1且没有特殊星期/日期选择）
 			const isStandardRule = config.interval === 1 &&
 				(!config.days || config.days.length <= 1) &&
 				(!config.monthDay || config.monthDay === 1);
 
 			if (isStandardRule) {
-				// 使用预设模式
 				freqSelect.value = config.frequency;
 				manualInput.style.display = 'none';
 
-				// 设置星期选择
 				if (config.days && config.days.length > 0) {
 					config.days.forEach(dayIdx => {
 						if (dayButtons[dayIdx]) {
@@ -729,7 +803,6 @@ class EditTaskModal extends BaseTaskModal {
 					weeklyDaysContainer.style.display = 'flex';
 				}
 
-				// 设置月份日期选择
 				if (config.monthDay && config.monthDay !== 'last' && typeof config.monthDay === 'number') {
 					monthDayInput.value = String(config.monthDay);
 					monthlyDayContainer.style.display = 'flex';
@@ -738,7 +811,6 @@ class EditTaskModal extends BaseTaskModal {
 					monthlyDayContainer.style.display = 'flex';
 				}
 			} else {
-				// 使用自定义模式
 				freqSelect.value = 'custom';
 				manualInput.value = currentRepeat;
 				manualInput.style.display = 'block';
@@ -746,31 +818,17 @@ class EditTaskModal extends BaseTaskModal {
 				monthlyDayContainer.style.display = 'none';
 			}
 
-			// 更新预览
-			updateRepeat();
+			// 重置变更标记
+			this.repeatChanged = false;
 		} else {
-			// 无法解析的规则，使用自定义模式
 			freqSelect.value = 'custom';
 			manualInput.value = currentRepeat;
 			manualInput.style.display = 'block';
 			weeklyDaysContainer.style.display = 'none';
 			monthlyDayContainer.style.display = 'none';
 			whenDoneToggle2.checked = currentRepeat.toLowerCase().includes('when done');
-			updateRepeat();
+			this.repeatChanged = false;
 		}
-	}
-
-	// ==================== EditTaskModal 特有方法 ====================
-
-	/**
-	 * 获取所有任务（用于推荐标签）
-	 */
-	private getAllTasks(): GCTask[] {
-		const plugin = (this.app as any).plugins.plugins['gantt-calendar'];
-		if (plugin?.taskCache) {
-			return plugin.taskCache.getAllTasks();
-		}
-		return [];
 	}
 }
 

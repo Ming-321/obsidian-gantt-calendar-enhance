@@ -77,6 +77,23 @@ export class TaskCardComponent {
 			: TaskCardClasses.modifiers.pending;
 		card.addClass(statusClass);
 
+		// 应用任务类型修饰符
+		const typeClass = task.type === 'reminder'
+			? TaskCardClasses.modifiers.typeReminder
+			: TaskCardClasses.modifiers.typeTodo;
+		card.addClass(typeClass);
+
+		// 待办过期标记
+		if (task.type === 'todo' && !task.completed && task.dueDate) {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			const due = new Date(task.dueDate);
+			due.setHours(0, 0, 0, 0);
+			if (due < today) {
+				card.addClass(TaskCardClasses.modifiers.overdue);
+			}
+		}
+
 		// 应用自定义状态颜色
 		this.renderer.applyStatusColors(task, card);
 	}
@@ -85,8 +102,15 @@ export class TaskCardComponent {
 	 * 渲染子元素
 	 */
 	private renderChildren(card: HTMLElement, task: GCTask, config: TaskCardConfig): void {
-		// 复选框
-		if (config.showCheckbox) {
+		// 复选框（仅待办显示复选框）或铃铛图标（提醒）
+		if (task.type === 'reminder') {
+			// 提醒：显示铃铛图标
+			const bellIcon = card.createEl('span', {
+				text: '🔔',
+				cls: 'gc-task-card__bell-icon'
+			});
+		} else if (config.showCheckbox) {
+			// 待办：显示复选框
 			this.renderer.createTaskCheckbox(task, card);
 		}
 
@@ -113,11 +137,6 @@ export class TaskCardComponent {
 		// 文件位置
 		if (config.showFileLocation) {
 			this.renderer.renderFileLocation(card, task);
-		}
-
-		// 警告图标
-		if (config.showWarning && task.warning) {
-			this.renderer.renderWarning(card, task);
 		}
 	}
 

@@ -105,11 +105,8 @@ export class MonthViewRenderer extends BaseViewRenderer {
 			const taskId = e.dataTransfer?.getData('taskId');
 			if (!taskId) return;
 
-			const [filePath, lineNum] = taskId.split(':');
-			const lineNumber = parseInt(lineNum, 10);
-
 			const allTasks = this.plugin.taskCache.getAllTasks();
-			const sourceTask = allTasks.find((t: GCTask) => t.filePath === filePath && t.lineNumber === lineNumber);
+			const sourceTask = allTasks.find((t: GCTask) => t.id === taskId);
 			if (!sourceTask) {
 				Logger.error('MonthView', 'Source task not found:', taskId);
 				return;
@@ -124,7 +121,6 @@ export class MonthViewRenderer extends BaseViewRenderer {
 					sourceTask,
 					dateFieldName,
 					targetDate,
-					this.plugin.settings.enabledTaskFormats
 				);
 				Logger.debug('MonthView', 'Task drag-drop update successful', { taskId, dateField: dateFieldName, targetDate });
 			} catch (error) {
@@ -262,22 +258,9 @@ export class MonthViewRenderer extends BaseViewRenderer {
 			tasks = this.applyStatusFilter(tasks);
 			// 应用标签筛选
 			tasks = this.applyTagFilter(tasks);
-			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
 
-			const normalizedTarget = new Date(targetDate);
-			normalizedTarget.setHours(0, 0, 0, 0);
-
-			// 筛选当天任务
-			let currentDayTasks = tasks.filter(task => {
-				const dateValue = (task as any)[dateField];
-				if (!dateValue) return false;
-
-				const taskDate = new Date(dateValue);
-				if (isNaN(taskDate.getTime())) return false;
-				taskDate.setHours(0, 0, 0, 0);
-
-				return taskDate.getTime() === normalizedTarget.getTime();
-			});
+			// 使用类型感知的日期过滤：待办从 startDate 到完成，提醒仅 dueDate 当天
+			let currentDayTasks = this.filterTasksForDate(tasks, targetDate);
 
 			// 应用排序
 			currentDayTasks = sortTasks(currentDayTasks, this.sortState);

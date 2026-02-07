@@ -16,7 +16,6 @@ export async function postponeTask(
 	app: App,
 	task: GCTask,
 	days: number,
-	enabledFormats: string[],
 	onRefresh: () => void,
 	fromNow = false
 ): Promise<void> {
@@ -41,7 +40,7 @@ export async function postponeTask(
 
 		updates.dueDate = newDate;
 
-		await updateTaskProperties(app, task, updates, enabledFormats);
+		await updateTaskProperties(app, task, updates);
 		onRefresh();
 
 		const dateStr = newDate.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });

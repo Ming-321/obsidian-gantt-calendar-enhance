@@ -14,7 +14,6 @@ import { Logger } from '../../utils/logger';
 export async function restoreTask(
 	app: App,
 	task: GCTask,
-	enabledFormats: string[],
 	onRefresh: () => void
 ): Promise<void> {
 	try {
@@ -35,7 +34,7 @@ export async function restoreTask(
 			status: 'todo',
 			cancelled: false,
 			cancelledDate: null
-		}, enabledFormats);
+		});
 
 		new Notice('任务已恢复');
 		onRefresh();

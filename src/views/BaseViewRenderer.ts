@@ -274,6 +274,64 @@ export abstract class BaseViewRenderer {
 	}
 
 	/**
+	 * 按任务类型过滤指定日期应显示的任务
+	 *
+	 * - 待办 (todo)：从 startDate 到完成（或 dueDate 取较晚者），持续显示
+	 * - 提醒 (reminder)：仅在 dueDate 当天显示
+	 * - 已归档任务默认不显示
+	 *
+	 * @param tasks 原始任务列表
+	 * @param targetDate 目标日期
+	 * @returns 应在该日期显示的任务
+	 */
+	protected filterTasksForDate(tasks: GCTask[], targetDate: Date): GCTask[] {
+		const normalizedTarget = new Date(targetDate);
+		normalizedTarget.setHours(0, 0, 0, 0);
+		const targetTime = normalizedTarget.getTime();
+
+		return tasks.filter(task => {
+			// 排除已归档任务
+			if (task.archived) return false;
+
+			if (task.type === 'reminder') {
+				// 提醒：仅在 dueDate 当天显示
+				if (!task.dueDate) return false;
+				const dueDate = new Date(task.dueDate);
+				dueDate.setHours(0, 0, 0, 0);
+				return dueDate.getTime() === targetTime;
+			} else {
+				// 待办：从 startDate 到完成前持续显示
+				// 1. 任务需有 dueDate 或 startDate
+				const startDate = task.startDate ? new Date(task.startDate) : (task.createdDate ? new Date(task.createdDate) : null);
+				const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+
+				if (!startDate && !dueDate) return false;
+
+				if (startDate) startDate.setHours(0, 0, 0, 0);
+				if (dueDate) dueDate.setHours(0, 0, 0, 0);
+
+				// 已完成任务：仅在完成日当天显示
+				if (task.completed && task.completionDate) {
+					const completionDate = new Date(task.completionDate);
+					completionDate.setHours(0, 0, 0, 0);
+					return completionDate.getTime() === targetTime;
+				}
+
+				// 活跃待办：从 startDate 开始，直到 dueDate 后（过期继续显示）
+				const rangeStart = startDate ? startDate.getTime() : -Infinity;
+				// 未完成的过期待办继续显示到今天
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+				const rangeEnd = dueDate
+					? Math.max(dueDate.getTime(), today.getTime())
+					: Infinity;
+
+				return targetTime >= rangeStart && targetTime <= rangeEnd;
+			}
+		});
+	}
+
+	/**
 	 * 清理悬浮提示
 	 */
 	protected clearTaskTooltips(): void {
@@ -282,10 +340,12 @@ export abstract class BaseViewRenderer {
 	}
 
 	/**
-	 * 打开任务所在文件
+	 * 打开任务编辑弹窗
+	 * 任务数据现在存储在 JSON 中，不再关联 Markdown 文件
 	 */
 	protected async openTaskFile(task: GCTask): Promise<void> {
-		await openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
+		// TODO: 打开 EditTaskModal 替代打开文件
+		Logger.debug('BaseViewRenderer', `Open task: ${task.id} - ${task.description}`);
 	}
 
 	/**

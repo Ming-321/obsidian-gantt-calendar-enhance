@@ -193,22 +193,9 @@ export class DayViewRenderer extends BaseViewRenderer {
 			tasks = this.applyStatusFilter(tasks);
 			// 应用标签筛选
 			tasks = this.applyTagFilter(tasks);
-			const dateField = this.plugin.settings.dateFilterField || 'dueDate';
 
-			const normalizedTarget = new Date(targetDate);
-			normalizedTarget.setHours(0, 0, 0, 0);
-
-			// 筛选当天任务
-			let currentDayTasks = tasks.filter(task => {
-				const dateValue = (task as any)[dateField];
-				if (!dateValue) return false;
-
-				const taskDate = new Date(dateValue);
-				if (isNaN(taskDate.getTime())) return false;
-				taskDate.setHours(0, 0, 0, 0);
-
-				return taskDate.getTime() === normalizedTarget.getTime();
-			});
+			// 使用类型感知的日期过滤：待办从 startDate 到完成，提醒仅 dueDate 当天
+			let currentDayTasks = this.filterTasksForDate(tasks, targetDate);
 
 			// 应用排序
 			currentDayTasks = sortTasks(currentDayTasks, this.sortState);
@@ -220,7 +207,7 @@ export class DayViewRenderer extends BaseViewRenderer {
 				return;
 			}
 
-			currentDayTasks.forEach(task => this.renderTaskItem(task, listContainer, normalizedTarget));
+			currentDayTasks.forEach(task => this.renderTaskItem(task, listContainer, targetDate));
 		} catch (error) {
 			Logger.error('DayView', 'Error loading day view tasks', error);
 			listContainer.empty();

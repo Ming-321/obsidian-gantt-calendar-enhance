@@ -14,8 +14,7 @@ import { Logger } from '../../utils/logger';
 export async function setTaskPriority(
 	app: App,
 	task: GCTask,
-	priority: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal',
-	enabledFormats: string[],
+	priority: 'high' | 'normal' | 'low',
 	onRefresh: () => void
 ): Promise<void> {
 	try {
@@ -23,7 +22,7 @@ export async function setTaskPriority(
 			priority: priority
 		};
 
-		await updateTaskProperties(app, task, updates, enabledFormats);
+		await updateTaskProperties(app, task, updates);
 		onRefresh();
 		new Notice('优先级已更新');
 	} catch (err) {

@@ -3244,3 +3244,98 @@ Author: sugar
 	fill: var(--background-modifier-hover) !important;
 	opacity: 1 !important;
 }
+
+/* ============================================
+   任务类型视觉区分 — 待办 vs 提醒
+   ============================================ */
+
+/* === 提醒卡片 — 浅蓝色调，铃铛图标 === */
+.gc-task-card--type-reminder {
+	border-left: 3px solid var(--color-blue);
+	background-color: rgba(var(--color-blue-rgb, 68, 138, 255), 0.06);
+}
+
+.gc-task-card--type-reminder .gc-task-card__bell-icon {
+	flex-shrink: 0;
+	margin-right: 4px;
+	font-size: 0.85em;
+	line-height: 1;
+}
+
+/* 提醒卡片文字稍微偏蓝 */
+.gc-task-card--type-reminder .gc-task-card__text {
+	color: var(--text-normal);
+}
+
+/* === 待办卡片 — 默认样式，有复选框 === */
+.gc-task-card--type-todo {
+	border-left: 3px solid var(--interactive-accent);
+}
+
+/* === 待办过期标记 — 红色边框 + 红色闪烁 === */
+.gc-task-card--overdue {
+	border-left-color: var(--color-red) !important;
+	background-color: rgba(var(--color-red-rgb, 233, 30, 99), 0.06);
+}
+
+.gc-task-card--overdue .gc-task-card__text {
+	color: var(--text-error);
+}
+
+/* === 紧凑模式下提醒铃铛调小 === */
+.gc-task-card--compact .gc-task-card__bell-icon {
+	font-size: 0.75em;
+	margin-right: 2px;
+}
+
+/* === Tooltip 类型徽章 === */
+.gc-task-tooltip__type-badge {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 0.8em;
+	font-weight: 500;
+	margin-right: 4px;
+	vertical-align: middle;
+}
+
+.gc-task-tooltip__type-badge--todo {
+	background-color: rgba(var(--color-accent-rgb, 124, 77, 255), 0.12);
+	color: var(--interactive-accent);
+}
+
+.gc-task-tooltip__type-badge--reminder {
+	background-color: rgba(var(--color-blue-rgb, 68, 138, 255), 0.12);
+	color: var(--color-blue);
+}
+
+/* === 甘特图类型样式 === */
+/* 提醒在甘特图中显示为圆点标记 */
+.task-type-reminder .bar {
+	rx: 8;
+	ry: 8;
+}
+
+.task-type-reminder .bar-label {
+	font-style: italic;
+}
+
+/* 待办在甘特图中显示为标准时间段条 */
+.task-type-todo .bar {
+	rx: 2;
+	ry: 2;
+}
+
+/* === 优先级样式（三级系统）=== */
+.priority-high {
+	color: var(--color-red);
+	font-weight: 600;
+}
+
+.priority-normal {
+	color: var(--text-muted);
+}
+
+.priority-low {
+	color: var(--color-blue);
+}

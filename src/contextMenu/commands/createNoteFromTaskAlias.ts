@@ -17,7 +17,6 @@ export async function createNoteFromTaskAlias(
 	app: App,
 	task: GCTask,
 	defaultPath: string,
-	enabledFormats: string[] = ['tasks']
 ): Promise<void> {
 	// 1) 先检查任务中是否已存在双链，如果有则直接打开
 	const existingLink = checkExistingWikiLink(task, app);
@@ -43,7 +42,7 @@ export async function createNoteFromTaskAlias(
 		displayText: baseDesc,
 	};
 
-	await createNoteFromTaskCore(app, task, defaultPath, fileName, options, enabledFormats);
+	await createNoteFromTaskCore(app, task, defaultPath, fileName, options);
 }
 
 // ==================== 弹窗组件 ====================

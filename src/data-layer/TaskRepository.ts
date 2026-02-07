@@ -9,6 +9,7 @@
  *
  * 设计模式：仓库模式（Repository Pattern）
  * 直接使用 GCTask 作为内部格式，避免无意义的转换。
+ * 任务通过 UUID (task.id) 进行唯一标识。
  */
 
 import { EventBus } from './EventBus';
@@ -20,17 +21,9 @@ import {
 import { IDataSource } from './IDataSource';
 import { Logger } from '../utils/logger';
 
-/**
- * 生成任务ID
- */
-function generateTaskId(task: GCTask): string {
-	return `${task.filePath}:${task.lineNumber}`;
-}
-
 export class TaskRepository {
 	private dataSources: Map<string, IDataSource> = new Map();
 	private taskCache: Map<string, GCTask> = new Map();
-	private fileIndex: Map<string, Set<string>> = new Map();
 	private eventBus: EventBus;
 
 	constructor(eventBus: EventBus) {
@@ -59,6 +52,15 @@ export class TaskRepository {
 	}
 
 	/**
+	 * 根据ID获取任务
+	 * @param taskId - 任务ID
+	 * @returns 任务对象或undefined
+	 */
+	getTaskById(taskId: string): GCTask | undefined {
+		return this.taskCache.get(taskId);
+	}
+
+	/**
 	 * 根据日期范围获取任务
 	 * @param start - 开始日期
 	 * @param end - 结束日期
@@ -77,15 +79,12 @@ export class TaskRepository {
 	}
 
 	/**
-	 * 根据文件路径获取任务
-	 * @param filePath - 文件路径
+	 * 根据任务类型获取任务
+	 * @param type - 任务类型
 	 * @returns 任务列表
 	 */
-	getTasksByFilePath(filePath: string): GCTask[] {
-		const taskIds = this.fileIndex.get(filePath) || new Set();
-		return Array.from(taskIds)
-			.map(id => this.taskCache.get(id)!)
-			.filter(Boolean);
+	getTasksByType(type: 'todo' | 'reminder'): GCTask[] {
+		return Array.from(this.taskCache.values()).filter(task => task.type === type);
 	}
 
 	/**
@@ -95,12 +94,20 @@ export class TaskRepository {
 	getStats(): {
 		totalTasks: number;
 		dataSources: number;
-		totalFiles: number;
+		todoCount: number;
+		reminderCount: number;
 	} {
+		let todoCount = 0;
+		let reminderCount = 0;
+		for (const task of this.taskCache.values()) {
+			if (task.type === 'todo') todoCount++;
+			else if (task.type === 'reminder') reminderCount++;
+		}
 		return {
 			totalTasks: this.taskCache.size,
 			dataSources: this.dataSources.size,
-			totalFiles: this.fileIndex.size
+			todoCount,
+			reminderCount,
 		};
 	}
 
@@ -129,11 +136,18 @@ export class TaskRepository {
 			);
 		}
 
+		if (options.type?.length) {
+			filtered = filtered.filter(t => options.type!.includes(t.type));
+		}
+
+		if (options.archived !== undefined) {
+			filtered = filtered.filter(t => t.archived === options.archived);
+		}
+
 		if (options.dateRange) {
 			const fieldMap: Record<keyof import('./types').TaskDates, keyof GCTask> = {
 				created: 'createdDate',
 				start: 'startDate',
-				scheduled: 'scheduledDate',
 				due: 'dueDate',
 				completed: 'completionDate',
 				cancelled: 'cancelledDate'
@@ -144,10 +158,6 @@ export class TaskRepository {
 				const date = t[gcField] as Date | undefined;
 				return date && date >= options.dateRange!.start && date <= options.dateRange!.end;
 			});
-		}
-
-		if (options.sources?.length) {
-			filtered = filtered.filter(t => options.sources!.includes(t.filePath));
 		}
 
 		return filtered;
@@ -167,23 +177,12 @@ export class TaskRepository {
 			created: changes.created.length,
 			updated: changes.updated.length,
 			deleted: changes.deleted.length,
-			deletedFilePaths: changes.deletedFilePaths?.length || 0
+			deletedIds: changes.deletedIds?.length || 0
 		});
 
 		// 处理新增任务
 		for (const task of changes.created) {
-			const taskId = generateTaskId(task);
-			this.taskCache.set(taskId, task);
-
-			// 更新文件索引
-			if (task.filePath) {
-				if (!this.fileIndex.has(task.filePath)) {
-					this.fileIndex.set(task.filePath, new Set());
-				}
-				this.fileIndex.get(task.filePath)!.add(taskId);
-			}
-
-			// 发布事件
+			this.taskCache.set(task.id, task);
 			this.eventBus.emit('task:created', { task });
 		}
 
@@ -191,12 +190,10 @@ export class TaskRepository {
 		for (const { id, changes: taskChanges, task: newTask } of changes.updated) {
 			let updatedTask: GCTask | undefined;
 
-			// 优先使用完整的新任务对象（如果提供）
 			if (newTask) {
 				updatedTask = newTask;
 				this.taskCache.set(id, newTask);
 			} else {
-				// 否则使用增量更新
 				const task = this.taskCache.get(id);
 				if (task) {
 					updatedTask = { ...task, ...taskChanges };
@@ -205,44 +202,21 @@ export class TaskRepository {
 			}
 
 			if (updatedTask) {
-				// 发布事件
 				this.eventBus.emit('task:updated', { task: updatedTask });
 			}
 		}
 
 		// 处理删除任务
 		for (const task of changes.deleted) {
-			const taskId = generateTaskId(task);
-			this.taskCache.delete(taskId);
-
-			// 更新文件索引
-			if (task.filePath) {
-				const taskIds = this.fileIndex.get(task.filePath);
-				if (taskIds) {
-					taskIds.delete(taskId);
-					if (taskIds.size === 0) {
-						this.fileIndex.delete(task.filePath);
-					}
-				}
-			}
-
-			// 发布事件
-			this.eventBus.emit('task:deleted', { taskId });
+			this.taskCache.delete(task.id);
+			this.eventBus.emit('task:deleted', { taskId: task.id });
 		}
 
-		// 处理文件删除（按文件路径清理所有任务）
-		if (changes.deletedFilePaths) {
-			for (const filePath of changes.deletedFilePaths) {
-				const taskIds = this.fileIndex.get(filePath);
-				if (taskIds) {
-					// 删除该文件的所有任务
-					for (const taskId of taskIds) {
-						this.taskCache.delete(taskId);
-						this.eventBus.emit('task:deleted', { taskId });
-					}
-					// 清理文件索引
-					this.fileIndex.delete(filePath);
-				}
+		// 处理按ID批量删除
+		if (changes.deletedIds) {
+			for (const taskId of changes.deletedIds) {
+				this.taskCache.delete(taskId);
+				this.eventBus.emit('task:deleted', { taskId });
 			}
 		}
 
@@ -256,8 +230,5 @@ export class TaskRepository {
 	 */
 	clear(): void {
 		this.taskCache.clear();
-		this.fileIndex.clear();
-		// 【修复】不清空 eventBus，因为它是 TaskStore 的实例，TaskStore 的监听器会受影响
-		// this.eventBus.clear();
 	}
 }

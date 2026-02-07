@@ -3,7 +3,6 @@ import type { GCTask } from '../../types';
 import type { TaskCardConfig, TimeFieldConfig } from './TaskCardConfig';
 import { TaskCardClasses, TimeBadgeClasses } from '../../utils/bem';
 import { registerTaskContextMenu } from '../../contextMenu/contextMenuIndex';
-import { openFileInExistingLeaf } from '../../utils/fileOpener';
 import { updateTaskCompletion } from '../../tasks/taskUpdater';
 import { getStatusColor, DEFAULT_TASK_STATUSES, getCurrentThemeMode } from '../../tasks/taskStatus';
 import { RegularExpressions } from '../../utils/RegularExpressions';
@@ -34,29 +33,25 @@ export class TaskCardRenderer {
 	}
 
 	/**
-	 * 获取优先级图标
+	 * 获取优先级图标（三级系统）
 	 */
 	getPriorityIcon(priority?: string): string {
 		switch (priority) {
-			case 'highest': return '🔺';
-			case 'high': return '⏫';
-			case 'medium': return '🔼';
-			case 'low': return '🔽';
-			case 'lowest': return '⏬';
+			case 'high': return '🔴';
+			case 'normal': return '⚪';
+			case 'low': return '🔵';
 			default: return '';
 		}
 	}
 
 	/**
-	 * 获取优先级CSS类名
+	 * 获取优先级CSS类名（三级系统）
 	 */
 	getPriorityClass(priority?: string): string {
 		switch (priority) {
-			case 'highest': return 'priority-highest';
 			case 'high': return 'priority-high';
-			case 'medium': return 'priority-medium';
+			case 'normal': return 'priority-normal';
 			case 'low': return 'priority-low';
-			case 'lowest': return 'priority-lowest';
 			default: return '';
 		}
 	}
@@ -101,7 +96,6 @@ export class TaskCardRenderer {
 					this.app,
 					task,
 					isNowCompleted,
-					this.plugin.settings.enabledTaskFormats
 				);
 				taskItem.toggleClass(TaskCardClasses.modifiers.completed, isNowCompleted);
 				taskItem.toggleClass(TaskCardClasses.modifiers.pending, !isNowCompleted);
@@ -195,9 +189,6 @@ export class TaskCardRenderer {
 		if (config.showStart && task.startDate) {
 			this.renderTimeBadge(container, '开始', task.startDate, TimeBadgeClasses.start);
 		}
-		if (config.showScheduled && task.scheduledDate) {
-			this.renderTimeBadge(container, '计划', task.scheduledDate, TimeBadgeClasses.scheduled);
-		}
 		if (config.showDue && task.dueDate) {
 			const isOverdue = config.showOverdueIndicator && task.dueDate < new Date() && !task.completed;
 			this.renderTimeBadge(container, '截止', task.dueDate, TimeBadgeClasses.due, isOverdue);
@@ -231,22 +222,10 @@ export class TaskCardRenderer {
 	 * 渲染文件位置
 	 */
 	renderFileLocation(card: HTMLElement, task: GCTask): void {
+		const typeText = task.type === 'todo' ? '待办' : '提醒';
 		card.createEl('span', {
-			text: `${task.fileName}:${task.lineNumber}`,
+			text: typeText,
 			cls: TaskCardClasses.elements.file
-		});
-	}
-
-	/**
-	 * 渲染警告图标
-	 */
-	renderWarning(card: HTMLElement, task: GCTask): void {
-		if (!task.warning) return;
-
-		card.createEl('span', {
-			text: '⚠️',
-			cls: TaskCardClasses.elements.warning,
-			attr: { title: task.warning }
 		});
 	}
 
@@ -254,7 +233,8 @@ export class TaskCardRenderer {
 	 * 打开任务所在文件
 	 */
 	async openTaskFile(task: GCTask): Promise<void> {
-		await openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
+		// TODO: Open edit modal for task with task.id
+		// Previously used: openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
 	}
 
 	/**
@@ -278,7 +258,7 @@ export class TaskCardRenderer {
 	 */
 	attachDragBehavior(card: HTMLElement, task: GCTask, targetDate?: Date): void {
 		card.draggable = true;
-		card.setAttribute('data-task-id', `${task.filePath}:${task.lineNumber}`);
+		card.setAttribute('data-task-id', task.id);
 
 		if (targetDate) {
 			card.setAttribute('data-target-date', targetDate.toISOString().split('T')[0]);
@@ -290,7 +270,7 @@ export class TaskCardRenderer {
 		card.addEventListener('dragstart', (e: DragEvent) => {
 			if (e.dataTransfer) {
 				e.dataTransfer.effectAllowed = 'move';
-				e.dataTransfer.setData('taskId', `${task.filePath}:${task.lineNumber}`);
+				e.dataTransfer.setData('taskId', task.id);
 				card.style.opacity = '0.6';
 
 				// 拖动时取消悬浮窗
@@ -311,7 +291,6 @@ export class TaskCardRenderer {
 		task: GCTask,
 		onRefresh?: () => void
 	): void {
-		const enabledFormats = this.plugin.settings.enabledTaskFormats || ['tasks'];
 		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
 
 		// 获取 TooltipManager 单例
@@ -326,7 +305,7 @@ export class TaskCardRenderer {
 			card,
 			task,
 			this.app,
-			enabledFormats,
+			this.plugin,
 			taskNotePath,
 			onRefresh || (() => {})
 		);

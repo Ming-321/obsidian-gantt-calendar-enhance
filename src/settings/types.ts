@@ -89,6 +89,17 @@ export interface GanttCalendarSettings {
 	ganttStartField: DateFieldType;  // 甘特图开始时间字段
 	ganttEndField: DateFieldType;    // 甘特图结束时间字段
 
+	// ========== GitHub 数据同步设置 ==========
+	githubSync?: {
+		enabled: boolean;
+		token: string;
+		owner: string;
+		repo: string;
+		lastSyncTime?: string;
+		lastSyncStatus?: 'success' | 'error';
+		lastSyncError?: string;
+	};
+
 	// ========== 同步设置 ==========
 	syncConfiguration?: {
 		enabledSources: {

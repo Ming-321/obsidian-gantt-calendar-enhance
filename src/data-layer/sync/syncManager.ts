@@ -220,7 +220,7 @@ export class SyncManager {
                 // 添加同步元数据
                 const tasksWithMeta = tasks.map(task => {
                     const existing = this.versionTracker.getMetadata(
-                        task.sourceId || `${sourceId}:${task.filePath}:${task.lineNumber}`
+                        task.sourceId || task.id
                     );
 
                     return {

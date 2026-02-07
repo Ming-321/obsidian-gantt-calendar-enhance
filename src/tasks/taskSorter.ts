@@ -14,7 +14,6 @@ export const SORT_OPTIONS: Array<{ field: SortField; icon: string; label: string
 	{ field: 'description', icon: '🔤', label: '字母排序' },
 	{ field: 'createdDate', icon: '➕', label: '创建时间' },
 	{ field: 'startDate', icon: '🛫', label: '开始时间' },
-	{ field: 'scheduledDate', icon: '⏳', label: '规划时间' },
 	{ field: 'dueDate', icon: '📅', label: '截止时间' },
 	{ field: 'completionDate', icon: '✅', label: '完成时间' },
 ];
@@ -24,12 +23,9 @@ export const SORT_OPTIONS: Array<{ field: SortField; icon: string; label: string
  * 数值越大优先级越高（用于降序排序时高优先级在前）
  */
 const PRIORITY_WEIGHTS: Record<string, number> = {
-	'highest': 5,
-	'high': 4,
-	'medium': 3,
+	'high': 3,
 	'normal': 2,
 	'low': 1,
-	'lowest': 0
 };
 
 /**
@@ -72,7 +68,6 @@ const comparators: Record<SortField, (a: GCTask, b: GCTask) => number> = {
 
 	createdDate: (a, b) => compareDates(a.createdDate, b.createdDate, a, b),
 	startDate: (a, b) => compareDates(a.startDate, b.startDate, a, b),
-	scheduledDate: (a, b) => compareDates(a.scheduledDate, b.scheduledDate, a, b),
 	dueDate: (a, b) => compareDates(a.dueDate, b.dueDate, a, b),
 	completionDate: (a, b) => compareDates(a.completionDate, b.completionDate, a, b),
 };

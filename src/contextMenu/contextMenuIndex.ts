@@ -3,7 +3,8 @@
  * @module contextMenu/contextMenuIndex
  */
 
-import { App, Menu, setIcon } from 'obsidian';
+import { App, Menu } from 'obsidian';
+import type GanttCalendarPlugin from '../../main';
 import type { GCTask } from '../types';
 import { createNoteFromTask } from './commands/createNoteFromTask';
 import { createNoteFromTaskAlias } from './commands/createNoteFromTaskAlias';
@@ -19,7 +20,7 @@ import { postponeTask } from './commands/postponeTask';
  * @param taskElement 任务元素
  * @param task 任务对象
  * @param app Obsidian App 实例
- * @param enabledFormats 启用的任务格式
+ * @param plugin 插件实例
  * @param defaultNotePath 默认笔记路径
  * @param onRefresh 刷新回调
  */
@@ -27,7 +28,7 @@ export function registerTaskContextMenu(
 	taskElement: HTMLElement,
 	task: GCTask,
 	app: App,
-	enabledFormats: string[],
+	plugin: GanttCalendarPlugin,
 	defaultNotePath: string,
 	onRefresh: () => void
 ): void {
@@ -42,14 +43,12 @@ export function registerTaskContextMenu(
 			item
 				.setTitle('编辑任务')
 				.setIcon('pencil')
-				   .onClick(() => {
-					   openEditTaskModal(app, task, enabledFormats, () => {
-						   onRefresh();
-					   }, true);
-				   });
+				.onClick(() => {
+					openEditTaskModal(app, plugin, task, () => {
+						onRefresh();
+					});
+				});
 		});
-
-
 
 		// 分隔线
 		menu.addSeparator();
@@ -60,7 +59,7 @@ export function registerTaskContextMenu(
 				.setTitle('创建任务笔记:同名')
 				.setIcon('file-plus')
 				.onClick(() => {
-					createNoteFromTask(app, task, defaultNotePath, enabledFormats);
+					createNoteFromTask(app, task, defaultNotePath);
 				});
 		});
 
@@ -70,27 +69,24 @@ export function registerTaskContextMenu(
 				.setTitle('创建任务笔记:别名')
 				.setIcon('file-plus')
 				.onClick(() => {
-					createNoteFromTaskAlias(app, task, defaultNotePath, enabledFormats);
+					createNoteFromTaskAlias(app, task, defaultNotePath);
 				});
 		});
 
 		// 分隔线
 		menu.addSeparator();
 
-		// 第一组：设置优先级（6个选项直接显示）
-		const priorities: Array<{ value: 'highest' | 'high' | 'medium' | 'low' | 'lowest' | 'normal', label: string, icon: string }> = [
-			{ value: 'highest', label: '最高', icon: '🔺' },
-			{ value: 'high', label: '高', icon: '⏫' },
-			{ value: 'medium', label: '中', icon: '🔼' },
-			{ value: 'normal', label: '普通', icon: '◽' },
-			{ value: 'low', label: '低', icon: '🔽' },
-			{ value: 'lowest', label: '最低', icon: '⏬' },
+		// 优先级设置（三级）
+		const priorities: Array<{ value: 'high' | 'normal' | 'low', label: string, icon: string }> = [
+			{ value: 'high', label: '高', icon: '🔴' },
+			{ value: 'normal', label: '普通', icon: '⚪' },
+			{ value: 'low', label: '低', icon: '🔵' },
 		];
 
 		priorities.forEach(p => {
 			menu.addItem((item) => {
 				item.setTitle(`${p.icon} ${p.label}`).onClick(() => {
-					setTaskPriority(app, task, p.value, enabledFormats, onRefresh);
+					setTaskPriority(app, task, p.value, onRefresh);
 				});
 			});
 		});
@@ -98,7 +94,7 @@ export function registerTaskContextMenu(
 		// 分隔线
 		menu.addSeparator();
 
-		// 第二组：任务延期（1天、3天、7天）和设置截止日期
+		// 任务延期
 		const postponeOptions = [
 			{ days: 1, label: '延期 1 天' },
 			{ days: 3, label: '延期 3 天' },
@@ -114,7 +110,7 @@ export function registerTaskContextMenu(
 		postponeOptions.forEach(option => {
 			menu.addItem((item) => {
 				item.setTitle(option.label).setIcon('calendar-clock').onClick(() => {
-					postponeTask(app, task, option.days, enabledFormats, onRefresh, false);
+					postponeTask(app, task, option.days, onRefresh, false);
 				});
 			});
 		});
@@ -122,7 +118,7 @@ export function registerTaskContextMenu(
 		setDueDateOptions.forEach(option => {
 			menu.addItem((item) => {
 				item.setTitle(option.label).setIcon('calendar-check').onClick(() => {
-					postponeTask(app, task, option.days, enabledFormats, onRefresh, true);
+					postponeTask(app, task, option.days, onRefresh, true);
 				});
 			});
 		});
@@ -130,7 +126,7 @@ export function registerTaskContextMenu(
 		// 分隔线
 		menu.addSeparator();
 
-		// 取消任务/恢复任务 - 根据任务状态动态显示
+		// 取消/恢复任务
 		const isCancelled = task.cancelled === true;
 		menu.addItem((item) => {
 			item
@@ -138,9 +134,9 @@ export function registerTaskContextMenu(
 				.setIcon(isCancelled ? 'rotate-ccw' : 'x')
 				.onClick(() => {
 					if (isCancelled) {
-						restoreTask(app, task, enabledFormats, onRefresh);
+						restoreTask(app, task, onRefresh);
 					} else {
-						cancelTask(app, task, enabledFormats, onRefresh);
+						cancelTask(app, task, onRefresh);
 					}
 				});
 		});

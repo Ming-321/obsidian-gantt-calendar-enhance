@@ -6,7 +6,7 @@
  */
 
 import { IDataSource, ChangeEventHandler } from '../../IDataSource';
-import type { GCTask } from '../../../types';
+import type { GCTask, TaskPriority } from '../../../types';
 import type { DataSourceConfig, SyncStatus } from '../../types';
 import type { GCTaskWithSync, DataSourceType } from '../../sync/syncTypes';
 import { Logger } from '../../../utils/logger';
@@ -339,17 +339,27 @@ export class CalDAVDataSource implements IDataSource {
     }
 
     /**
+     * 生成 UUID
+     */
+    private generateUUID(): string {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    }
+
+    /**
      * 创建占位任务
      */
     protected createPlaceholderTask(id: string): GCTask {
         return {
-            filePath: `${this.sourceId}/${id}`,
-            fileName: `${this.sourceId}.md`,
-            lineNumber: 0,
-            content: '',
+            id: this.generateUUID(),
+            type: 'todo',
             description: 'Deleted task',
             completed: false,
             priority: 'normal',
+            archived: false,
             sourceId: id,
         };
     }

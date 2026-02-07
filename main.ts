@@ -32,9 +32,12 @@ export default class GanttCalendarPlugin extends Plugin {
 		// 2. 初始化日志
 		Logger.init(this);
 
-		// 3. 初始化任务缓存
+		// 3. 初始化任务缓存（使用 JSON 数据源）
 		this.taskCache = new TaskStore(this.app);
 		this.scheduleTaskCacheInit();
+
+		// 3.5 初始化 GitHub 同步（如果已配置）
+		this.initGitHubSync();
 
 		// 4. 初始化视图管理器
 		this.viewManager = new ViewManager(this.app);
@@ -60,10 +63,12 @@ export default class GanttCalendarPlugin extends Plugin {
 		this.syncManagerBridge.initialize(this.settings.syncConfiguration);
 	}
 
-	onunload() {
+	async onunload() {
 		// 按相反顺序清理
 		this.syncManagerBridge?.destroy();
 		this.themeManager?.destroy();
+		// 保存任务数据后清理
+		await this.taskCache?.flushSave();
 		this.taskCache?.clear();
 		TooltipManager.reset();
 		this.app.workspace.getLeavesOfType(GC_VIEW_ID).forEach(leaf => leaf.detach());
@@ -77,14 +82,6 @@ export default class GanttCalendarPlugin extends Plugin {
 	 */
 	async saveSettings(): Promise<void> {
 		await this.settingsManager.saveSettings(this.settings);
-
-		// 更新任务缓存
-		if (this.taskCache) {
-			await this.taskCache.updateSettings(
-				this.settings.globalTaskFilter,
-				this.settings.enabledTaskFormats
-			);
-		}
 
 		// 更新同步管理器配置
 		if (this.syncManagerBridge) {
@@ -110,15 +107,12 @@ export default class GanttCalendarPlugin extends Plugin {
 
 	/**
 	 * 安排任务缓存初始化
-	 * 布局就绪后延迟触发，避免 vault 未就绪
+	 * 布局就绪后延迟触发，加载 JSON 任务数据
 	 */
 	private scheduleTaskCacheInit(): void {
 		this.app.workspace.onLayoutReady(() => {
 			setTimeout(() => {
-				this.taskCache.initialize(
-					this.settings.globalTaskFilter,
-					this.settings.enabledTaskFormats
-				).then(() => {
+				this.taskCache.initialize().then(() => {
 					Logger.stats('Main', 'Task cache initialized');
 					this.refreshCalendarViews();
 				}).catch(error => {
@@ -127,6 +121,37 @@ export default class GanttCalendarPlugin extends Plugin {
 				});
 			}, 800);
 		});
+	}
+
+	/**
+	 * 初始化 GitHub 同步
+	 */
+	private initGitHubSync(): void {
+		const cfg = this.settings.githubSync;
+		if (!cfg?.enabled || !cfg.token || !cfg.owner || !cfg.repo) return;
+
+		this.taskCache.configureGitHubSync(
+			{ token: cfg.token, owner: cfg.owner, repo: cfg.repo },
+			(time) => {
+				// 同步成功回调
+				if (this.settings.githubSync) {
+					this.settings.githubSync.lastSyncTime = time;
+					this.settings.githubSync.lastSyncStatus = 'success';
+					this.settings.githubSync.lastSyncError = undefined;
+					this.saveSettings();
+				}
+			},
+			(error) => {
+				// 同步失败回调
+				if (this.settings.githubSync) {
+					this.settings.githubSync.lastSyncStatus = 'error';
+					this.settings.githubSync.lastSyncError = error;
+					this.saveSettings();
+				}
+			}
+		);
+
+		Logger.info('Main', 'GitHub sync initialized', { owner: cfg.owner, repo: cfg.repo });
 	}
 
 	/**

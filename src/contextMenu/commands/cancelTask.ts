@@ -15,7 +15,6 @@ import { Logger } from '../../utils/logger';
 export async function cancelTask(
 	app: App,
 	task: GCTask,
-	enabledFormats: string[],
 	onRefresh: () => void
 ): Promise<void> {
 	try {
@@ -37,7 +36,7 @@ export async function cancelTask(
 			status: 'canceled',
 			cancelled: true,
 			cancelledDate: new Date()
-		}, enabledFormats);
+		});
 
 		new Notice('任务已取消');
 		onRefresh();

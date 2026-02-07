@@ -875,14 +875,13 @@ export class SvgGanttRenderer {
 	}
 
 	/**
-	 * 处理任务列表项点击事件 - 跳转到文件
+	 * 处理任务列表项点击事件
 	 */
 	private handleTaskListItemClick(task: GanttChartTask): void {
-		if (!task.filePath || !task.lineNumber || !this.app) return;
-
-		// 使用 openFileInExistingLeaf 跳转到文件
-		const { openFileInExistingLeaf } = require('../../utils/fileOpener');
-		openFileInExistingLeaf(this.app, task.filePath, task.lineNumber);
+		// Delegate to config on_click handler
+		if (this.config.on_click) {
+			this.config.on_click(task);
+		}
 	}
 
 	/**
@@ -1357,7 +1356,7 @@ export class SvgGanttRenderer {
 	 * @param mousePosition - 鼠标位置（可选）
 	 */
 	private showPopup(task: GanttChartTask, targetElement: Element, mousePosition?: MousePosition): void {
-		if (!this.plugin || !task.filePath) return;
+		if (!this.plugin) return;
 
 		// 从 this.tasks 中获取最新的任务对象（避免使用闭包中的旧对象）
 		// 因为 updateTasks 只更新视觉属性，不更新事件监听器引用的任务对象

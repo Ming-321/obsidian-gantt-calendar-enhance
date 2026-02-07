@@ -3,6 +3,18 @@ import { TaskStatusType } from './tasks/taskStatus';
 
 export type CalendarViewType = 'year' | 'month' | 'week' | 'day' | 'task' | 'gantt';
 
+/**
+ * 任务类型
+ * - todo: 待办事项 — 截止日前持续显示，需手动完成，可延期
+ * - reminder: 提醒 — 仅在指定日期显示，到期自动完成并归档
+ */
+export type TaskType = 'todo' | 'reminder';
+
+/**
+ * 任务优先级（三级）
+ */
+export type TaskPriority = 'high' | 'normal' | 'low';
+
 // 甘特图时间颗粒度类型（仅支持周视图）
 export type GanttTimeGranularity = 'week';
 
@@ -70,50 +82,32 @@ export interface CalendarMonth {
 /**
  * 全局任务数据结构 (GC = GanttCalendar)
  *
- * 表示从 Markdown 文件中解析出的任务信息，所有视图通用的任务格式。
- * 支持两种格式：Tasks 插件的 emoji 格式和 Dataview 插件的 field 格式。
+ * 表示插件管理的任务信息，所有视图通用的任务格式。
+ * 任务分为两种类型：
+ * - todo（待办）：截止日前持续显示，需手动完成，可延期
+ * - reminder（提醒）：仅在指定日期显示，到期自动完成并归档
  *
- * 格式示例：
- * - Tasks (emoji): `- [ ] 🎯 Task title ⏫ ➕ 2025-01-10 📅 2025-01-15`
- * - Dataview (field): `- [ ] 🎯 Task title [priority:: high] [created:: 2025-01-10] [due:: 2025-01-15]`
- *
- * 优先级对应关系（6个档位）：
- * - 🔺 = highest (最高)
- * - ⏫ = high (高)
- * - 🔼 = medium (中高)
- * - 无emoji = normal (普通，默认优先级)
- * - 🔽 = low (低)
- * - ⏬ = lowest (最低)
- *
- * 日期 emoji 对应关系：
- * - ➕ = createdDate (创建日期)
- * - 🛫 = startDate (开始日期)
- * - ⏳ = scheduledDate (计划日期)
- * - 📅 = dueDate (截止日期)
- * - ✅ = completionDate (完成日期)
- * - ❌ = cancelledDate (取消日期)
+ * 存储在专用 JSON 文件中，不再依赖 Markdown 解析。
  */
 export interface GCTask {
-	filePath: string;              // 任务所在文件的完整路径
-	fileName: string;              // 任务所在文件名
-	lineNumber: number;            // 任务在文件中的行号
-	content: string;               // 原始任务内容（保留完整格式用于写回）
-	description: string;           // 清理后的任务描述（移除元数据标记，用于显示）
+	id: string;                    // UUID，唯一标识
+	type: TaskType;                // 任务类型：待办 | 提醒
+	description: string;           // 任务标题/描述（用于显示）
+	detail?: string;               // 详细说明（可选）
 	completed: boolean;            // 任务是否已完成
-	cancelled?: boolean;           // 任务是否已取消（使用 [-] 复选框）
+	cancelled?: boolean;           // 任务是否已取消
 	status?: TaskStatusType;       // 任务状态类型
-	format?: 'tasks' | 'dataview'; // 源格式：用于写回时选择正确的字段样式
-	priority: string;              // 优先级：highest, high, medium, normal, low, lowest（默认normal）
+	priority: TaskPriority;        // 优先级：high, normal, low
 	tags?: string[];               // 任务标签列表
 	createdDate?: Date;            // 创建日期
-	startDate?: Date;              // 开始日期
-	scheduledDate?: Date;          // 计划日期
-	dueDate?: Date;                // 截止日期
+	startDate?: Date;              // 开始日期（默认为创建时间）
+	dueDate?: Date;                // 截止日期 / 提醒日期
 	cancelledDate?: Date;          // 取消日期
 	completionDate?: Date;         // 完成日期
-	repeat?: string;               // 周期规则，如 "every day", "every week on Monday when done"
-	warning?: string;              // 警告信息：显示任务格式问题或缺失的关键属性
-	// 同步相关字段
+	time?: string;                 // 可选精确时间 "HH:mm"
+	repeat?: string;               // 周期规则，如 "every day", "every week on Monday"
+	archived: boolean;             // 归档标记（提醒到期后自动归档）
+	// 元数据
 	sourceId?: string;             // 数据源特定 ID
 	lastModified?: Date;           // 最后修改时间
 }
@@ -126,7 +120,6 @@ export type SortField =
 	| 'description'
 	| 'createdDate'
 	| 'startDate'
-	| 'scheduledDate'
 	| 'dueDate'
 	| 'completionDate';
 

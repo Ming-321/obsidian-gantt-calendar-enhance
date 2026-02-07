@@ -7,7 +7,7 @@
  * RFC 5545: https://tools.ietf.org/html/rfc5545
  */
 
-import type { GCTask } from '../../../../types';
+import type { GCTask, TaskPriority } from '../../../../types';
 
 /**
  * ICS 组件类型
@@ -24,6 +24,17 @@ interface ParsedComponent {
 }
 
 /**
+ * 生成 UUID
+ */
+function generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
+
+/**
  * 将 ICS 字符串转换为 GCTask
  */
 export function icsToGCTask(ics: string): GCTask {
@@ -31,14 +42,14 @@ export function icsToGCTask(ics: string): GCTask {
 
     // 基础字段
     const task: GCTask = {
-        filePath: 'caldav',
-        fileName: 'caldav.ics',
-        lineNumber: 0,
-        content: component.properties.get('DESCRIPTION') || component.properties.get('SUMMARY') || '',
+        id: generateUUID(),
+        type: 'todo',
         description: component.properties.get('SUMMARY') || '',
+        detail: component.properties.get('DESCRIPTION'),
         completed: false,
         priority: 'normal',
         tags: [],
+        archived: false,
     };
 
     // 完成状态
@@ -59,14 +70,15 @@ export function icsToGCTask(ics: string): GCTask {
     }
 
     // 优先级（0-9，0=未定义，1=最高，9=最低）
+    // Map to TaskPriority: 'high' | 'normal' | 'low'
     const priority = component.properties.get('PRIORITY');
     if (priority) {
         const num = parseInt(priority);
-        if (num <= 1) task.priority = 'highest';
+        if (num <= 1) task.priority = 'high';
         else if (num <= 4) task.priority = 'high';
         else if (num <= 5) task.priority = 'normal';
         else if (num <= 7) task.priority = 'low';
-        else task.priority = 'lowest';
+        else task.priority = 'low';
     }
 
     // 日期字段
@@ -97,17 +109,18 @@ export function icsToGCTask(ics: string): GCTask {
         task.tags = categories.split(',').map(t => t.trim());
     }
 
-    // 额外信息存储在 content 中
+    // 额外信息存储在 detail 中
     const location = component.properties.get('LOCATION');
     const url = component.properties.get('URL');
     if (location || url) {
         const extras: string[] = [];
         if (location) extras.push(`📍 ${location}`);
         if (url) extras.push(`🔗 ${url}`);
-        if (task.content) {
-            task.content = `${task.content}\n\n${extras.join('\n')}`;
+        const extraText = extras.join('\n');
+        if (task.detail) {
+            task.detail = `${task.detail}\n\n${extraText}`;
         } else {
-            task.content = extras.join('\n');
+            task.detail = extraText;
         }
     }
 
@@ -144,18 +157,16 @@ export function gcTaskToICS(task: GCTask, uid?: string): string {
     }
 
     // 描述
-    if (task.content && task.content !== task.description) {
-        icsLines.push(`DESCRIPTION:${escapeICSText(task.content)}`);
+    if (task.detail && task.detail !== task.description) {
+        icsLines.push(`DESCRIPTION:${escapeICSText(task.detail)}`);
     }
 
     // 优先级
     if (task.priority && task.priority !== 'normal') {
-        const priorityMap: Record<string, string> = {
-            'highest': '1',
+        const priorityMap: Record<TaskPriority, string> = {
             'high': '3',
             'normal': '5',
             'low': '7',
-            'lowest': '9',
         };
         icsLines.push(`PRIORITY:${priorityMap[task.priority] || '5'}`);
     }

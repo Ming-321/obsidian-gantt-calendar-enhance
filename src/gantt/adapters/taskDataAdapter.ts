@@ -27,8 +27,20 @@ export class TaskDataAdapter {
 		endField: DateFieldType,
 		index: number
 	): GanttChartTask | null {
-		const startDate = (task as any)[startField] as Date | undefined;
-		const endDate = (task as any)[endField] as Date | undefined;
+		let startDate: Date | undefined;
+		let endDate: Date | undefined;
+
+		if (task.type === 'reminder') {
+			// 提醒：显示为时间点标记（start = end = dueDate）
+			const dueDate = task.dueDate;
+			if (!dueDate) return null;
+			startDate = new Date(dueDate);
+			endDate = new Date(dueDate);
+		} else {
+			// 待办：显示为时间段条（startDate → dueDate）
+			startDate = (task as any)[startField] as Date | undefined;
+			endDate = (task as any)[endField] as Date | undefined;
+		}
 
 		// 验证必要字段
 		if (!startDate || !endDate) {
@@ -44,7 +56,7 @@ export class TaskDataAdapter {
 		const normalizedEndDate = endDate < startDate ? startDate : endDate;
 
 		return {
-			id: this.generateTaskId(task, index),
+			id: task.id,
 			name: task.description || '无标题任务',
 			start: this.formatDate(startDate),
 			end: this.formatDate(normalizedEndDate),
@@ -54,24 +66,24 @@ export class TaskDataAdapter {
 			// 保存原始任务信息，避免后续查找
 			completed: task.completed,
 			cancelled: task.cancelled,
-			filePath: task.filePath,
-			fileName: task.fileName,
-			lineNumber: task.lineNumber,
 
 			// 完整任务信息（用于更新时保留原始数据）
-			content: task.content,
 			description: task.description,
 			tags: task.tags,
 			priority: task.priority,
-			format: task.format,
 			status: task.status,
 			createdDate: task.createdDate,
 			startDate: task.startDate,
-			scheduledDate: task.scheduledDate,
 			dueDate: task.dueDate,
 			cancelledDate: task.cancelledDate,
 			completionDate: task.completionDate,
 			repeat: task.repeat,
+
+			// 兼容字段（GanttChartTask 接口要求，但 GCTask 已移除）
+			filePath: '',
+			fileName: task.description,
+			lineNumber: 0,
+			content: task.description,
 		};
 	}
 
@@ -93,20 +105,6 @@ export class TaskDataAdapter {
 			.filter((t): t is GanttChartTask => t !== null);
 	}
 
-	/**
-	 * 生成唯一任务ID
-	 *
-	 * 格式: `{fileName}-{lineNumber}-{index}`
-	 *
-	 * @param task - 原始任务对象
-	 * @param index - 任务索引
-	 * @returns 唯一任务ID
-	 */
-	private static generateTaskId(task: GCTask, index: number): string {
-		// 移除文件扩展名并替换特殊字符
-		const sanitizedName = task.fileName.replace(/\.md$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-		return `${sanitizedName}-${task.lineNumber}-${index}`;
-	}
 
 	/**
 	 * 格式化日期为 YYYY-MM-DD
@@ -143,6 +141,9 @@ export class TaskDataAdapter {
 	 */
 	private static getCustomClass(task: GCTask): string {
 		const classes: string[] = [];
+
+		// 任务类型
+		classes.push(task.type === 'reminder' ? 'task-type-reminder' : 'task-type-todo');
 
 		// 完成状态
 		if (task.completed) {
@@ -192,7 +193,8 @@ export class TaskDataAdapter {
 		selectedTags: string[] = [],
 		tagOperator: 'AND' | 'OR' | 'NOT' = 'OR'
 	): GCTask[] {
-		let filtered = tasks;
+		// 排除已归档任务
+		let filtered = tasks.filter(t => !t.archived);
 
 		// 状态筛选（支持多选）
 		if (statusFilter.selectedStatuses.length > 0) {

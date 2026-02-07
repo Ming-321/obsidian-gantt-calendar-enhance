@@ -37,11 +37,11 @@ class MockDataSource implements IDataSource {
 			updated: [],
 			deleted: []
 		});
-		return `${task.filePath}:${task.lineNumber}`;
+		return task.id;
 	}
 
 	async updateTask(taskId: string, changes: any): Promise<void> {
-		const task = this.tasks.find(t => `${t.filePath}:${t.lineNumber}` === taskId);
+		const task = this.tasks.find(t => t.id === taskId);
 		if (task) {
 			Object.assign(task, changes);
 			this.changeHandler?.({
@@ -54,7 +54,7 @@ class MockDataSource implements IDataSource {
 	}
 
 	async deleteTask(taskId: string): Promise<void> {
-		const index = this.tasks.findIndex(t => `${t.filePath}:${t.lineNumber}` === taskId);
+		const index = this.tasks.findIndex(t => t.id === taskId);
 		if (index >= 0) {
 			const task = this.tasks[index];
 			this.tasks.splice(index, 1);
@@ -116,14 +116,13 @@ describe('TaskRepository', () => {
 			repository.registerDataSource(mockSource);
 
 			const mockTask: GCTask = {
-				filePath: 'test.md',
-				fileName: 'test.md',
-				lineNumber: 1,
-				content: '- [ ] Test task',
+				id: 'test-task-1',
+				type: 'todo',
 				description: 'Test task',
 				completed: false,
 				priority: 'normal',
-				status: 'todo'
+				status: 'todo',
+				archived: false,
 			};
 
 			await mockSource.createTask(mockTask);

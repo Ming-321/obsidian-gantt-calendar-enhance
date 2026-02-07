@@ -55,9 +55,7 @@ export function renderCreateTaskButton(
 			plugin: plugin,
 			targetDate: targetDate || new Date(),
 			onSuccess: async () => {
-				// 刷新任务缓存（重新初始化）
-				await plugin.taskCache.initialize(plugin.settings.globalTaskFilter, plugin.settings.enabledTaskFormats);
-				// 刷新所有视图
+				// 刷新所有视图（JSON 数据源会自动通知更新）
 				plugin.refreshCalendarViews();
 			}
 		});

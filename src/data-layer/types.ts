@@ -6,7 +6,7 @@
  */
 
 import { TaskStatusType } from '../tasks/taskStatus';
-import type { GCTask } from '../types';
+import type { GCTask, TaskPriority } from '../types';
 
 /**
  * 任务状态类型（与现有系统兼容）
@@ -14,9 +14,9 @@ import type { GCTask } from '../types';
 export type TaskStatus = TaskStatusType;
 
 /**
- * 优先级类型（与现有系统兼容）
+ * 优先级类型
  */
-export type Priority = 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
+export type Priority = TaskPriority;
 
 /**
  * 任务日期集合
@@ -24,7 +24,6 @@ export type Priority = 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowes
 export interface TaskDates {
 	created?: Date;
 	start?: Date;
-	scheduled?: Date;
 	due?: Date;
 	completed?: Date;
 	cancelled?: Date;
@@ -108,7 +107,7 @@ export interface DataSourceChanges {
 	created: GCTask[];
 	updated: Array<{ id: string; changes: TaskChanges; task?: GCTask }>;
 	deleted: GCTask[];
-	deletedFilePaths?: string[];  // 已删除的文件路径列表
+	deletedIds?: string[];  // 已删除的任务ID列表
 }
 
 /**
@@ -118,17 +117,20 @@ export interface DataSourceChanges {
  */
 export interface TaskChanges {
 	description?: string;
+	detail?: string;
 	completed?: boolean;
 	cancelled?: boolean;
 	status?: TaskStatus;
-	priority?: string;
+	priority?: TaskPriority;
 	tags?: string[];
 	createdDate?: Date;
 	startDate?: Date;
-	scheduledDate?: Date;
 	dueDate?: Date;
 	cancelledDate?: Date;
 	completionDate?: Date;
+	time?: string;
+	repeat?: string;
+	archived?: boolean;
 }
 
 /**
@@ -138,6 +140,8 @@ export interface QueryOptions {
 	status?: TaskStatus[];
 	priority?: Priority[];
 	tags?: string[];
+	type?: ('todo' | 'reminder')[];   // 按任务类型筛选
+	archived?: boolean;                 // 是否包含归档任务
 	dateRange?: {
 		start: Date;
 		end: Date;

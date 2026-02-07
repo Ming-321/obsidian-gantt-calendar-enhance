@@ -176,14 +176,17 @@ export class TooltipManager {
 	private updateContent(task: GCTask): void {
 		if (!this.cachedElements.description) return;
 
-		// 更新描述
+		// 更新描述（带类型图标前缀）
 		const displayText = task.description || '';
-		this.cachedElements.description.innerHTML = `<strong>${this.escapeHtml(displayText)}</strong>`;
+		const typeIcon = task.type === 'reminder' ? '🔔' : '☐';
+		const typeLabel = task.type === 'reminder' ? '提醒' : '待办';
+		this.cachedElements.description.innerHTML = `<span class="gc-task-tooltip__type-badge gc-task-tooltip__type-badge--${task.type}">${typeIcon} ${typeLabel}</span> <strong>${this.escapeHtml(displayText)}</strong>`;
 
 		// 更新优先级
 		if (task.priority && this.cachedElements.priority) {
 			const priorityIcon = this.getPriorityIcon(task.priority);
-			this.cachedElements.priority.innerHTML = `<span class="priority-${task.priority}">${priorityIcon} 优先级: ${task.priority}</span>`;
+			const priorityLabel = task.priority === 'high' ? '高' : task.priority === 'low' ? '低' : '普通';
+			this.cachedElements.priority.innerHTML = `<span class="priority-${task.priority}">${priorityIcon} 优先级: ${priorityLabel}</span>`;
 			this.cachedElements.priority.style.display = '';
 		} else if (this.cachedElements.priority) {
 			this.cachedElements.priority.style.display = 'none';
@@ -191,10 +194,10 @@ export class TooltipManager {
 
 		// 更新时间属性
 		if (this.cachedElements.times) {
-			const hasTimeProperties = task.createdDate || task.startDate || task.scheduledDate ||
+			const hasTimeProperties = task.createdDate || task.startDate ||
 				task.dueDate || task.cancelledDate || task.completionDate;
 
-			if (hasTimeProperties || task.repeat) {
+			if (hasTimeProperties || task.repeat || task.time) {
 				const timeHtml: string[] = [];
 
 				if (task.createdDate) {
@@ -203,14 +206,15 @@ export class TooltipManager {
 				if (task.startDate) {
 					timeHtml.push(`<div class="gc-task-tooltip__time-item">🛫 开始: ${formatDate(task.startDate, 'yyyy-MM-dd')}</div>`);
 				}
-				if (task.scheduledDate) {
-					timeHtml.push(`<div class="gc-task-tooltip__time-item">⏳ 计划: ${formatDate(task.scheduledDate, 'yyyy-MM-dd')}</div>`);
-				}
 				if (task.dueDate) {
+					const dueLabel = task.type === 'reminder' ? '📅 提醒' : '📅 截止';
 					const overdueClass = task.dueDate < new Date() && !task.completed
 						? ' gc-task-tooltip__time-item--overdue'
 						: '';
-					timeHtml.push(`<div class="gc-task-tooltip__time-item${overdueClass}">📅 截止: ${formatDate(task.dueDate, 'yyyy-MM-dd')}</div>`);
+					timeHtml.push(`<div class="gc-task-tooltip__time-item${overdueClass}">${dueLabel}: ${formatDate(task.dueDate, 'yyyy-MM-dd')}</div>`);
+				}
+				if (task.time) {
+					timeHtml.push(`<div class="gc-task-tooltip__time-item">🕐 时间: ${task.time}</div>`);
 				}
 				if (task.cancelledDate) {
 					timeHtml.push(`<div class="gc-task-tooltip__time-item">❌ 取消: ${formatDate(task.cancelledDate, 'yyyy-MM-dd')}</div>`);
@@ -256,7 +260,7 @@ export class TooltipManager {
 
 		// 更新文件位置
 		if (this.cachedElements.file) {
-			this.cachedElements.file.innerHTML = `<span class="gc-task-tooltip__file-location">📄 ${task.fileName}:${task.lineNumber}</span>`;
+			this.cachedElements.file.innerHTML = `<span class="gc-task-tooltip__file-location">📄 ${task.type === 'todo' ? '待办' : '提醒'}</span>`;
 		}
 	}
 
@@ -326,7 +330,6 @@ export class TooltipManager {
 		if (this.currentTask.priority) height += 30;
 		if (this.currentTask.createdDate) height += 20;
 		if (this.currentTask.startDate) height += 20;
-		if (this.currentTask.scheduledDate) height += 20;
 		if (this.currentTask.dueDate) height += 20;
 		if (this.currentTask.cancelledDate) height += 20;
 		if (this.currentTask.completionDate) height += 20;
@@ -407,11 +410,9 @@ export class TooltipManager {
 	 */
 	private getPriorityIcon(priority?: string): string {
 		switch (priority) {
-			case 'highest': return '🔺';
-			case 'high': return '⏫';
-			case 'medium': return '🔼';
-			case 'low': return '🔽';
-			case 'lowest': return '⏬';
+			case 'high': return '🔴';
+			case 'normal': return '⚪';
+			case 'low': return '🔵';
 			default: return '';
 		}
 	}

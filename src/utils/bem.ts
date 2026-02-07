@@ -104,6 +104,11 @@ export const TaskCardClasses = {
 		// 状态修饰符
 		completed: bem(BLOCKS.TASK_CARD, undefined, 'completed'),
 		pending: bem(BLOCKS.TASK_CARD, undefined, 'pending'),
+		// 任务类型修饰符
+		typeTodo: bem(BLOCKS.TASK_CARD, undefined, 'type-todo'),
+		typeReminder: bem(BLOCKS.TASK_CARD, undefined, 'type-reminder'),
+		// 过期修饰符
+		overdue: bem(BLOCKS.TASK_CARD, undefined, 'overdue'),
 	}
 };
 

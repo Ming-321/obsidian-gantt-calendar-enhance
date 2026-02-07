@@ -12,7 +12,7 @@ import { Logger } from '../../utils/logger';
 /**
  * 任务更新回调函数类型
  */
-export type TaskUpdateCallback = (filePath: string) => void;
+export type TaskUpdateCallback = (taskId: string) => void;
 
 /**
  * 任务更新处理器
@@ -50,13 +50,6 @@ export class TaskUpdateHandler {
 		_allTasks: GCTask[]
 	): Promise<void> {
 		try {
-			// 直接从 GanttChartTask 获取任务信息
-			if (!ganttTask.filePath || ganttTask.lineNumber === undefined) {
-				Logger.error('TaskUpdateHandler', 'Missing task information:', ganttTask);
-				new Notice('任务信息不完整');
-				return;
-			}
-
 			// 使用 updateTaskProperties
 			const { updateTaskProperties } = await import('../../tasks/taskUpdater');
 			const updates: Record<string, Date> = {
@@ -69,7 +62,6 @@ export class TaskUpdateHandler {
 				this.app,
 				ganttTask as any, // 类型断言：GanttChartTask 实际包含完整任务信息
 				updates,
-				this.plugin.settings.enabledTaskFormats
 			);
 
 			// 显示通知
@@ -94,13 +86,6 @@ export class TaskUpdateHandler {
 		_allTasks: GCTask[]
 	): Promise<void> {
 		try {
-			// 直接从 GanttChartTask 获取任务信息
-			if (!ganttTask.filePath || ganttTask.lineNumber === undefined) {
-				Logger.error('TaskUpdateHandler', 'Missing task information:', ganttTask);
-				new Notice('任务信息不完整');
-				return;
-			}
-
 			const completed = progress >= 100;
 
 			// 使用 updateTaskCompletion，它会自动更新 completionDate 和 status
@@ -110,7 +95,6 @@ export class TaskUpdateHandler {
 				this.app,
 				ganttTask as any, // 类型断言：GanttChartTask 实际包含完整任务信息
 				completed,
-				this.plugin.settings.enabledTaskFormats
 			);
 
 			new Notice(completed ? '任务已标记为完成' : '任务已标记为未完成');
@@ -128,15 +112,9 @@ export class TaskUpdateHandler {
 	 * @param _allTasks - 所有任务列表（保留参数以保持兼容性，但不再使用）
 	 */
 	handleTaskClick(ganttTask: GanttChartTask, _allTasks: GCTask[]): void {
-		// 直接从 GanttChartTask 获取任务信息
-		if (!ganttTask.filePath || !ganttTask.fileName) {
-			Logger.error('TaskUpdateHandler', 'Missing task information', ganttTask);
-			return;
-		}
-
-		// 使用 openFileInExistingLeaf 避免重复打开标签页
-		const { openFileInExistingLeaf } = require('../../utils/fileOpener');
-		openFileInExistingLeaf(this.app, ganttTask.filePath, ganttTask.lineNumber);
+		// TODO: Open edit modal for task with ganttTask.id
+		// Previously used: openFileInExistingLeaf(this.app, ganttTask.filePath, ganttTask.lineNumber);
+		Logger.debug('TaskUpdateHandler', 'Task clicked:', ganttTask.id);
 	}
 
 	/**

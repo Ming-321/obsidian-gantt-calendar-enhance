@@ -10,6 +10,7 @@ import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
 import { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
 import { GanttViewSettingsBuilder } from './builders/GanttViewSettingsBuilder';
 import { SyncSettingsBuilder } from './builders/SyncSettingsBuilder';
+import { GitHubSyncSettingsBuilder } from './builders/GitHubSyncSettingsBuilder';
 import type { BuilderConfig } from './types';
 
 /**
@@ -110,6 +111,14 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			onRefreshSettings: refreshCallback
 		});
 		ganttViewBuilder.render();
+
+		// ===== GitHub 同步 & 邮件提醒 =====
+		const githubSyncBuilder = new GitHubSyncSettingsBuilder({
+			containerEl,
+			plugin: this.plugin,
+			onRefreshSettings: refreshCallback
+		});
+		githubSyncBuilder.render();
 
 		// ===== 同步设置 =====
 		const syncSettingsBuilder = new SyncSettingsBuilder({

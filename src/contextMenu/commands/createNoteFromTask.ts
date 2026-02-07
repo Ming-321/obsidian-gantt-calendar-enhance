@@ -41,11 +41,11 @@ export interface NoteTemplateData {
  * @returns 如果存在双链且文件存在，返回文件路径；否则返回 null
  */
 export function checkExistingWikiLink(task: GCTask, app: App): string | null {
-	const raw = task.content;
+	const raw = task.description || task.detail || '';
 	const wikiLinkMatch = raw.match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/);
 	if (wikiLinkMatch) {
 		const linkTarget = wikiLinkMatch[1];
-		const dest = app.metadataCache.getFirstLinkpathDest(linkTarget, task.filePath);
+		const dest = app.metadataCache.getFirstLinkpathDest(linkTarget, '');
 		if (dest) {
 			return linkTarget;
 		}
@@ -61,7 +61,7 @@ export async function openExistingNote(
 	task: GCTask,
 	linkTarget: string
 ): Promise<void> {
-	const dest = app.metadataCache.getFirstLinkpathDest(linkTarget, task.filePath);
+	const dest = app.metadataCache.getFirstLinkpathDest(linkTarget, '');
 	if (dest) {
 		const leaf = app.workspace.getLeaf(false);
 		await leaf.openFile(dest);
@@ -73,18 +73,19 @@ export async function openExistingNote(
  * 收集任务中的超链接
  * @returns [markdownLinks, rawUrls]
  */
-function collectTaskLinks(raw: string): [Array<{ text: string; url: string }>, string[]] {
+function collectTaskLinks(description: string, detail?: string): [Array<{ text: string; url: string }>, string[]] {
+	const combinedText = [description, detail].filter(Boolean).join(' ');
 	const markdownLinks: Array<{ text: string; url: string }> = [];
 	const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
 	let m: RegExpExecArray | null;
-	while ((m = linkRegex.exec(raw)) !== null) {
+	while ((m = linkRegex.exec(combinedText)) !== null) {
 		markdownLinks.push({ text: m[1], url: m[2] });
 	}
 
 	const rawUrls: string[] = [];
 	const urlRegex = /(https?:\/\/[^\s)]+)/g;
 	let u: RegExpExecArray | null;
-	while ((u = urlRegex.exec(raw)) !== null) {
+	while ((u = urlRegex.exec(combinedText)) !== null) {
 		// 避免与 markdownLinks 重复收集
 		if (!markdownLinks.some(l => l.url === u![1])) {
 			rawUrls.push(u[1]);
@@ -123,10 +124,6 @@ export function generateNoteContent(data: NoteTemplateData): string {
 		lines.push(`- **开始日期**: ${formatDate(task.startDate, 'yyyy-MM-dd')}`);
 	}
 
-	if (task.scheduledDate) {
-		lines.push(`- **计划日期**: ${formatDate(task.scheduledDate, 'yyyy-MM-dd')}`);
-	}
-
 	if (task.dueDate) {
 		lines.push(`- **截止日期**: ${formatDate(task.dueDate, 'yyyy-MM-dd')}`);
 	}
@@ -158,7 +155,7 @@ export function generateNoteContent(data: NoteTemplateData): string {
 	}
 
 	lines.push('');
-	lines.push(`- **来源**: [[${task.fileName}#^line-${task.lineNumber}|${task.fileName}:${task.lineNumber}]]`);
+	lines.push(`- **任务ID**: ${task.id}`);
 	lines.push('');
 	lines.push('## 笔记内容');
 	lines.push('');
@@ -173,7 +170,6 @@ export function generateNoteContent(data: NoteTemplateData): string {
  * @param defaultPath 默认笔记路径
  * @param fileName 文件名
  * @param options 创建选项
- * @param enabledFormats 启用的任务格式
  */
 export async function createNoteFromTaskCore(
 	app: App,
@@ -181,7 +177,6 @@ export async function createNoteFromTaskCore(
 	defaultPath: string,
 	fileName: string,
 	options: CreateNoteOptions,
-	enabledFormats: string[] = ['tasks']
 ): Promise<void> {
 	try {
 		// 1) 检查文件名是否有效
@@ -191,19 +186,19 @@ export async function createNoteFromTaskCore(
 		}
 
 		// 2) 收集超链接
-		const [markdownLinks, rawUrls] = collectTaskLinks(task.content);
+		const [markdownLinks, rawUrls] = collectTaskLinks(task.description, task.detail);
 
 		// 3) 确保目标文件夹存在
 		await ensureFolderExists(app, defaultPath);
 
 		// 4) 检查整个 vault 中是否存在同名文件
-		const existingFileInVault = app.metadataCache.getFirstLinkpathDest(fileName, task.filePath);
+		const existingFileInVault = app.metadataCache.getFirstLinkpathDest(fileName, '');
 		if (existingFileInVault) {
 			new Notice(`已存在同名笔记: ${fileName}.md`);
 			const leaf = app.workspace.getLeaf(false);
 			await leaf.openFile(existingFileInVault);
 			// 直接将任务改为双链，方便后续跳转
-			await updateTaskProperties(app, task, { content: options.wikiLinkContent }, enabledFormats);
+			await updateTaskProperties(app, task, { description: options.wikiLinkContent });
 			return;
 		}
 
@@ -215,7 +210,7 @@ export async function createNoteFromTaskCore(
 			const leaf = app.workspace.getLeaf(false);
 			await leaf.openFile(existingFile as any);
 			// 仍将任务内容改为双链，方便后续跳转
-			await updateTaskProperties(app, task, { content: options.wikiLinkContent }, enabledFormats);
+			await updateTaskProperties(app, task, { description: options.wikiLinkContent });
 			return;
 		}
 
@@ -239,7 +234,7 @@ export async function createNoteFromTaskCore(
 		new Notice(`已创建笔记: ${fileName}.md`);
 
 		// 9) 更新源任务行为双链，使用 updateTaskProperties 保留 tags 等元数据
-		await updateTaskProperties(app, task, { content: options.wikiLinkContent }, enabledFormats);
+		await updateTaskProperties(app, task, { description: options.wikiLinkContent });
 	} catch (error) {
 		Logger.error('createNoteFromTask', 'Failed to create note from task:', error);
 		new Notice('创建笔记失败');
@@ -254,7 +249,6 @@ export async function createNoteFromTask(
 	app: App,
 	task: GCTask,
 	defaultPath: string,
-	enabledFormats: string[] = ['tasks']
 ): Promise<void> {
 	// 1) 先检查任务中是否已存在双链，如果有则直接打开
 	const existingLink = checkExistingWikiLink(task, app);
@@ -270,7 +264,7 @@ export async function createNoteFromTask(
 	// 3) wiki 链接内容（不带别名）
 	const wikiLinkContent = `[[${fileName}]]`;
 
-	await createNoteFromTaskCore(app, task, defaultPath, fileName, { wikiLinkContent }, enabledFormats);
+	await createNoteFromTaskCore(app, task, defaultPath, fileName, { wikiLinkContent });
 }
 
 // ==================== 工具函数 ====================

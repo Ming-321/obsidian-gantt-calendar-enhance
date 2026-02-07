@@ -103,19 +103,21 @@ export class YearViewRenderer extends BaseViewRenderer {
 
 		// 预计算当年每日任务数量
 		let tasks: GCTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
+		// 排除已归档任务
+		tasks = tasks.filter(t => !t.archived);
 		// 应用标签筛选
 		tasks = this.applyTagFilter(tasks);
-		const dateField = this.plugin.settings.dateFilterField || 'dueDate';
 		const countsMap: Map<string, number> = new Map();
-		const startDate = new Date(year, 0, 1);
-		const endDate = new Date(year, 11, 31);
 
-		for (const t of tasks) {
-			const d = (t as any)[dateField] as Date | undefined;
-			if (!d) continue;
-			if (d < startDate || d > endDate) continue;
-			const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-			countsMap.set(key, (countsMap.get(key) || 0) + 1);
+		// 使用类型感知的日期过滤进行计数
+		const yearStart = new Date(year, 0, 1);
+		const yearEnd = new Date(year, 11, 31);
+		for (let d = new Date(yearStart); d <= yearEnd; d.setDate(d.getDate() + 1)) {
+			const dayTasks = this.filterTasksForDate(tasks, d);
+			if (dayTasks.length > 0) {
+				const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+				countsMap.set(key, dayTasks.length);
+			}
 		}
 
 		const yearContainer = container.createDiv('gc-view gc-view--year');
@@ -216,29 +218,30 @@ export class YearViewRenderer extends BaseViewRenderer {
 
 		// 重新计算任务数量
 		let tasks: GCTask[] = this.plugin.taskCache?.getAllTasks?.() || [];
+		tasks = tasks.filter(t => !t.archived);
 		tasks = this.applyTagFilter(tasks);
-		const dateField = this.plugin.settings.dateFilterField || 'dueDate';
 
 		// 获取当前年份
 		const yearGrid = this.yearContainer.querySelector('.gc-year-view__months');
 		if (!yearGrid) return;
 
-		// 获取第一个月份卡片的年份来确定当前年份
 		const firstMonthCard = yearGrid.querySelector('.gc-year-view__month-card');
 		if (!firstMonthCard) return;
 
-		// 重新计算任务计数
 		const countsMap: Map<string, number> = new Map();
 		const monthCards = yearGrid.querySelectorAll('.gc-year-view__month-card');
 
-		// 从DOM中获取年份信息
 		let currentYear = new Date().getFullYear();
 
-		for (const t of tasks) {
-			const d = (t as any)[dateField] as Date | undefined;
-			if (!d) continue;
-			const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-			countsMap.set(key, (countsMap.get(key) || 0) + 1);
+		// 遍历一年中的每一天，用类型感知的过滤计算
+		const yearStart = new Date(currentYear, 0, 1);
+		const yearEnd = new Date(currentYear, 11, 31);
+		for (let d = new Date(yearStart); d <= yearEnd; d.setDate(d.getDate() + 1)) {
+			const dayTasks = this.filterTasksForDate(tasks, d);
+			if (dayTasks.length > 0) {
+				const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+				countsMap.set(key, dayTasks.length);
+			}
 		}
 
 		// 更新每个日期格子的样式

@@ -213,10 +213,8 @@ export class VersionTracker {
             this.taskMappings.set(syncId, mapping);
         }
 
-        // 使用 filePath:lineNumber 作为本地任务的 sourceId
-        const sourceId = source === 'markdown'
-            ? `${task.filePath}:${task.lineNumber}`
-            : task.sourceId || syncId;
+        // 使用 task.id 作为本地任务的 sourceId
+        const sourceId = task.sourceId || task.id || syncId;
 
         mapping.mappings.set(source, sourceId);
         mapping.updatedAt = new Date();

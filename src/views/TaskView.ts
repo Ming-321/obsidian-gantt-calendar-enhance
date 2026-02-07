@@ -14,13 +14,16 @@ import { Logger } from '../utils/logger';
  */
 export class TaskViewRenderer extends BaseViewRenderer {
 	// 时间字段筛选
-	private timeFieldFilter: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'dueDate';
+	private timeFieldFilter: 'createdDate' | 'startDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'dueDate';
 
 	// 时间值筛选
 	private timeValueFilter: Date | null = null;
 
 	// 日期范围模式：全部/当天/当周/当月/自定义日期
 	private dateRangeMode: 'all' | 'day' | 'week' | 'month' | 'custom' = 'week';
+
+	// 任务类型筛选：全部/待办/提醒/已归档
+	private taskTypeFilter: 'all' | 'todo' | 'reminder' | 'archived' = 'all';
 
 	// 排序状态
 	private sortState: SortState = DEFAULT_SORT_STATE;
@@ -98,7 +101,7 @@ export class TaskViewRenderer extends BaseViewRenderer {
 
 	// ===== Getter/Setter 方法 =====
 
-	public getTimeFilterField(): 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate' {
+	public getTimeFilterField(): 'createdDate' | 'startDate' | 'dueDate' | 'completionDate' | 'cancelledDate' {
 		return this.timeFieldFilter;
 	}
 
@@ -126,6 +129,15 @@ export class TaskViewRenderer extends BaseViewRenderer {
 		this.saveDateRangeMode().catch(err => {
 			Logger.error('TaskView', 'Failed to save date range mode', err);
 		});
+	}
+
+	public getTaskTypeFilter(): 'all' | 'todo' | 'reminder' | 'archived' {
+		return this.taskTypeFilter;
+	}
+
+	public setTaskTypeFilter(filter: 'all' | 'todo' | 'reminder' | 'archived'): void {
+		this.taskTypeFilter = filter;
+		this.refreshTaskList();
 	}
 
 	public getSortState(): SortState {
@@ -193,6 +205,20 @@ export class TaskViewRenderer extends BaseViewRenderer {
 
 		try {
 			let tasks: GCTask[] = this.plugin.taskCache.getAllTasks();
+
+			// 按任务类型筛选
+			if (this.taskTypeFilter === 'archived') {
+				// 仅显示已归档任务
+				tasks = tasks.filter(t => t.archived);
+			} else {
+				// 默认排除已归档任务
+				tasks = tasks.filter(t => !t.archived);
+				if (this.taskTypeFilter === 'todo') {
+					tasks = tasks.filter(t => t.type === 'todo');
+				} else if (this.taskTypeFilter === 'reminder') {
+					tasks = tasks.filter(t => t.type === 'reminder');
+				}
+			}
 
 			// 应用状态筛选（使用基类方法）
 			tasks = this.applyStatusFilter(tasks);
