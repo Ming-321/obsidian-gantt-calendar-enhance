@@ -300,16 +300,6 @@ export abstract class BaseViewRenderer {
 				dueDate.setHours(0, 0, 0, 0);
 				return dueDate.getTime() === targetTime;
 			} else {
-				// 待办：从 startDate 到完成前持续显示
-				// 1. 任务需有 dueDate 或 startDate
-				const startDate = task.startDate ? new Date(task.startDate) : (task.createdDate ? new Date(task.createdDate) : null);
-				const dueDate = task.dueDate ? new Date(task.dueDate) : null;
-
-				if (!startDate && !dueDate) return false;
-
-				if (startDate) startDate.setHours(0, 0, 0, 0);
-				if (dueDate) dueDate.setHours(0, 0, 0, 0);
-
 				// 已完成任务：仅在完成日当天显示
 				if (task.completed && task.completionDate) {
 					const completionDate = new Date(task.completionDate);
@@ -317,16 +307,21 @@ export abstract class BaseViewRenderer {
 					return completionDate.getTime() === targetTime;
 				}
 
-				// 活跃待办：从 startDate 开始，直到 dueDate 后（过期继续显示）
-				const rangeStart = startDate ? startDate.getTime() : -Infinity;
-				// 未完成的过期待办继续显示到今天
-				const today = new Date();
-				today.setHours(0, 0, 0, 0);
-				const rangeEnd = dueDate
-					? Math.max(dueDate.getTime(), today.getTime())
-					: Infinity;
+				// 待办：仅在 dueDate 当天显示
+				if (task.dueDate) {
+					const dueDate = new Date(task.dueDate);
+					dueDate.setHours(0, 0, 0, 0);
+					return dueDate.getTime() === targetTime;
+				}
 
-				return targetTime >= rangeStart && targetTime <= rangeEnd;
+				// 无截止日的待办：在 startDate 当天显示
+				const startDate = task.startDate ? new Date(task.startDate) : (task.createdDate ? new Date(task.createdDate) : null);
+				if (startDate) {
+					startDate.setHours(0, 0, 0, 0);
+					return startDate.getTime() === targetTime;
+				}
+
+				return false;
 			}
 		});
 	}

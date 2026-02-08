@@ -260,9 +260,24 @@ export class JsonDataSource implements IDataSource {
 			}
 		} catch (error) {
 			Logger.error('JsonDataSource', 'Failed to read data file:', error);
+
+			// 文件存在但读取/解析失败（如 JSON 损坏）：不覆盖原文件
+			// 尝试创建备份，然后返回空数据（内存中），避免覆盖损坏的原始文件
+			try {
+				const backupPath = filePath + '.backup';
+				if (await adapter.exists(filePath)) {
+					const rawContent = await adapter.read(filePath);
+					await adapter.write(backupPath, rawContent);
+					Logger.warn('JsonDataSource', `Corrupted data file backed up to: ${backupPath}`);
+				}
+			} catch (backupError) {
+				Logger.error('JsonDataSource', 'Failed to backup corrupted file:', backupError);
+			}
+
+			return createEmptyTasksFile();
 		}
 
-		// 文件不存在或读取失败，创建空文件
+		// 文件不存在，创建空文件
 		const emptyData = createEmptyTasksFile();
 		await this.writeDataFile(emptyData);
 		return emptyData;
@@ -275,13 +290,9 @@ export class JsonDataSource implements IDataSource {
 		const filePath = this.getDataFilePath();
 		const adapter = this.app.vault.adapter;
 
-		try {
-			const content = JSON.stringify(data, null, 2);
-			await adapter.write(filePath, content);
-			Logger.debug('JsonDataSource', 'Data file saved');
-		} catch (error) {
-			Logger.error('JsonDataSource', 'Failed to write data file:', error);
-		}
+		const content = JSON.stringify(data, null, 2);
+		await adapter.write(filePath, content);
+		Logger.debug('JsonDataSource', 'Data file saved');
 	}
 
 	/**
@@ -508,12 +519,13 @@ export class JsonDataSource implements IDataSource {
 
 	/**
 	 * 销毁数据源
+	 * 注意：调用 destroy() 前应先调用 flushSave() 确保数据已保存
 	 */
 	destroy(): void {
 		if (this.saveDebounceTimer !== null) {
 			clearTimeout(this.saveDebounceTimer);
-			// 最后一次同步保存
-			this.saveToFile();
+			this.saveDebounceTimer = null;
+			Logger.warn('JsonDataSource', 'Destroy called with pending save — ensure flushSave() was called first');
 		}
 		this.changeHandlers = [];
 		this.tasks.clear();

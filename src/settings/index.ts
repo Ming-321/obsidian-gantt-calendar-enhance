@@ -12,9 +12,7 @@ export { BaseBuilder } from './builders/BaseBuilder';
 export { TaskViewSettingsBuilder } from './builders/TaskViewSettingsBuilder';
 export { CalendarViewSettingsBuilder } from './builders/CalendarViewSettingsBuilder';
 export { FestivalColorBuilder } from './builders/FestivalColorBuilder';
-export { DayViewSettingsBuilder } from './builders/DayViewSettingsBuilder';
 export { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
-export { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
 export { TaskStatusSettingsBuilder } from './builders/TaskStatusSettingsBuilder';
 
 // 可选：导出组件（供外部扩展使用）

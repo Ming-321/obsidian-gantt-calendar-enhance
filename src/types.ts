@@ -1,7 +1,7 @@
 // 日历视图类型定义
 import { TaskStatusType } from './tasks/taskStatus';
 
-export type CalendarViewType = 'year' | 'month' | 'week' | 'day' | 'task' | 'gantt';
+export type CalendarViewType = 'month' | 'week' | 'task';
 
 /**
  * 任务类型

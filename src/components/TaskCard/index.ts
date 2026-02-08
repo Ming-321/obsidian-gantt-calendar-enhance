@@ -31,7 +31,5 @@ export type { TaskCardConfig, TaskCardProps, TaskCardRenderResult, TimeFieldConf
 
 // 预设配置
 export { TaskViewConfig } from './presets/TaskView.config';
-export { DayViewConfig } from './presets/DayView.config';
 export { WeekViewConfig } from './presets/WeekView.config';
 export { MonthViewConfig } from './presets/MonthView.config';
-export { GanttViewConfig } from './presets/GanttView.config';

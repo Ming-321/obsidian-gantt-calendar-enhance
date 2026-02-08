@@ -140,6 +140,7 @@ export default class GanttCalendarPlugin extends Plugin {
 					this.settings.githubSync.lastSyncError = undefined;
 					this.saveSettings();
 				}
+				new Notice('📤 任务数据已同步到 GitHub');
 			},
 			(error) => {
 				// 同步失败回调
@@ -148,6 +149,7 @@ export default class GanttCalendarPlugin extends Plugin {
 					this.settings.githubSync.lastSyncError = error;
 					this.saveSettings();
 				}
+				new Notice(`⚠️ GitHub 同步失败: ${error}`);
 			}
 		);
 

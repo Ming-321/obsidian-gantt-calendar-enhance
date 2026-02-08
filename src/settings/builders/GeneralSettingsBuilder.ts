@@ -29,16 +29,13 @@ export class GeneralSettingsBuilder extends BaseBuilder {
 					.setDesc('打开插件时默认显示的视图')
 					.addDropdown(drop => drop
 						.addOptions({
-							'day': '日视图',
 							'week': '周视图',
 							'month': '月视图',
-							'year': '年视图',
 							'task': '任务视图',
-							'gantt': '甘特图'
 						})
 						.setValue(this.plugin.settings.defaultView)
 						.onChange(async (value) => {
-							this.plugin.settings.defaultView = value as 'day' | 'week' | 'month' | 'year' | 'task' | 'gantt';
+							this.plugin.settings.defaultView = value as 'week' | 'month' | 'task';
 							await this.saveAndRefresh();
 						}))
 			);

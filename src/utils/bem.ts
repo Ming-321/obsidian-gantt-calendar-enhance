@@ -639,12 +639,26 @@ export const WeekViewClasses = {
 		tasksGrid: bem(BLOCKS.WEEK_VIEW, 'tasks-grid'),
 		tasksColumn: bem(BLOCKS.WEEK_VIEW, 'tasks-column'),
 		empty: bem(BLOCKS.WEEK_VIEW, 'empty'),
+		// 甘特图元素
+		ganttBody: bem(BLOCKS.WEEK_VIEW, 'gantt-body'),
+		ganttRow: bem(BLOCKS.WEEK_VIEW, 'gantt-row'),
+		ganttBar: bem(BLOCKS.WEEK_VIEW, 'gantt-bar'),
+		ganttBarLabel: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-label'),
+		ganttBarIcon: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-icon'),
+		ganttGridLines: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-lines'),
+		ganttGridLine: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-line'),
 	},
 
 	/** Modifiers */
 	modifiers: {
 		today: bem(BLOCKS.WEEK_VIEW, 'header-cell', 'today'),
 		tasksColumnToday: bem(BLOCKS.WEEK_VIEW, 'tasks-column', 'today'),
+		ganttBarHigh: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'high'),
+		ganttBarNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'normal'),
+		ganttBarLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'low'),
+		ganttBarReminder: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'reminder'),
+		ganttBarCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'completed'),
+		ganttGridLineToday: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-line', 'today'),
 	},
 };
 

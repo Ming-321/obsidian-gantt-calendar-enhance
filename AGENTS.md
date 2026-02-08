@@ -25,7 +25,26 @@ npm run build           # 生产构建（运行 tsc + esbuild）
 ### 视图系统
 插件使用基类模式构建视图：
 - `BaseViewRenderer` - 所有视图的共享方法（任务渲染、工具提示、链接解析）
-- 各视图继承此基类：`YearView`、`MonthView`、`WeekView`、`DayView`、`TaskView`、`GanttView`
+- 各视图继承此基类：`MonthView`、`WeekView`、`TaskView`
+
+视图类型定义：`CalendarViewType = 'month' | 'week' | 'task'`
+
+#### 周视图（甘特图风格）
+周视图采用甘特图布局，每个任务显示为一行横向 bar：
+- Header：7 列日期头（周一~周日），高亮今天
+- Body：每个待办占独立一行，提醒类任务通过贪心装箱合并到共享行
+- Bar 颜色按优先级区分：红色=高、蓝色=普通、灰色=低、橙色虚线=提醒、绿色=已完成
+- 交互：hover 显示 tooltip、点击打开编辑弹窗、支持状态/标签筛选
+
+#### 月视图
+- 待办仅在截止日期（dueDate）当天显示
+- 无截止日的待办在开始日期（startDate）当天显示
+- 提醒仅在 dueDate 当天显示
+- 已完成任务仅在完成日当天显示
+
+#### 任务视图
+- 仅显示截止时间（不显示创建、开始等其他日期）
+- 不显示任务类型标签（待办/提醒）
 
 ### 工具栏系统
 `src/toolbar/` 中的三区域布局：

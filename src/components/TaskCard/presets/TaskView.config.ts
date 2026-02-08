@@ -13,19 +13,19 @@ export const TaskViewConfig: TaskCardConfig = {
 	showDescription: true,
 	showTags: true,
 	showPriority: true,
-	showFileLocation: true,
+	showFileLocation: false,
 	showWarning: true,
 	showGlobalFilter: true,
 
-	// 时间属性配置
+	// 时间属性配置 — 仅显示截止时间
 	showTimes: true,
 	timeFields: {
-		showCreated: true,
-		showStart: true,
-		showScheduled: true,
+		showCreated: false,
+		showStart: false,
+		showScheduled: false,
 		showDue: true,
-		showCancelled: true,
-		showCompletion: true,
+		showCancelled: false,
+		showCompletion: false,
 		showOverdueIndicator: true,
 	},
 

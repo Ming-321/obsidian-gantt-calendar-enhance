@@ -12,14 +12,11 @@ interface ViewButtonConfig {
 	ariaLabel: string;
 }
 
-/** 6个视图按钮的配置 - 使用线框风格图标 */
+/** 3个视图按钮的配置 */
 const VIEW_BUTTONS: ViewButtonConfig[] = [
-	{ type: 'day', label: '日', icon: 'sun', ariaLabel: '日视图' },
 	{ type: 'week', label: '周', icon: 'layout', ariaLabel: '周视图' },
 	{ type: 'month', label: '月', icon: 'grid', ariaLabel: '月视图' },
-	{ type: 'year', label: '年', icon: 'map', ariaLabel: '年视图' },
 	{ type: 'task', label: '任务', icon: 'list-checks', ariaLabel: '任务视图' },
-	{ type: 'gantt', label: '甘特图', icon: 'chart-gantt', ariaLabel: '甘特图视图' },
 ];
 
 /**

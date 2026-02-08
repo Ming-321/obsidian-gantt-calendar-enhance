@@ -202,41 +202,7 @@ Author: sugar
 	gap: 12px;
 }
 
-/* ==================== Day View Layout ==================== */
-/* BEM命名: gc-day-view, gc-view */
-.gc-day-view,
-.gc-view.gc-view--day {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	max-width: 100%;
-	margin: 0;
-	height: 100%;
-	flex: 1;
-	overflow: hidden;
-	padding: 12px;
-}
-
-/* 水平分屏布局修饰符 */
-.gc-day-view--horizontal {
-	display: flex;
-	gap: 0;
-	width: 100%;
-	height: 100%;
-	flex: 1;
-	min-height: 0;
-}
-
-/* 垂直分屏布局修饰符 */
-.gc-day-view--vertical {
-	display: flex;
-	flex-direction: column;
-	gap: 0;
-	width: 100%;
-	height: 100%;
-	flex: 1;
-	min-height: 0;
-}
+/* (Day View removed) */
 
 /* ==================== Task View Layout ==================== */
 /* BEM命名: gc-view--task (Modifier) */
@@ -1670,8 +1636,8 @@ Author: sugar
 /* 6.4 Month View Components */
 /* 星期标签 - 位于Grid第1行 */
 .gc-month-view__weekday {
-	font-size: 16px;
-	font-weight: 600;
+	font-size: 12px;
+	font-weight: 500;
 	color: var(--text-muted);
 	text-align: center;
 	padding: 8px 4px;
@@ -1750,9 +1716,9 @@ Author: sugar
 
 /* BEM类名: gc-month-view__lunar-text */
 .gc-month-view__day-cell .gc-month-view__lunar-text {
-	font-size: 18px;
-	font-weight: 500;
-	color: var(--text-normal);
+	font-size: 11px;
+	font-weight: 400;
+	color: var(--text-muted);
 }
 
 /* BEM类名: gc-month-view__tasks */
@@ -1810,7 +1776,7 @@ Author: sugar
 
 .gc-week-view__day-name {
 	flex: 1;
-	font-size: 16px;
+	font-size: 12px;
 	font-weight: 500;
 	color: var(--text-normal);
 	text-align: left;
@@ -1818,7 +1784,7 @@ Author: sugar
 
 .gc-week-view__day-number {
 	flex: 1;
-	font-size: 16px;
+	font-size: 13px;
 	font-weight: 500;
 	color: var(--text-normal);
 	text-align: center;
@@ -1826,9 +1792,9 @@ Author: sugar
 
 .gc-week-view__lunar-text {
 	flex: 1;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--text-normal);
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-muted);
 	text-align: right;
 }
 
@@ -1930,111 +1896,122 @@ Author: sugar
 	text-align: center;
 	color: var(--text-muted);
 	font-size: 12px;
+	grid-column: 1 / -1;
 }
 
-/* ==================== Day View Sub-Components ==================== */
-/* BEM命名: gc-day-view Elements */
-.gc-day-view__task-list {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+/* ==================== Week View - Gantt Body ==================== */
+.gc-week-view__gantt-body {
+	flex: 1 1 auto;
+	min-height: 0;
 	overflow-y: auto;
-	flex: 1;
-	min-height: 0;
+	overflow-x: hidden;
+	position: relative;
+	padding: 4px 0;
 }
 
-.gc-day-view--horizontal .gc-day-view__section--tasks {
-	flex: 1 1 50%;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	padding-right: 8px;
-	border-right: 1px solid var(--divider-color);
-	min-height: 0;
+/* 背景网格线 */
+.gc-week-view__gantt-grid-lines {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	pointer-events: none;
+	z-index: 0;
 }
 
-.gc-day-view--tasks-only {
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	width: 100%;
-	height: 100%;
-	min-height: 0;
+.gc-week-view__gantt-grid-line {
+	border-right: 1px solid var(--background-modifier-border);
 }
 
-.gc-day-view--horizontal .gc-day-view__section--notes {
-	flex: 1 1 50%;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	padding-left: 8px;
-	min-height: 0;
+.gc-week-view__gantt-grid-line:last-child {
+	border-right: none;
 }
 
-.gc-day-view__divider {
-	width: 8px;
-	background-color: transparent;
-	cursor: col-resize;
-	transition: background-color 0.2s;
-	flex-shrink: 0;
+.gc-week-view__gantt-grid-line--today {
+	background-color: rgba(255, 107, 107, 0.04);
 }
 
-.gc-day-view__divider:hover {
-	background-color: var(--interactive-accent);
+/* 任务行 */
+.gc-week-view__gantt-row {
+	position: relative;
+	height: 34px;
+	margin: 3px 0;
+	z-index: 1;
 }
 
-.gc-day-view--vertical .gc-day-view__section--tasks {
-	flex: 1 1 50%;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	padding-bottom: 8px;
-	border-bottom: 1px solid var(--divider-color);
-	min-height: 0;
-}
-
-.gc-day-view--vertical .gc-day-view__title {
-	margin: 0 0 12px 0;
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--text-normal);
+/* 任务 Bar */
+.gc-week-view__gantt-bar {
+	position: absolute;
+	top: 2px;
+	bottom: 2px;
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	flex-shrink: 0;
-}
-
-.gc-day-view--vertical .gc-day-view__task-list {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	overflow-y: auto;
-	flex: 1;
-	min-height: 0;
-}
-
-.gc-day-view--vertical .gc-day-view__section--notes {
-	flex: 1 1 50%;
-	display: flex;
-	flex-direction: column;
+	gap: 4px;
+	padding: 0 8px;
+	border-radius: 6px;
+	cursor: pointer;
 	overflow: hidden;
-	padding-top: 8px;
-	min-height: 0;
-}
-
-.gc-day-view__divider--vertical {
-	height: 8px;
-	background-color: transparent;
-	cursor: row-resize;
-	transition: background-color 0.2s;
-	flex-shrink: 0;
-}
-
-.gc-day-view__notes-body {
+	white-space: nowrap;
+	transition: filter 0.15s ease, box-shadow 0.15s ease;
 	font-size: 12px;
-	line-height: 1.6;
+	line-height: 1;
+	z-index: 1;
+}
+
+.gc-week-view__gantt-bar:hover {
+	filter: brightness(1.08);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	z-index: 2;
+}
+
+/* Bar 优先级配色 */
+.gc-week-view__gantt-bar--high {
+	background-color: rgba(231, 76, 60, 0.25);
+	border: 1px solid rgba(231, 76, 60, 0.5);
 	color: var(--text-normal);
 }
+
+.gc-week-view__gantt-bar--normal {
+	background-color: rgba(56, 132, 255, 0.2);
+	border: 1px solid rgba(56, 132, 255, 0.45);
+	color: var(--text-normal);
+}
+
+.gc-week-view__gantt-bar--low {
+	background-color: rgba(140, 140, 140, 0.15);
+	border: 1px solid rgba(140, 140, 140, 0.35);
+	color: var(--text-muted);
+}
+
+.gc-week-view__gantt-bar--reminder {
+	background-color: rgba(245, 166, 35, 0.2);
+	border: 2px dashed rgba(245, 166, 35, 0.75);
+	color: var(--text-normal);
+}
+
+.gc-week-view__gantt-bar--completed {
+	background-color: rgba(82, 196, 26, 0.15);
+	border: 1px solid rgba(82, 196, 26, 0.35);
+	color: var(--text-muted);
+	opacity: 0.7;
+}
+
+/* Bar 内容 */
+.gc-week-view__gantt-bar-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 1;
+}
+
+.gc-week-view__gantt-bar-icon {
+	flex-shrink: 0;
+	font-size: 12px;
+}
+
+/* (Day View Sub-Components removed) */
 
 /* Priority badge inline */
 /* BEM命名: gc-task-card__priority, gc-task-card__priority-badge */
@@ -2409,15 +2386,7 @@ Author: sugar
 	border-left-color: var(--task-pending-color);
 }
 
-/* Day View 容器 */
-.gc-day-view__task-list .gc-task-card--day.gc-task-card--completed {
-	opacity: 0.65;
-	border-left-color: var(--task-completed-color);
-}
-
-.gc-day-view__task-list .gc-task-card--day.gc-task-card--pending {
-	border-left-color: var(--task-pending-color);
-}
+/* (Day View task card styles removed) */
 
 
 /* Week View */
@@ -2640,7 +2609,6 @@ Author: sugar
 
 /* 7.6 Text Decoration (已完成任务) */
 /* 排除自定义状态的已完成任务，使用自定义文字颜色 */
-.gc-day-view__task-list .gc-task-card--day.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
 .gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
 .gc-month-view__tasks .gc-task-card--month.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
 .gc-view--task .gc-task-card--task.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,

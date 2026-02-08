@@ -4,11 +4,8 @@ import { GeneralSettingsBuilder } from './builders/GeneralSettingsBuilder';
 import { TaskSettingsBuilder } from './builders/TaskSettingsBuilder';
 import { TaskViewSettingsBuilder } from './builders/TaskViewSettingsBuilder';
 import { CalendarViewSettingsBuilder } from './builders/CalendarViewSettingsBuilder';
-import { DayViewSettingsBuilder } from './builders/DayViewSettingsBuilder';
 import { WeekViewSettingsBuilder } from './builders/WeekViewSettingsBuilder';
 import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
-import { YearViewSettingsBuilder } from './builders/YearViewSettingsBuilder';
-import { GanttViewSettingsBuilder } from './builders/GanttViewSettingsBuilder';
 import { SyncSettingsBuilder } from './builders/SyncSettingsBuilder';
 import { GitHubSyncSettingsBuilder } from './builders/GitHubSyncSettingsBuilder';
 import type { BuilderConfig } from './types';
@@ -72,14 +69,6 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		});
 		calendarViewBuilder.render();
 
-		// ===== 日视图设置 =====
-		const dayViewBuilder = new DayViewSettingsBuilder({
-			containerEl,
-			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		dayViewBuilder.render();
-
 		// ===== 周视图设置 =====
 		const weekViewBuilder = new WeekViewSettingsBuilder({
 			containerEl,
@@ -95,22 +84,6 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 			onRefreshSettings: refreshCallback
 		});
 		monthViewBuilder.render();
-
-		// ===== 年视图设置 =====
-		const yearViewBuilder = new YearViewSettingsBuilder({
-			containerEl,
-			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		yearViewBuilder.render();
-
-		// ===== 甘特图设置 =====
-		const ganttViewBuilder = new GanttViewSettingsBuilder({
-			containerEl,
-			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		ganttViewBuilder.render();
 
 		// ===== GitHub 同步 & 邮件提醒 =====
 		const githubSyncBuilder = new GitHubSyncSettingsBuilder({

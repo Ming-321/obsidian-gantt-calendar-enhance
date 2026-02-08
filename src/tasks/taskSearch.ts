@@ -10,7 +10,7 @@ import { GCTask } from '../types';
  * 从 TaskStore 获取所有任务
  */
 export async function searchTasks(app: App): Promise<GCTask[]> {
-	const plugin = (app as any).plugins?.plugins?.['obsidian-gantt-calendar'];
+	const plugin = (app as any).plugins?.plugins?.['gantt-calendar'];
 	if (!plugin?.taskCache) return [];
 	return plugin.taskCache.getAllTasks();
 }

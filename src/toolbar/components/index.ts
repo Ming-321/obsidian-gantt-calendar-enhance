@@ -32,8 +32,6 @@ export { renderRefreshButton } from './refresh-button';
 export { renderSortButton, type SortButtonOptions } from './sort-button';
 export { renderStatusFilterButton, type StatusFilterButtonOptions } from './status-filter';
 export { renderTagFilterButton, type TagFilterOptions } from './tag-filter';
-export { renderGanttScrollButtons, type GanttScrollButtonsOptions } from './gantt-scroll-buttons';
-
 // === 组合组件 ===
 export {
 	renderNavButtons,
@@ -59,10 +57,8 @@ export {
 export {
 	renderFieldSelector,
 	renderDualFieldSelector,
-	renderGanttFieldSelector,
 	type FieldSelectorOptions,
 	type DualFieldSelectorOptions,
-	type GanttFieldSelectorOptions,
 	type DateFieldType,
 	type DateFieldOption,
 	DEFAULT_DATE_FIELD_OPTIONS

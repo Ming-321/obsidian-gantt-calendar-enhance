@@ -77,7 +77,7 @@ export async function updateTaskCompletion(
 	completed: boolean,
 ): Promise<void> {
 	// 获取 TaskStore 实例
-	const plugin = (app as any).plugins?.plugins?.['obsidian-gantt-calendar'];
+	const plugin = (app as any).plugins?.plugins?.['gantt-calendar'];
 	if (!plugin?.taskCache) {
 		Logger.error('taskUpdater', 'TaskStore not available');
 		return;
@@ -130,7 +130,7 @@ export async function updateTaskProperties(
 	});
 
 	// 获取 TaskStore 实例
-	const plugin = (app as any).plugins?.plugins?.['obsidian-gantt-calendar'];
+	const plugin = (app as any).plugins?.plugins?.['gantt-calendar'];
 	if (!plugin?.taskCache) {
 		Logger.error('taskUpdater', 'TaskStore not available');
 		return;

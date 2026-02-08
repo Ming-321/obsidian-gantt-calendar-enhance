@@ -13,7 +13,6 @@ export type DateFieldType = 'createdDate' | 'startDate' | 'scheduledDate' | 'due
 export interface GanttCalendarSettings {
 	mySetting: string;
 	startOnMonday: boolean;
-	yearLunarFontSize: number;
 	solarFestivalColor: string;
 	lunarFestivalColor: string;
 	solarTermColor: string;
@@ -21,20 +20,14 @@ export interface GanttCalendarSettings {
 	enabledTaskFormats: string[];
 	showGlobalFilterInTaskText: boolean; // 是否在任务列表文本中显示 global filter 前缀
 	dateFilterField: 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate'; // 日历视图的筛选字段，任务视图的初始字段
-	enableDailyNote: boolean; // 是否在日视图中显示 Daily Note
-	dayViewLayout: 'horizontal' | 'vertical'; // 日视图布局：水平（左右分屏）或垂直（上下分屏）
 	dailyNotePath: string; // Daily note 文件夹路径
 	dailyNoteNameFormat: string; // Daily note 文件名格式 (如 yyyy-MM-dd)
 	monthViewTaskLimit: number; // 月视图每天显示的最大任务数量
-	yearShowTaskCount: boolean; // 年视图是否显示每日任务数量
-	yearHeatmapEnabled: boolean; // 年视图是否启用任务热力图
-	yearHeatmapPalette: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'cyan' | 'pink' | 'yellow'; // 热力图色卡选择
-	yearHeatmap3DEnabled: 0 | 1 | 2; // 年视图热力图3D效果：0=关闭，1=轻微突起，2=明显突起
 	taskNotePath: string; // 任务笔记默认文件夹路径
 	taskStatuses: TaskStatus[]; // 任务状态配置（包含颜色）
 	taskSortField: SortField; // 任务排序字段
 	taskSortOrder: SortOrder; // 任务排序顺序
-	defaultView: 'day' | 'week' | 'month' | 'year' | 'task' | 'gantt'; // 默认视图
+	defaultView: 'week' | 'month' | 'task'; // 默认视图
 	newTaskHeading?: string; // 新任务插入的标题（留空则添加到文件末尾）
 	enableTemplaterForDailyNote: boolean; // 是否启用 Templater 集成
 	templaterTemplatePath: string; // Templater 模板路径
@@ -52,13 +45,6 @@ export interface GanttCalendarSettings {
 	taskViewTagOperator: TagFilterOperator;
 	taskViewTimeFieldFilter: DateFieldType;
 	taskViewDateRangeMode: 'all' | 'day' | 'week' | 'month' | 'custom';
-
-	// DayView 状态
-	dayViewSortField: SortField;
-	dayViewSortOrder: SortOrder;
-	dayViewSelectedStatuses: string[];
-	dayViewSelectedTags: string[];
-	dayViewTagOperator: TagFilterOperator;
 
 	// WeekView 状态
 	weekViewSortField: SortField;
@@ -80,15 +66,6 @@ export interface GanttCalendarSettings {
 	monthViewShowTags: boolean;
 	monthViewShowPriority: boolean;
 
-	// YearView 状态
-	yearViewSelectedTags: string[];
-	yearViewTagOperator: TagFilterOperator;
-
-	// ========== 甘特图设置 ==========
-
-	ganttStartField: DateFieldType;  // 甘特图开始时间字段
-	ganttEndField: DateFieldType;    // 甘特图结束时间字段
-
 	// ========== GitHub 数据同步设置 ==========
 	githubSync?: {
 		enabled: boolean;
@@ -98,6 +75,13 @@ export interface GanttCalendarSettings {
 		lastSyncTime?: string;
 		lastSyncStatus?: 'success' | 'error';
 		lastSyncError?: string;
+		// 邮件提醒时间配置
+		reminderSchedule?: {
+			morning:  { enabled: boolean; time: string };
+			noon:     { enabled: boolean; time: string };
+			evening:  { enabled: boolean; time: string };
+		};
+		timezone?: number; // UTC 偏移小时数，默认 8（东八区）
 	};
 
 	// ========== 同步设置 ==========

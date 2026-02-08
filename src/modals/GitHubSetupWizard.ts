@@ -12,7 +12,12 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import type GanttCalendarPlugin from '../../main';
 import { GitHubSyncService } from '../services/GitHubSyncService';
-import { WORKFLOW_TEMPLATE, EMAIL_SCRIPT_TEMPLATE } from '../services/githubTemplates';
+import {
+	WORKFLOW_TEMPLATE,
+	EMAIL_SCRIPT_TEMPLATE,
+	DEFAULT_REMINDER_SCHEDULE,
+	DEFAULT_TIMEZONE,
+} from '../services/githubTemplates';
 import { Logger } from '../utils/logger';
 
 export class GitHubSetupWizard extends Modal {
@@ -232,6 +237,8 @@ export class GitHubSetupWizard extends Modal {
 				repo: this.repoName,
 				lastSyncTime: new Date().toISOString(),
 				lastSyncStatus: 'success',
+				reminderSchedule: { ...DEFAULT_REMINDER_SCHEDULE },
+				timezone: DEFAULT_TIMEZONE,
 			};
 			await this.plugin.saveSettings();
 

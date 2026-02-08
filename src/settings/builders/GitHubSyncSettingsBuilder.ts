@@ -5,12 +5,156 @@
 import { Setting, Notice } from 'obsidian';
 import type { BuilderConfig } from '../types';
 import { GitHubSetupWizard } from '../../modals/GitHubSetupWizard';
+import { GitHubSyncService } from '../../services/GitHubSyncService';
+import {
+	generateWorkflowTemplate,
+	DEFAULT_REMINDER_SCHEDULE,
+	DEFAULT_TIMEZONE,
+	type ReminderScheduleConfig,
+} from '../../services/githubTemplates';
 
 export class GitHubSyncSettingsBuilder {
 	private config: BuilderConfig;
 
 	constructor(config: BuilderConfig) {
 		this.config = config;
+	}
+
+	/**
+	 * 验证时间格式 HH:mm
+	 */
+	private isValidTime(time: string): boolean {
+		const match = time.match(/^(\d{1,2}):(\d{2})$/);
+		if (!match) return false;
+		const h = parseInt(match[1]), m = parseInt(match[2]);
+		return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+	}
+
+	/**
+	 * 渲染提醒时间配置区域
+	 */
+	private renderReminderScheduleSettings(
+		containerEl: HTMLElement,
+		cfg: NonNullable<typeof this.config.plugin.settings.githubSync>,
+	): void {
+		const { plugin } = this.config;
+
+		containerEl.createEl('h3', { text: '📬 邮件提醒时间' });
+
+		// 确保有默认值
+		if (!cfg.reminderSchedule) {
+			cfg.reminderSchedule = { ...DEFAULT_REMINDER_SCHEDULE };
+		}
+		if (cfg.timezone === undefined) {
+			cfg.timezone = DEFAULT_TIMEZONE;
+		}
+
+		const schedule = cfg.reminderSchedule;
+		const slots: { key: keyof ReminderScheduleConfig; label: string }[] = [
+			{ key: 'morning', label: '早上提醒' },
+			{ key: 'noon',    label: '中午提醒' },
+			{ key: 'evening', label: '晚上提醒' },
+		];
+
+		// 时区设置
+		new Setting(containerEl)
+			.setName('时区')
+			.setDesc('用于计算 cron 触发时间（UTC 偏移）')
+			.addDropdown(dd => {
+				for (let i = -12; i <= 14; i++) {
+					const sign = i >= 0 ? '+' : '';
+					dd.addOption(String(i), `UTC${sign}${i}`);
+				}
+				dd.setValue(String(cfg.timezone ?? DEFAULT_TIMEZONE));
+				dd.onChange(async (value) => {
+					cfg.timezone = parseInt(value);
+					await plugin.saveSettings();
+				});
+			});
+
+		// 三个时间段
+		for (const { key, label } of slots) {
+			const slot = schedule[key];
+
+			new Setting(containerEl)
+				.setName(label)
+				.setDesc(`当前: ${slot.time}`)
+				.addToggle(toggle => {
+					toggle.setValue(slot.enabled)
+						.onChange(async (value) => {
+							schedule[key].enabled = value;
+							await plugin.saveSettings();
+						});
+				})
+				.addText(text => {
+					text.setPlaceholder('HH:mm')
+						.setValue(slot.time)
+						.onChange(async (value) => {
+							const trimmed = value.trim();
+							if (this.isValidTime(trimmed)) {
+								schedule[key].time = trimmed;
+								await plugin.saveSettings();
+							}
+						});
+					text.inputEl.style.width = '80px';
+					text.inputEl.style.textAlign = 'center';
+				});
+		}
+
+		// 更新提醒时间按钮
+		new Setting(containerEl)
+			.setName('更新提醒时间')
+			.setDesc('将新的提醒时间推送到 GitHub 工作流')
+			.addButton(btn => {
+				btn.setButtonText('📤 更新提醒时间')
+					.setCta()
+					.onClick(async () => {
+						// 校验所有已启用时段的时间格式
+						for (const { key, label } of slots) {
+							if (schedule[key].enabled && !this.isValidTime(schedule[key].time)) {
+								new Notice(`${label}的时间格式无效，请使用 HH:mm 格式`);
+								return;
+							}
+						}
+
+						try {
+							btn.setDisabled(true);
+							btn.setButtonText('推送中...');
+
+							const workflowContent = generateWorkflowTemplate(
+								schedule as ReminderScheduleConfig,
+								cfg.timezone ?? DEFAULT_TIMEZONE,
+							);
+
+							const syncService = new GitHubSyncService();
+							syncService.configure({
+								token: cfg.token,
+								owner: cfg.owner,
+								repo: cfg.repo,
+							});
+
+							await syncService.pushMultipleFiles([{
+								path: '.github/workflows/task-reminder.yml',
+								content: workflowContent,
+								message: `config: update reminder schedule`,
+							}]);
+
+							new Notice('提醒时间已更新！');
+							btn.setButtonText('✅ 更新成功');
+							setTimeout(() => {
+								btn.setButtonText('📤 更新提醒时间');
+								btn.setDisabled(false);
+							}, 2000);
+						} catch (error) {
+							new Notice('更新失败: ' + (error as Error).message);
+							btn.setButtonText('❌ 更新失败');
+							setTimeout(() => {
+								btn.setButtonText('📤 更新提醒时间');
+								btn.setDisabled(false);
+							}, 2000);
+						}
+					});
+			});
 	}
 
 	render(): void {
@@ -133,6 +277,9 @@ export class GitHubSyncSettingsBuilder {
 							window.open(`https://github.com/${cfg!.owner}/${cfg!.repo}/settings/secrets/actions`);
 						});
 				});
+
+			// ========== 邮件提醒时间配置 ==========
+			this.renderReminderScheduleSettings(containerEl, cfg!);
 
 			// 清除配置
 			new Setting(containerEl)

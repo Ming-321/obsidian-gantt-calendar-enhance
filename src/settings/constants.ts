@@ -7,7 +7,6 @@ import { DEFAULT_TASK_STATUSES } from '../tasks/taskStatus';
 export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	mySetting: 'default',
 	startOnMonday: true,
-	yearLunarFontSize: 10,
 	solarFestivalColor: '#e74c3c',  // 阳历节日 - 红色
 	lunarFestivalColor: '#e8a041',  // 农历节日 - 橙色
 	solarTermColor: '#52c41a',      // 节气 - 绿色
@@ -15,15 +14,9 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	enabledTaskFormats: ['tasks'], // 启用的任务格式
 	showGlobalFilterInTaskText: true, // 默认显示 global filter
 	dateFilterField: 'dueDate', // 默认使用截止日期作为筛选字段
-	enableDailyNote: true, // 默认在日视图中显示 Daily Note
-	dayViewLayout: 'horizontal', // 默认水平（左右分屏）布局
 	dailyNotePath: 'DailyNotes', // 默认 daily note 文件夹路径
 	dailyNoteNameFormat: 'yyyy-MM-dd', // 默认文件名格式
 	monthViewTaskLimit: 3, // 默认每天显示5个任务
-	yearShowTaskCount: true,
-	yearHeatmapEnabled: true,
-	yearHeatmapPalette: 'blue',
-	yearHeatmap3DEnabled: 2,
 	taskNotePath: 'Tasks', // 默认任务笔记文件夹路径
 	taskStatuses: DEFAULT_TASK_STATUSES, // 默认任务状态配置
 	taskSortField: 'dueDate', // 默认排序字段：截止日期
@@ -47,13 +40,6 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	taskViewTimeFieldFilter: 'dueDate',
 	taskViewDateRangeMode: 'week',
 
-	// DayView
-	dayViewSortField: 'dueDate',
-	dayViewSortOrder: 'asc',
-	dayViewSelectedStatuses: ['todo'],
-	dayViewSelectedTags: [],
-	dayViewTagOperator: 'OR',
-
 	// WeekView
 	weekViewSortField: 'priority',
 	weekViewSortOrder: 'desc',
@@ -74,14 +60,6 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	monthViewShowTags: true,
 	monthViewShowPriority: false,  // 月视图空间有限，默认不显示优先级
 
-	// YearView
-	yearViewSelectedTags: [],
-	yearViewTagOperator: 'OR',
-
-	// ========== 甘特图设置 ==========
-
-	ganttStartField: 'startDate',  // 默认使用开始日期
-	ganttEndField: 'dueDate',      // 默认使用截止日期
 };
 
 /**

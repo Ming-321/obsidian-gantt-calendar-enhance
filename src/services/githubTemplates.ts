@@ -4,25 +4,114 @@
  * 这些模板在一键初始化时推送到用户的专用数据仓库。
  */
 
+/** 提醒时间段配置 */
+export interface ReminderTimeSlot {
+	enabled: boolean;
+	time: string; // "HH:mm"
+}
+
+/** 提醒时间配置 */
+export interface ReminderScheduleConfig {
+	morning: ReminderTimeSlot;
+	noon: ReminderTimeSlot;
+	evening: ReminderTimeSlot;
+}
+
+/** 默认提醒时间配置 */
+export const DEFAULT_REMINDER_SCHEDULE: ReminderScheduleConfig = {
+	morning: { enabled: true, time: '06:30' },
+	noon:    { enabled: true, time: '14:00' },
+	evening: { enabled: true, time: '18:00' },
+};
+
+/** 默认时区（UTC+8） */
+export const DEFAULT_TIMEZONE = 8;
+
 /**
- * GitHub Action 工作流模板
+ * 将本地时间转换为 UTC cron 表达式
+ * @param localTime "HH:mm" 格式的本地时间
+ * @param utcOffset UTC 偏移小时数（如 8 代表 UTC+8）
+ * @returns cron 表达式，如 "30 22 * * *"
  */
-export const WORKFLOW_TEMPLATE = `name: Task Email Reminder
+export function localTimeToUtcCron(localTime: string, utcOffset: number): string {
+	const [hour, minute] = localTime.split(':').map(Number);
+	let utcHour = hour - utcOffset;
+	if (utcHour < 0) utcHour += 24;
+	if (utcHour >= 24) utcHour -= 24;
+	return `${minute} ${utcHour} * * *`;
+}
+
+/**
+ * 生成 GitHub Action 工作流模板
+ * @param schedule 提醒时间配置
+ * @param timezone UTC 偏移小时数
+ */
+export function generateWorkflowTemplate(
+	schedule: ReminderScheduleConfig = DEFAULT_REMINDER_SCHEDULE,
+	timezone: number = DEFAULT_TIMEZONE,
+): string {
+	const slots: { key: string; label: string; slot: ReminderTimeSlot }[] = [
+		{ key: 'morning', label: '早上', slot: schedule.morning },
+		{ key: 'noon',    label: '中午', slot: schedule.noon },
+		{ key: 'evening', label: '晚上', slot: schedule.evening },
+	];
+
+	// 生成 cron 行和对应的判断逻辑
+	const enabledSlots = slots.filter(s => s.slot.enabled);
+
+	if (enabledSlots.length === 0) {
+		// 全部禁用时只保留 workflow_dispatch
+		return generateWorkflowYaml([], []);
+	}
+
+	const cronEntries = enabledSlots.map(s => {
+		const cron = localTimeToUtcCron(s.slot.time, timezone);
+		const utcSign = timezone >= 0 ? '+' : '';
+		return {
+			key: s.key,
+			label: s.label,
+			time: s.slot.time,
+			cron,
+			comment: `${s.label} ${s.slot.time} (UTC${utcSign}${timezone} = UTC ${cron.split(' ')[1]}:${cron.split(' ')[0].padStart(2, '0')})`,
+		};
+	});
+
+	return generateWorkflowYaml(cronEntries, enabledSlots.map(s => s.key));
+}
+
+function generateWorkflowYaml(
+	cronEntries: { key: string; cron: string; comment: string }[],
+	enabledKeys: string[],
+): string {
+	// 构建 schedule 部分
+	let schedulePart = '';
+	if (cronEntries.length > 0) {
+		const cronLines = cronEntries.map(e =>
+			`    # ${e.comment}\n    - cron: '${e.cron}'`
+		).join('\n');
+		schedulePart = `  schedule:\n${cronLines}\n`;
+	}
+
+	// 构建 cron → type 判断逻辑
+	let cronDetection = '';
+	if (cronEntries.length > 0) {
+		const conditions = cronEntries.map((e, i) => {
+			const prefix = i === 0 ? 'if' : 'elif';
+			return `            ${prefix} [ "\$CRON" = "${e.cron}" ]; then\n              echo "type=${e.key}" >> \$GITHUB_OUTPUT`;
+		}).join('\n');
+
+		cronDetection = `${conditions}\n            else\n              echo "type=${cronEntries[cronEntries.length - 1].key}" >> \$GITHUB_OUTPUT\n            fi`;
+	}
+
+	return `name: Task Email Reminder
 
 on:
-  schedule:
-    # 早上 7:00 (UTC+8 = 前一天 UTC 23:00)
-    - cron: '0 23 * * *'
-    # 中午 12:00 (UTC+8 = UTC 4:00)
-    - cron: '0 4 * * *'
-    # 晚上 20:00 (UTC+8 = UTC 12:00)
-    - cron: '0 12 * * *'
-  workflow_dispatch:
+${schedulePart}  workflow_dispatch:
     inputs:
       schedule_override:
         description: 'Override schedule type (morning/noon/evening)'
         required: false
-        default: 'morning'
+        default: '${enabledKeys[0] || 'morning'}'
 
 jobs:
   send-reminder:
@@ -44,13 +133,7 @@ jobs:
             echo "type=\${{ github.event.inputs.schedule_override }}" >> \$GITHUB_OUTPUT
           else
             CRON="\${{ github.event.schedule }}"
-            if [ "\$CRON" = "0 23 * * *" ]; then
-              echo "type=morning" >> \$GITHUB_OUTPUT
-            elif [ "\$CRON" = "0 4 * * *" ]; then
-              echo "type=noon" >> \$GITHUB_OUTPUT
-            else
-              echo "type=evening" >> \$GITHUB_OUTPUT
-            fi
+${cronDetection}
           fi
 
       - name: Generate and send email
@@ -63,6 +146,12 @@ jobs:
           SMTP_PASS: \${{ secrets.SMTP_PASS }}
           SCHEDULE_TYPE: \${{ steps.schedule.outputs.type }}
 `;
+}
+
+/**
+ * 保持向后兼容：默认参数的工作流模板
+ */
+export const WORKFLOW_TEMPLATE = generateWorkflowTemplate();
 
 /**
  * 邮件生成脚本模板
