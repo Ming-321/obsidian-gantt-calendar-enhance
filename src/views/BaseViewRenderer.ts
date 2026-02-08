@@ -154,7 +154,7 @@ export abstract class BaseViewRenderer {
 
 	/**
 	 * 从插件设置初始化筛选状态
-	 * @param settingsPrefix 设置字段前缀（如 'taskView', 'dayView'）
+	 * @param settingsPrefix 设置字段前缀（如 'taskView', 'weekView'）
 	 */
 	protected initializeFilterStates(settingsPrefix: string): void {
 		const settings = this.plugin?.settings;

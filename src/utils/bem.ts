@@ -21,14 +21,10 @@
 export const BLOCKS = {
 	/** 视图容器 */
 	VIEW: 'view',
-	/** 日视图 */
-	DAY_VIEW: 'day-view',
 	/** 周视图 */
 	WEEK_VIEW: 'week-view',
 	/** 月视图 */
 	MONTH_VIEW: 'month-view',
-	/** 年视图 */
-	YEAR_VIEW: 'year-view',
 	/** 甘特图 */
 	GANTT: 'gantt-view',
 
@@ -98,9 +94,7 @@ export const TaskCardClasses = {
 		// 视图相关修饰符（添加 view 后缀区分）
 		monthView: bem(BLOCKS.TASK_CARD, undefined, 'month'),
 		weekView: bem(BLOCKS.TASK_CARD, undefined, 'week'),
-		dayView: bem(BLOCKS.TASK_CARD, undefined, 'day'),
 		taskView: bem(BLOCKS.TASK_CARD, undefined, 'task'),
-		ganttView: bem(BLOCKS.TASK_CARD, undefined, 'gantt'),
 		// 状态修饰符
 		completed: bem(BLOCKS.TASK_CARD, undefined, 'completed'),
 		pending: bem(BLOCKS.TASK_CARD, undefined, 'pending'),
@@ -184,32 +178,6 @@ export const TagClasses = {
 };
 
 /**
- * 日视图类名常量
- */
-export const DayViewClasses = {
-	block: bem(BLOCKS.DAY_VIEW),
-
-	/** 布局模式修饰符 */
-	modifiers: {
-		horizontal: bem(BLOCKS.DAY_VIEW, undefined, 'horizontal'),
-		vertical: bem(BLOCKS.DAY_VIEW, undefined, 'vertical'),
-		tasksOnly: bem(BLOCKS.DAY_VIEW, undefined, 'tasks-only'),
-	},
-
-	/** Elements */
-	elements: {
-		sectionTasks: bem(BLOCKS.DAY_VIEW, 'section', 'tasks'),
-		sectionNotes: bem(BLOCKS.DAY_VIEW, 'section', 'notes'),
-		title: bem(BLOCKS.DAY_VIEW, 'title'),
-		taskList: bem(BLOCKS.DAY_VIEW, 'task-list'),
-		notesContent: bem(BLOCKS.DAY_VIEW, 'notes-content'),
-		notesBody: bem(BLOCKS.DAY_VIEW, 'notes-body'),
-		divider: bem(BLOCKS.DAY_VIEW, 'divider'),
-		dividerVertical: bem(BLOCKS.DAY_VIEW, 'divider', 'vertical'),
-	},
-};
-
-/**
  * 视图容器类名常量
  */
 export const ViewClasses = {
@@ -217,12 +185,9 @@ export const ViewClasses = {
 
 	/** 视图类型修饰符 */
 	modifiers: {
-		year: bem(BLOCKS.VIEW, undefined, 'year'),
 		month: bem(BLOCKS.VIEW, undefined, 'month'),
 		week: bem(BLOCKS.VIEW, undefined, 'week'),
-		day: bem(BLOCKS.VIEW, undefined, 'day'),
 		task: bem(BLOCKS.VIEW, undefined, 'task'),
-		gantt: bem(BLOCKS.VIEW, undefined, 'gantt'),
 	},
 };
 
@@ -277,10 +242,6 @@ export const GanttClasses = {
 		stickyHeader: bem(BLOCKS.GANTT, 'sticky-header'),
 	},
 
-	/** Modifiers */
-	modifiers: {
-		dayView: bem(BLOCKS.GANTT, undefined, 'day-view'),
-	},
 };
 
 
@@ -398,7 +359,7 @@ export const ToolbarClasses = {
 			group: bem(BLOCKS.TOOLBAR, 'view-selector'),
 		},
 
-		/** 6视图按钮组 */
+		/** 视图按钮组 */
 		viewSelectorGroup: {
 			group: bem(BLOCKS.TOOLBAR, 'view-selector-group'),
 			iconOnly: bem(BLOCKS.TOOLBAR, 'view-selector-group', 'icon-only'),
@@ -558,32 +519,6 @@ export const EditTaskModalClasses = {
 
 		// 滚动容器
 		scrollContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'scroll-container'),
-	},
-};
-
-/**
- * 年视图类名常量
- */
-export const YearViewClasses = {
-	block: bem(BLOCKS.YEAR_VIEW),
-
-	/** Elements */
-	elements: {
-		months: bem(BLOCKS.YEAR_VIEW, 'months'),
-		monthCard: bem(BLOCKS.YEAR_VIEW, 'month-card'),
-		monthHeader: bem(BLOCKS.YEAR_VIEW, 'month-header'),
-		weekdays: bem(BLOCKS.YEAR_VIEW, 'weekdays'),
-		weekday: bem(BLOCKS.YEAR_VIEW, 'weekday'),
-		daysGrid: bem(BLOCKS.YEAR_VIEW, 'days-grid'),
-		day: bem(BLOCKS.YEAR_VIEW, 'day'),
-		dayNumber: bem(BLOCKS.YEAR_VIEW, 'day-number'),
-		lunarText: bem(BLOCKS.YEAR_VIEW, 'lunar-text'),
-		taskCount: bem(BLOCKS.YEAR_VIEW, 'task-count'),
-	},
-
-	/** Modifiers */
-	modifiers: {
-		showLunar: bem(BLOCKS.YEAR_VIEW, undefined, 'show-lunar'),
 	},
 };
 

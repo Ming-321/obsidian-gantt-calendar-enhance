@@ -201,7 +201,7 @@ export class GCMainView extends ItemView {
 
 	public selectDate(date: Date): void {
 		this.currentDate = new Date(date);
-		// 选择日期时切换到周视图（原来是日视图）
+		// 选择日期时切换到周视图
 		if (this.viewType !== 'week') {
 			this.viewType = 'week';
 		}

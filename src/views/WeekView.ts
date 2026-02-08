@@ -364,17 +364,23 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		const taskStartTime = start ? start.getTime() : weekStartTime;
 		const taskEndTime = due ? Math.max(due.getTime(), today.getTime()) : today.getTime();
 
-		// Clamp to week boundaries
+		// Clamp to week boundaries（weekEndTime 为周最后一天的 23:59:59.999）
 		const barStartTime = Math.max(taskStartTime, weekStartTime);
-		const weekEndTime = weekStartTime + 6 * dayMs;
+		const weekEndTime = this.currentWeekEnd ? this.currentWeekEnd.getTime() : weekStartTime + 6 * dayMs;
 		const barEndTime = Math.min(taskEndTime, weekEndTime);
+
+		// 安全检查：如果 barEnd < barStart（如任务 start 在未来且无 due），显示单天标记
+		if (barEndTime < barStartTime) {
+			const fallbackIndex = Math.max(0, Math.min(6, Math.round((barStartTime - weekStartTime) / dayMs)));
+			return { leftPercent: fallbackIndex * colWidth, widthPercent: colWidth };
+		}
 
 		const startIndex = (barStartTime - weekStartTime) / dayMs;
 		const endIndex = (barEndTime - weekStartTime) / dayMs;
 
-		const leftPercent = Math.max(0, startIndex) * colWidth;
+		const leftPercent = Math.min(Math.max(0, startIndex) * colWidth, 100 - colWidth);
 		const span = Math.max(1, endIndex - startIndex + 1); // at least 1 day
-		const widthPercent = Math.min(span * colWidth, 100 - leftPercent);
+		const widthPercent = Math.max(colWidth, Math.min(span * colWidth, 100 - leftPercent));
 
 		return { leftPercent, widthPercent };
 	}

@@ -20,8 +20,8 @@ const VIEW_BUTTONS: ViewButtonConfig[] = [
 ];
 
 /**
- * 工具栏左侧区域 - 6视图选择器
- * 负责渲染 日|周|月|年|任务|甘特图 6个平级按钮
+ * 工具栏左侧区域 - 视图选择器
+ * 负责渲染 周|月|任务 3个平级按钮
  */
 export class ToolbarLeft {
 	/**
@@ -47,7 +47,7 @@ export class ToolbarLeft {
 			buttonGroup.addClass(ToolbarClasses.components.viewSelectorGroup.iconOnly);
 		}
 
-		// 渲染6个视图按钮
+		// 渲染视图按钮
 		VIEW_BUTTONS.forEach((config) => {
 			const btn = buttonGroup.createEl('button', {
 				attr: {

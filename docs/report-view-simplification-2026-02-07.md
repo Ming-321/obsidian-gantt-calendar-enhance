@@ -19,7 +19,7 @@
 ### 删除的文件
 - `src/views/DayView.ts` — 日视图渲染器
 - `src/settings/builders/DayViewSettingsBuilder.ts` — 日视图设置构建器
-- `src/components/TaskCard/presets/DayView.config.ts` 的导出（文件保留但不再被引用）
+- `src/components/TaskCard/presets/DayView.config.ts` — 日视图任务卡片配置
 
 ### 修改的文件
 
@@ -159,6 +159,33 @@ Reminder:    🔔 提醒1 ████    🔔 提醒3 ████
 |------|---------|
 | `CLAUDE.md` | 更新视图系统描述，移除 DayView/YearView/GanttView 引用 |
 | `AGENTS.md` | 同步 CLAUDE.md 的视图系统描述变更 |
+
+---
+
+## 六、代码审查修复
+
+### Bug 修复
+
+1. **`calculateBarPosition()` 中 `weekEndTime` 计算错误**
+   - 原来使用 `weekStartTime + 6 * dayMs`（第 6 天的 00:00），导致周日任务 bar 宽度被截断
+   - 修复为使用 `this.currentWeekEnd.getTime()`（周日 23:59:59.999）
+
+2. **`calculateBarPosition()` 边界值越界**
+   - 当 `barEndTime < barStartTime`（如未来 startDate + 无 dueDate）时，改为显示单天标记
+   - `leftPercent` 限制在 `0 ~ (100 - colWidth)` 范围
+   - `widthPercent` 保证最小为 `colWidth`（1 天宽度）
+
+### 残留代码清理
+
+- `src/utils/bem.ts`：移除 `DayViewClasses`、`YearViewClasses` 导出及 `BLOCKS.DAY_VIEW`、`BLOCKS.YEAR_VIEW` 常量
+- `src/utils/bem.ts`：移除 `ViewClasses.modifiers` 中的 `day`、`year`、`gantt`
+- `src/utils/bem.ts`：移除 `TaskCardClasses.modifiers` 中的 `dayView`、`ganttView`
+- `src/utils/bem.ts`：移除 `GanttClasses.modifiers.dayView`
+- `styles.css`：移除约 71 个 `gc-year-view` / `gc-view--year` 相关 CSS 规则块
+- `src/views/BaseViewRenderer.ts`：修正注释中 `'dayView'` → `'weekView'`
+- `src/toolbar/toolbar-left.ts`：修正注释中 `6视图选择器` → `视图选择器`
+- `src/types.ts`：修正注释中 `日视图` 引用
+- `src/GCMainView.ts`：移除 `（原来是日视图）` 注释
 
 ---
 
