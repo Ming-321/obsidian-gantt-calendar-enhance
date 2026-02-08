@@ -1,7 +1,6 @@
-import { ItemView, WorkspaceLeaf, setIcon, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { CalendarViewType } from './types';
-import { getWeekOfDate, formatDate, formatMonth, getTodayDate } from './dateUtils/dateUtilsIndex';
-import { solarToLunar, getShortLunarText } from './lunar/lunar';
+import { getWeekOfDate, getRolling7Days, getTodayDate } from './dateUtils/dateUtilsIndex';
 import { MonthViewRenderer } from './views/MonthView';
 import { WeekViewRenderer } from './views/WeekView';
 import { TaskViewRenderer } from './views/TaskView';
@@ -10,9 +9,13 @@ import { Logger } from './utils/logger';
 
 export const GC_VIEW_ID = 'gantt-calendar-view';
 
+/** 周视图模式：标准周（周一~周日） 或 滚动7日（从今天起7天） */
+export type WeekMode = 'standard' | 'rolling7';
+
 export class GCMainView extends ItemView {
 	private currentDate: Date = new Date();
 	private viewType: CalendarViewType = 'month';
+	private weekMode: WeekMode = 'standard';
 	private resizeObserver: ResizeObserver | null = null;
 	private plugin: any;
 	private cacheUpdateListener: (() => void) | null = null;
@@ -145,19 +148,22 @@ export class GCMainView extends ItemView {
 
 		// Create toolbar
 		const toolbarContainer = container.createDiv('calendar-toolbar');
+		// rolling7 模式下隐藏导航箭头
+		const showNav = this.viewType !== 'task' && this.weekMode !== 'rolling7';
+
 		this.toolbar.render(toolbarContainer, {
 			currentViewType: this.viewType,
 			currentDate: this.currentDate,
 			titleText: this.getViewTitle(),
 			showViewNavButtonText: this.plugin?.settings?.showViewNavButtonText ?? true,
-			globalFilterText: this.plugin?.settings?.globalTaskFilter,
+			showNav,
 			taskRenderer: this.taskRenderer,
-			weekRenderer: this.weekRenderer,
 			plugin: this.plugin,
 			onViewSwitch: (type) => this.switchView(type),
 			onPrevious: () => this.previousPeriod(),
-			onToday: () => this.goToToday(),
+			onToday: () => this.handleTitleClick(),
 			onNext: () => this.nextPeriod(),
+			onLongPress: () => this.handleTitleLongPress(),
 			onFilterChange: () => {
 				if (this.viewType === 'task') {
 					this.taskRenderer.refreshTaskList();
@@ -166,13 +172,6 @@ export class GCMainView extends ItemView {
 				}
 			},
 			onRender: () => this.render(),
-			onRefresh: async () => {
-				await this.plugin.taskCache.initialize(
-					this.plugin.settings.globalTaskFilter,
-					this.plugin.settings.enabledTaskFormats
-				);
-				this.render();
-			}
 		});
 
 		// Create calendar content
@@ -188,9 +187,11 @@ export class GCMainView extends ItemView {
 			case 'month':
 				this.monthRenderer.render(content, this.currentDate);
 				break;
-			case 'week':
-				this.weekRenderer.render(content, this.currentDate);
+			case 'week': {
+				const dateForWeek = this.weekMode === 'rolling7' ? getTodayDate() : this.currentDate;
+				this.weekRenderer.render(content, dateForWeek, this.weekMode);
 				break;
+			}
 			case 'task':
 				this.taskRenderer.render(content, this.currentDate);
 				break;
@@ -209,6 +210,9 @@ export class GCMainView extends ItemView {
 	}
 
 	public switchView(type: CalendarViewType): void {
+		if (type !== 'week') {
+			this.weekMode = 'standard';
+		}
 		this.viewType = type;
 		this.render();
 	}
@@ -249,24 +253,140 @@ export class GCMainView extends ItemView {
 
 	private goToToday(): void {
 		if (this.viewType === 'task') return;
+		this.weekMode = 'standard';
 		this.currentDate = getTodayDate();
 		this.render();
 	}
 
-	private getViewTitle(): string {
-		const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-		switch (this.viewType) {
-			case 'month':
-				return monthAbbreviations[this.currentDate.getMonth()];
-			case 'week': {
-				const week = getWeekOfDate(this.currentDate, undefined, !!(this.plugin?.settings?.startOnMonday));
-				const start = formatDate(week.startDate, 'MM/dd');
-				const end = formatDate(week.endDate, 'MM/dd');
-				return `W${week.weekNumber}(${start}-${end})`;
-			}
-			case 'task':
-				return '任务视图';
+	/**
+	 * 标题单击处理：
+	 * - 任务视图 → 切换简洁/完整显示模式
+	 * - rolling7 模式 → 切回标准周模式
+	 * - 标准模式 → 回到今天
+	 */
+	private handleTitleClick(): void {
+		if (this.viewType === 'task') {
+			this.toggleTaskViewDisplayMode();
+			return;
 		}
+		if (this.weekMode === 'rolling7') {
+			this.weekMode = 'standard';
+			this.currentDate = getTodayDate();
+			this.render();
+		} else {
+			this.goToToday();
+		}
+	}
+
+	/**
+	 * 切换任务视图显示模式（简洁 ↔ 完整）
+	 */
+	private async toggleTaskViewDisplayMode(): Promise<void> {
+		if (!this.plugin?.settings) return;
+		const current = this.plugin.settings.taskViewDisplayMode || 'compact';
+		this.plugin.settings.taskViewDisplayMode = current === 'compact' ? 'full' : 'compact';
+		await this.plugin.saveSettings();
+		this.render();
+	}
+
+	/**
+	 * 标题长按处理：仅在周视图标准模式下，切换到 rolling7 模式
+	 */
+	private handleTitleLongPress(): void {
+		if (this.viewType !== 'week') return;
+		if (this.weekMode === 'standard') {
+			this.weekMode = 'rolling7';
+			this.currentDate = getTodayDate();
+			this.render();
+		}
+	}
+
+	private getViewTitle(): string {
+		switch (this.viewType) {
+			case 'month': {
+				const m = this.currentDate.getMonth() + 1;
+				return `${m}月`;
+			}
+			case 'week': {
+				if (this.weekMode === 'rolling7') {
+					const rolling = getRolling7Days(getTodayDate());
+					const s = rolling.startDate;
+					const e = rolling.endDate;
+					const startStr = `${s.getMonth() + 1}.${s.getDate()}`;
+					const endStr = `${e.getMonth() + 1}.${e.getDate()}`;
+					return `今天起7天 (${startStr}-${endStr})`;
+				}
+				const week = getWeekOfDate(this.currentDate, undefined, !!(this.plugin?.settings?.startOnMonday));
+				const weekNum = this.getCustomWeekNumber(week);
+				const s = week.startDate;
+				const e = week.endDate;
+				const startStr = `${s.getMonth() + 1}.${s.getDate()}`;
+				const endStr = `${e.getMonth() + 1}.${e.getDate()}`;
+				return `第${weekNum}周 (${startStr}-${endStr})`;
+			}
+			case 'task': {
+				const mode = this.plugin?.settings?.taskViewDisplayMode || 'compact';
+				const modeLabel = mode === 'compact' ? '简洁' : '完整';
+				return `任务 · ${modeLabel}`;
+			}
+		}
+	}
+
+	/**
+	 * 根据学期起始日列表计算自定义周数
+	 * 从 semesterStartDates 中找到最近的、不晚于当前周起始日的日期作为基准
+	 * 列表为空时回退到自然年周数
+	 */
+	private getCustomWeekNumber(week: { weekNumber: number; startDate: Date }): number {
+		const dates = this.plugin?.settings?.semesterStartDates;
+		if (!dates || dates.length === 0) {
+			return week.weekNumber;
+		}
+
+		const weekStart = new Date(week.startDate);
+		weekStart.setHours(0, 0, 0, 0);
+		const weekStartTime = weekStart.getTime();
+
+		// 找最近的、不晚于当前周起始日的学期起始日
+		let activeSemesterStr: string | null = null;
+		const sorted = [...dates].sort(); // 升序排列
+		for (const d of sorted) {
+			const parsed = this.parseDateString(d);
+			if (parsed && parsed.getTime() <= weekStartTime) {
+				activeSemesterStr = d;
+			}
+		}
+
+		if (!activeSemesterStr) {
+			return week.weekNumber;
+		}
+
+		const semStart = this.parseDateString(activeSemesterStr)!;
+
+		// 对齐到该周的起始日（周一或周日）
+		const startOnMonday = !!(this.plugin?.settings?.startOnMonday);
+		const dayOfWeek = semStart.getDay();
+		if (startOnMonday) {
+			const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+			semStart.setDate(semStart.getDate() + offset);
+		} else {
+			semStart.setDate(semStart.getDate() - dayOfWeek);
+		}
+		semStart.setHours(0, 0, 0, 0);
+
+		const diffMs = weekStartTime - semStart.getTime();
+		const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+
+		return diffWeeks > 0 ? diffWeeks : week.weekNumber;
+	}
+
+	/**
+	 * 解析 YYYY-MM-DD 格式的日期字符串
+	 */
+	private parseDateString(dateStr: string): Date | null {
+		const parts = dateStr.split('-');
+		if (parts.length !== 3) return null;
+		const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+		return isNaN(d.getTime()) ? null : d;
 	}
 }

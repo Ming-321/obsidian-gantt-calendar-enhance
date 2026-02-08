@@ -34,6 +34,9 @@ export class SettingsManager {
 		// 迁移旧的颜色格式到新的主题分离格式
 		await this.migrateTaskStatusColors(settings);
 
+		// 迁移旧的 semesterStartDate 到 semesterStartDates 列表
+		await this.migrateSemesterStartDate(settings);
+
 		// 更新 CSS 变量
 		this.updateCSSVariables(settings);
 
@@ -123,6 +126,28 @@ export class SettingsManager {
 
 		if (needsSave) {
 			await this.plugin.saveData(settings);
+		}
+	}
+
+	/**
+	 * 迁移旧的 semesterStartDate（单一字符串）到 semesterStartDates（列表）
+	 */
+	private async migrateSemesterStartDate(settings: GanttCalendarSettings): Promise<void> {
+		if (settings.semesterStartDate && settings.semesterStartDate.trim()) {
+			if (!settings.semesterStartDates) {
+				settings.semesterStartDates = [];
+			}
+			// 仅在列表中不存在时添加
+			if (!settings.semesterStartDates.includes(settings.semesterStartDate.trim())) {
+				settings.semesterStartDates.push(settings.semesterStartDate.trim());
+				settings.semesterStartDates.sort();
+			}
+			// 清空旧字段
+			settings.semesterStartDate = undefined;
+			await this.plugin.saveData(settings);
+			Logger.info('SettingsManager', 'Migrated semesterStartDate to semesterStartDates', {
+				dates: settings.semesterStartDates,
+			});
 		}
 	}
 

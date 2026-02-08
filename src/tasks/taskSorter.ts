@@ -19,13 +19,16 @@ export const SORT_OPTIONS: Array<{ field: SortField; icon: string; label: string
 ];
 
 /**
- * 优先级权重映射
+ * 优先级权重映射（六级）
  * 数值越大优先级越高（用于降序排序时高优先级在前）
  */
 const PRIORITY_WEIGHTS: Record<string, number> = {
-	'high': 3,
-	'normal': 2,
-	'low': 1,
+	'highest': 6,
+	'high': 5,
+	'medium': 4,
+	'normal': 3,
+	'low': 2,
+	'lowest': 1,
 };
 
 /**
@@ -53,8 +56,8 @@ function compareDates(a: Date | undefined, b: Date | undefined, taskA: GCTask, t
 const comparators: Record<SortField, (a: GCTask, b: GCTask) => number> = {
 	priority: (a, b) => {
 		// 所有任务都应该有优先级，默认为 'normal'
-		const aPriority = PRIORITY_WEIGHTS[a.priority || 'normal'] ?? 2;
-		const bPriority = PRIORITY_WEIGHTS[b.priority || 'normal'] ?? 2;
+		const aPriority = PRIORITY_WEIGHTS[a.priority || 'normal'] ?? 3;
+		const bPriority = PRIORITY_WEIGHTS[b.priority || 'normal'] ?? 3;
 		if (aPriority !== bPriority) {
 			return aPriority - bPriority; // 升序：低优先级在前
 		}

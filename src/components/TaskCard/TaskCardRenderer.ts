@@ -33,25 +33,31 @@ export class TaskCardRenderer {
 	}
 
 	/**
-	 * 获取优先级图标（三级系统）
+	 * 获取优先级图标（六级系统）
 	 */
 	getPriorityIcon(priority?: string): string {
 		switch (priority) {
-			case 'high': return '🔴';
+			case 'highest': return '🔺';
+			case 'high': return '⏫';
+			case 'medium': return '🔼';
 			case 'normal': return '⚪';
-			case 'low': return '🔵';
+			case 'low': return '🔽';
+			case 'lowest': return '⏬';
 			default: return '';
 		}
 	}
 
 	/**
-	 * 获取优先级CSS类名（三级系统）
+	 * 获取优先级CSS类名（六级系统）
 	 */
 	getPriorityClass(priority?: string): string {
 		switch (priority) {
+			case 'highest': return 'priority-highest';
 			case 'high': return 'priority-high';
+			case 'medium': return 'priority-medium';
 			case 'normal': return 'priority-normal';
 			case 'low': return 'priority-low';
+			case 'lowest': return 'priority-lowest';
 			default: return '';
 		}
 	}
@@ -119,7 +125,6 @@ export class TaskCardRenderer {
 		if (!config.showDescription) return;
 
 		const cleaned = task.description;
-		const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
 
 		const taskTextEl = card.createDiv(TaskCardClasses.elements.text);
 
@@ -127,11 +132,6 @@ export class TaskCardRenderer {
 		if (config.maxLines) {
 			taskTextEl.style.setProperty('--max-lines', String(config.maxLines));
 			taskTextEl.addClass('gc-task-card__text--limited');
-		}
-
-		// 使用用户设置 showGlobalFilterInTaskText 控制是否显示全局过滤词
-		if (this.plugin?.settings?.showGlobalFilterInTaskText && gf) {
-			taskTextEl.appendText(gf + ' ');
 		}
 
 		this.renderTaskDescriptionWithLinks(taskTextEl, cleaned);
@@ -142,6 +142,16 @@ export class TaskCardRenderer {
 	 */
 	private renderTaskDescriptionWithLinks(container: HTMLElement, text: string): void {
 		LinkRenderer.renderTaskDescriptionWithLinks(container, text, this.app);
+	}
+
+	/**
+	 * 渲染任务备注/详情
+	 */
+	renderDetail(card: HTMLElement, task: GCTask): void {
+		if (!task.detail) return;
+
+		const detailEl = card.createDiv(TaskCardClasses.elements.detail);
+		detailEl.textContent = task.detail;
 	}
 
 	/**

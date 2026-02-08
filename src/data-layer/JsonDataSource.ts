@@ -34,7 +34,7 @@ interface JsonTaskData {
 	completed: boolean;
 	cancelled?: boolean;
 	status?: string;
-	priority: 'high' | 'normal' | 'low';
+	priority: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
 	tags?: string[];
 	createdDate?: string;
 	startDate?: string;

@@ -28,19 +28,6 @@ export class TaskSettingsBuilder extends BaseBuilder {
 		this.createSettingGroup('任务设置', (group) => {
 			// ========== 基础设置 ==========
 
-			// 全局任务筛选标记
-			addSetting(group, setting =>
-				setting.setName('全局任务筛选标记(修改此设置后需重启 Obsidian 生效)')
-					.setDesc('用于标记任务的前缀符号或文字（如 "🎯 ", "TODO ", "#task "）')
-					.addText(text => text
-						.setPlaceholder('空则不使用筛选')
-						.setValue(this.plugin.settings.globalTaskFilter)
-						.onChange(async (value) => {
-							this.plugin.settings.globalTaskFilter = value.trim();
-							await this.saveAndRefresh();
-						}))
-			);
-
 			// 启用的任务格式
 			addSetting(group, setting => {
 				setting.setName('启用的任务格式')
@@ -63,18 +50,6 @@ export class TaskSettingsBuilder extends BaseBuilder {
 						});
 					});
 			});
-
-			// 任务文本是否显示 Global Filter
-			addSetting(group, setting =>
-				setting.setName('任务文本显示 Global Filter')
-					.setDesc('在任务列表中文本前显示全局筛选前缀（如 🎯）。关闭则仅显示任务描述. 修改全局筛选器后可能会有显示错误,需要关闭再打开此选项一次')
-					.addToggle(toggle => toggle
-						.setValue(this.plugin.settings.showGlobalFilterInTaskText)
-						.onChange(async (value) => {
-							this.plugin.settings.showGlobalFilterInTaskText = value;
-							await this.saveAndRefresh();
-						}))
-			);
 
 			// 任务笔记文件夹路径
 			addSetting(group, setting =>
@@ -147,14 +122,11 @@ export class TaskSettingsBuilder extends BaseBuilder {
 					.setDesc('创建新任务时的默认优先级')
 					.addDropdown(drop => drop
 						.addOptions({
-							'highest': '🔺 最高',
-							'high': '⏫ 高',
-							'medium': '🔼 中',
-							'low': '🔽 低',
-							'lowest': '⏬ 最低',
-							'normal': '无',
+							'high': '🔴 重要',
+							'normal': '⚪ 正常',
+							'low': '🔵 不重要',
 						})
-						.setValue(this.plugin.settings.defaultTaskPriority || 'medium')
+						.setValue(this.plugin.settings.defaultTaskPriority || 'normal')
 						.onChange(async (value) => {
 							this.plugin.settings.defaultTaskPriority = value as any;
 							await this.plugin.saveSettings();

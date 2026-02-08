@@ -72,6 +72,8 @@ export class TaskCardComponent {
 	 * 应用状态修饰符
 	 */
 	private applyStateModifiers(card: HTMLElement, task: GCTask): void {
+		const { config } = this.props;
+
 		const statusClass = task.completed
 			? TaskCardClasses.modifiers.completed
 			: TaskCardClasses.modifiers.pending;
@@ -92,6 +94,32 @@ export class TaskCardComponent {
 			if (due < today) {
 				card.addClass(TaskCardClasses.modifiers.overdue);
 			}
+		}
+
+		// 优先级背景色模式：将优先级映射到三级（重要/正常/不重要）修饰类
+		// 配合任务类型修饰类（type-todo/type-reminder）使用不同颜色
+		if (config.priorityAsBackground && task.priority) {
+			// 6 级 → 3 级映射：highest/high → high, medium/normal → normal, low/lowest → low
+			let visualPriority: 'high' | 'normal' | 'low';
+			switch (task.priority) {
+				case 'highest':
+				case 'high':
+					visualPriority = 'high';
+					break;
+				case 'low':
+				case 'lowest':
+					visualPriority = 'low';
+					break;
+				default: // medium, normal
+					visualPriority = 'normal';
+					break;
+			}
+			const priorityModifierMap: Record<string, string> = {
+				high: TaskCardClasses.modifiers.priorityHigh,
+				normal: TaskCardClasses.modifiers.priorityNormal,
+				low: TaskCardClasses.modifiers.priorityLow,
+			};
+			card.addClass(priorityModifierMap[visualPriority]);
 		}
 
 		// 应用自定义状态颜色
@@ -119,13 +147,18 @@ export class TaskCardComponent {
 			this.renderer.renderDescription(card, task, config);
 		}
 
+		// 备注详情
+		if (config.showDetail) {
+			this.renderer.renderDetail(card, task);
+		}
+
 		// 标签
 		if (config.showTags) {
 			this.renderer.renderTaskTags(task, card);
 		}
 
-		// 优先级
-		if (config.showPriority && task.priority) {
+		// 优先级（非背景色模式时显示圆点）
+		if (config.showPriority && !config.priorityAsBackground && task.priority) {
 			this.renderer.renderPriority(card, task);
 		}
 

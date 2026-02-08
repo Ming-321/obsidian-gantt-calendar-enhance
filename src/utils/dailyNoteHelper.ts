@@ -262,7 +262,6 @@ async function insertTaskToFile(
  */
 function serializeNewTask(taskData: CreateTaskData, app: App): string {
 	const plugin = (app as any).plugins.plugins['gantt-calendar'];
-	const globalFilter = plugin?.settings?.globalTaskFilter || '';
 	const enabledFormats = plugin?.settings?.enabledTaskFormats || ['tasks'];
 	const format = enabledFormats.includes('dataview') ? 'dataview' : 'tasks';
 
@@ -270,11 +269,6 @@ function serializeNewTask(taskData: CreateTaskData, app: App): string {
 
 	// 复选框
 	parts.push('[ ]');
-
-	// 全局过滤器
-	if (globalFilter) {
-		parts.push(globalFilter.trim());
-	}
 
 	// 标签
 	if (taskData.tags && taskData.tags.length > 0) {

@@ -1,12 +1,15 @@
 import { Notice, App } from 'obsidian';
 import { BaseViewRenderer } from './BaseViewRenderer';
-import { getWeekOfDate } from '../dateUtils/dateUtilsIndex';
+import { getWeekOfDate, getRolling7Days } from '../dateUtils/dateUtilsIndex';
+import type { WeekMode } from '../GCMainView';
 import type { GCTask, SortState, StatusFilterState, TagFilterState, CalendarDay } from '../types';
 import { sortTasks } from '../tasks/taskSorter';
 import { Logger } from '../utils/logger';
 import { TooltipManager } from '../utils/tooltipManager';
-import { WeekViewClasses } from '../utils/bem';
+import { WeekViewClasses, TaskCardClasses } from '../utils/bem';
 import { openEditTaskModal } from '../modals/EditTaskModal';
+import { showCreateTaskMenu } from '../contextMenu/contextMenuIndex';
+import { updateTaskCompletion } from '../tasks/taskUpdater';
 
 /**
  * 周视图渲染器 — 甘特图风格
@@ -68,8 +71,10 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
 	// ==================== 主渲染 ====================
 
-	render(container: HTMLElement, currentDate: Date): void {
-		const weekData = getWeekOfDate(currentDate, currentDate.getFullYear(), !!(this.plugin?.settings?.startOnMonday));
+	render(container: HTMLElement, currentDate: Date, weekMode: WeekMode = 'standard'): void {
+		const weekData = weekMode === 'rolling7'
+			? getRolling7Days(currentDate)
+			: getWeekOfDate(currentDate, currentDate.getFullYear(), !!(this.plugin?.settings?.startOnMonday));
 
 		// 缓存周数据
 		this.currentWeekDays = weekData.days;
@@ -95,14 +100,12 @@ export class WeekViewRenderer extends BaseViewRenderer {
 	 */
 	private renderHeader(weekGrid: HTMLElement, days: CalendarDay[]): void {
 		const headerRow = weekGrid.createDiv(WeekViewClasses.elements.headerRow);
+		const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 		days.forEach((day) => {
 			const dayHeader = headerRow.createDiv(WeekViewClasses.elements.headerCell);
-			const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 			dayHeader.createEl('div', { text: dayNames[day.weekday], cls: WeekViewClasses.elements.dayName });
 			dayHeader.createEl('div', { text: day.day.toString(), cls: WeekViewClasses.elements.dayNumber });
-			if (day.lunarText) {
-				dayHeader.createEl('div', { text: day.lunarText, cls: WeekViewClasses.elements.lunarText });
-			}
+			// 周视图不显示农历信息，保持简洁
 			if (day.isToday) {
 				dayHeader.addClass(WeekViewClasses.modifiers.today);
 			}
@@ -117,6 +120,23 @@ export class WeekViewRenderer extends BaseViewRenderer {
 	 */
 	private renderGanttBody(weekGrid: HTMLElement): void {
 		const ganttBody = weekGrid.createDiv(WeekViewClasses.elements.ganttBody);
+
+		// 空白处右键创建任务菜单
+		ganttBody.addEventListener('contextmenu', (e: MouseEvent) => {
+			// 点击已有任务 bar 时不触发
+			if ((e.target as HTMLElement).closest(`.${WeekViewClasses.elements.ganttBar}`)) return;
+
+			// 通过鼠标位置计算日期列
+			const rect = ganttBody.getBoundingClientRect();
+			const relativeX = e.clientX - rect.left;
+			const dayIndex = Math.min(6, Math.max(0, Math.floor(relativeX / (rect.width / 7))));
+			const targetDay = this.currentWeekDays[dayIndex];
+			if (!targetDay) return;
+
+			showCreateTaskMenu(e, this.app, this.plugin, targetDay.date, () => {
+				this.refreshTasks();
+			});
+		});
 
 		// 添加网格线（7列竖线）
 		this.renderGridLines(ganttBody);
@@ -280,27 +300,59 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		bar.style.left = `${leftPercent}%`;
 		bar.style.width = `${widthPercent}%`;
 
-		// 优先级颜色修饰
-		if (task.type === 'reminder') {
-			bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
-		} else if (task.completed) {
+		// 类型+优先级颜色修饰（与卡片一致）
+		if (task.completed) {
 			bar.addClass(WeekViewClasses.modifiers.ganttBarCompleted);
 		} else {
+			// 任务类型修饰
+			if (task.type === 'reminder') {
+				bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
+			} else {
+				bar.addClass(WeekViewClasses.modifiers.ganttBarTodo);
+			}
+			// 6 级优先级映射到 3 级显示
 			switch (task.priority) {
+				case 'highest':
 				case 'high':
-					bar.addClass(WeekViewClasses.modifiers.ganttBarHigh);
+					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityHigh);
 					break;
 				case 'low':
-					bar.addClass(WeekViewClasses.modifiers.ganttBarLow);
+				case 'lowest':
+					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityLow);
 					break;
-				default:
-					bar.addClass(WeekViewClasses.modifiers.ganttBarNormal);
+				default: // medium, normal
+					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityNormal);
+					break;
 			}
 		}
 
-		// Bar 内容：图标 + 标题
+		// Bar 内容：复选框/图标 + 标题
 		if (task.type === 'reminder') {
 			bar.createSpan({ text: '🔔', cls: WeekViewClasses.elements.ganttBarIcon });
+		} else if (this.plugin.settings.weekViewShowCheckbox) {
+			// 待办任务显示复选框（受设置控制）
+			const checkbox = bar.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+			checkbox.checked = task.completed;
+			checkbox.disabled = false;
+			checkbox.addClass(TaskCardClasses.elements.checkbox);
+
+			checkbox.addEventListener('change', async (e) => {
+				e.stopPropagation();
+				const isNowCompleted = checkbox.checked;
+				try {
+					const tooltipManager = TooltipManager.getInstance(this.plugin);
+					tooltipManager.hide();
+					await updateTaskCompletion(this.app, task, isNowCompleted);
+					this.refreshTasks();
+				} catch (error) {
+					Logger.error('WeekView', 'Error updating task completion:', error);
+					checkbox.checked = task.completed;
+				}
+			});
+
+			checkbox.addEventListener('click', (e) => {
+				e.stopPropagation();
+			});
 		}
 		bar.createSpan({ text: task.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
 

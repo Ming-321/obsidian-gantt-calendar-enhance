@@ -72,10 +72,14 @@ export interface TaskCardConfig {
 	/** 描述最大行数 */
 	maxLines?: number;
 
-	/** ===== 内容过滤 ===== */
+	/** ===== 扩展字段 ===== */
 
 	/** 显示全局过滤词 */
 	showGlobalFilter?: boolean;
+	/** 显示任务备注/详情 (task.detail) */
+	showDetail?: boolean;
+	/** 使用背景色表示优先级（替代圆点指示器） */
+	priorityAsBackground?: boolean;
 }
 
 /**

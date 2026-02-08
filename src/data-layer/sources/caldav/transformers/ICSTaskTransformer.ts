@@ -70,15 +70,15 @@ export function icsToGCTask(ics: string): GCTask {
     }
 
     // 优先级（0-9，0=未定义，1=最高，9=最低）
-    // Map to TaskPriority: 'high' | 'normal' | 'low'
+    // Map to TaskPriority: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest'
     const priority = component.properties.get('PRIORITY');
     if (priority) {
         const num = parseInt(priority);
-        if (num <= 1) task.priority = 'high';
-        else if (num <= 4) task.priority = 'high';
-        else if (num <= 5) task.priority = 'normal';
+        if (num <= 1) task.priority = 'highest';
+        else if (num <= 3) task.priority = 'high';
+        else if (num <= 5) task.priority = 'medium';
         else if (num <= 7) task.priority = 'low';
-        else task.priority = 'low';
+        else task.priority = 'lowest';
     }
 
     // 日期字段
@@ -164,9 +164,12 @@ export function gcTaskToICS(task: GCTask, uid?: string): string {
     // 优先级
     if (task.priority && task.priority !== 'normal') {
         const priorityMap: Record<TaskPriority, string> = {
+            'highest': '1',
             'high': '3',
+            'medium': '5',
             'normal': '5',
             'low': '7',
+            'lowest': '9',
         };
         icsLines.push(`PRIORITY:${priorityMap[task.priority] || '5'}`);
     }

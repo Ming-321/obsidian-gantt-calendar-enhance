@@ -2,11 +2,12 @@ import { App } from 'obsidian';
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { isToday, isThisWeek, isThisMonth } from '../dateUtils/dateUtilsIndex';
 import type { GCTask, SortState, StatusFilterState, TagFilterState } from '../types';
-import { registerTaskContextMenu } from '../contextMenu/contextMenuIndex';
+import { registerTaskContextMenu, showCreateTaskMenu } from '../contextMenu/contextMenuIndex';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
-import { ViewClasses, withModifiers } from '../utils/bem';
-import { TaskCardComponent, TaskViewConfig } from '../components/TaskCard';
+import { ViewClasses, TaskCardClasses, withModifiers } from '../utils/bem';
+import { TaskCardComponent } from '../components/TaskCard';
+import { getTaskViewConfig } from '../components/TaskCard/presets/TaskView.config';
 import { Logger } from '../utils/logger';
 
 /**
@@ -175,6 +176,16 @@ export class TaskViewRenderer extends BaseViewRenderer {
 		// 创建任务视图容器
 		const taskRoot = container.createDiv(withModifiers(ViewClasses.block, ViewClasses.modifiers.task));
 
+		// 空白处右键创建任务菜单
+		taskRoot.addEventListener('contextmenu', (e: MouseEvent) => {
+			// 点击已有任务卡片时不触发（任务卡片有自己的右键菜单）
+			if ((e.target as HTMLElement).closest(`.${TaskCardClasses.block}`)) return;
+
+			showCreateTaskMenu(e, this.app, this.plugin, new Date(), () => {
+				this.refreshTaskList();
+			});
+		});
+
 		this.taskListContainer = taskRoot;
 		this.loadTaskList(taskRoot);
 	}
@@ -278,12 +289,13 @@ export class TaskViewRenderer extends BaseViewRenderer {
 	}
 
 	/**
-	 * 渲染任务项（使用统一组件）
+	 * 渲染任务项（使用统一组件，根据当前显示模式动态生成配置）
 	 */
 	private renderTaskItem(task: GCTask, listContainer: HTMLElement): void {
+		const config = getTaskViewConfig(this.plugin?.settings);
 		new TaskCardComponent({
 			task,
-			config: TaskViewConfig,
+			config,
 			container: listContainer,
 			app: this.app,
 			plugin: this.plugin,

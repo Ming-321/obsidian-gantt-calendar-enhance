@@ -1,65 +1,12 @@
 /**
  * @fileoverview 工具栏组件统一导出
  * @module toolbar/components
+ *
+ * 当前活跃组件：
+ * - view-menu: 视图菜单弹窗（状态筛选 + 排序 + 标签筛选 + 日期范围）
+ * - preset-button: 快捷预设按钮（单击应用默认 / 长按选择）
  */
 
-// === 基础组件 ===
-export {
-	renderButtonGroup,
-	renderNavButtonGroup,
-	type ButtonGroupOptions,
-	type ButtonConfig,
-	type NavButtonGroupOptions
-} from './button-group';
-
-export {
-	renderInputGroup,
-	renderNumberInputGroup,
-	type InputGroupOptions,
-	type InputWithUnitOptions
-} from './input-group';
-
-export {
-	renderModeToggleGroup,
-	renderViewSwitcher,
-	type ModeToggleGroupOptions,
-	type ModeOption,
-	type ViewSwitcherOptions
-} from './mode-toggle-group';
-
-// === 功能组件（移动后导出） ===
-export { renderRefreshButton } from './refresh-button';
-export { renderSortButton, type SortButtonOptions } from './sort-button';
-export { renderStatusFilterButton, type StatusFilterButtonOptions } from './status-filter';
-export { renderTagFilterButton, type TagFilterOptions } from './tag-filter';
-// === 组合组件 ===
-export {
-	renderNavButtons,
-	renderNavButtonsFull,
-	type NavButtonsOptions,
-	type NavButtonsFullOptions
-} from './nav-buttons';
-
-export {
-	renderCalendarViewSwitcher,
-	renderSimpleViewSwitcher,
-	type CalendarViewSwitcherOptions,
-	type SimpleViewSwitcherOptions
-} from './calendar-view-switcher';
-
-export {
-	renderDateRangeFilter,
-	type DateRangeFilterOptions,
-	type DateRangeState,
-	type DateRangeType
-} from './date-range-filter';
-
-export {
-	renderFieldSelector,
-	renderDualFieldSelector,
-	type FieldSelectorOptions,
-	type DualFieldSelectorOptions,
-	type DateFieldType,
-	type DateFieldOption,
-	DEFAULT_DATE_FIELD_OPTIONS
-} from './field-selector';
+// === 活跃组件 ===
+export { renderViewMenuButton, type ViewMenuOptions } from './view-menu';
+export { renderPresetButton, type PresetButtonOptions } from './preset-button';

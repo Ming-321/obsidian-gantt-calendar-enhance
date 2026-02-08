@@ -60,9 +60,9 @@ export abstract class BaseTaskModal extends Modal {
 
 	// 优先级选项常量（三级）
 	protected readonly priorityOptions: PriorityOption[] = [
-		{ value: 'high', label: '高', icon: '🔴' },
-		{ value: 'normal', label: '普通', icon: '⚪' },
-		{ value: 'low', label: '低', icon: '🔵' },
+		{ value: 'high', label: '重要', icon: '🔴' },
+		{ value: 'normal', label: '正常', icon: '⚪' },
+		{ value: 'low', label: '不重要', icon: '🔵' },
 	];
 
 	constructor(app: App) {

@@ -80,6 +80,7 @@ export const TaskCardClasses = {
 	elements: {
 		checkbox: bem(BLOCKS.TASK_CARD, 'checkbox'),
 		text: bem(BLOCKS.TASK_CARD, 'text'),
+		detail: bem(BLOCKS.TASK_CARD, 'detail'),
 		tags: bem(BLOCKS.TASK_CARD, 'tags'),
 		priority: bem(BLOCKS.TASK_CARD, 'priority'),
 		priorityBadge: bem(BLOCKS.TASK_CARD, 'priority-badge'),
@@ -103,6 +104,10 @@ export const TaskCardClasses = {
 		typeReminder: bem(BLOCKS.TASK_CARD, undefined, 'type-reminder'),
 		// 过期修饰符
 		overdue: bem(BLOCKS.TASK_CARD, undefined, 'overdue'),
+		// 优先级背景色修饰符（三级：重要/正常/不重要）
+		priorityHigh: bem(BLOCKS.TASK_CARD, undefined, 'priority-high'),
+		priorityNormal: bem(BLOCKS.TASK_CARD, undefined, 'priority-normal'),
+		priorityLow: bem(BLOCKS.TASK_CARD, undefined, 'priority-low'),
 	}
 };
 
@@ -365,6 +370,7 @@ export const ToolbarClasses = {
 			iconOnly: bem(BLOCKS.TOOLBAR, 'view-selector-group', 'icon-only'),
 			btn: bem(BLOCKS.TOOLBAR, 'view-selector-btn'),
 			btnActive: bem(BLOCKS.TOOLBAR, 'view-selector-btn', 'active'),
+			disabled: bem(BLOCKS.TOOLBAR, 'view-selector-btn', 'disabled'),
 			icon: bem(BLOCKS.TOOLBAR, 'view-selector-icon'),
 			label: bem(BLOCKS.TOOLBAR, 'view-selector-label'),
 		},
@@ -398,6 +404,43 @@ export const ToolbarClasses = {
 		/** 字段筛选组 */
 		fieldFilter: {
 			group: bem(BLOCKS.TOOLBAR, 'field-filter-group'),
+		},
+
+		/** 中间导航标题 */
+		centerNav: {
+			wrapper: bem(BLOCKS.TOOLBAR, 'center-nav'),
+			prevBtn: bem(BLOCKS.TOOLBAR, 'center-nav-prev'),
+			nextBtn: bem(BLOCKS.TOOLBAR, 'center-nav-next'),
+			title: bem(BLOCKS.TOOLBAR, 'center-nav-title'),
+		},
+
+		/** 视图菜单弹窗 */
+		viewMenu: {
+			btn: bem(BLOCKS.TOOLBAR, 'view-menu-btn'),
+			btnActive: bem(BLOCKS.TOOLBAR, 'view-menu-btn', 'active'),
+			panel: bem(BLOCKS.TOOLBAR, 'view-menu-panel'),
+			section: bem(BLOCKS.TOOLBAR, 'view-menu-section'),
+			sectionTitle: bem(BLOCKS.TOOLBAR, 'view-menu-section-title'),
+			row: bem(BLOCKS.TOOLBAR, 'view-menu-row'),
+			label: bem(BLOCKS.TOOLBAR, 'view-menu-label'),
+			select: bem(BLOCKS.TOOLBAR, 'view-menu-select'),
+			checkboxItem: bem(BLOCKS.TOOLBAR, 'view-menu-checkbox-item'),
+			checkbox: bem(BLOCKS.TOOLBAR, 'view-menu-checkbox'),
+			sortRow: bem(BLOCKS.TOOLBAR, 'view-menu-sort-row'),
+			sortFieldSelect: bem(BLOCKS.TOOLBAR, 'view-menu-sort-field'),
+			sortOrderBtn: bem(BLOCKS.TOOLBAR, 'view-menu-sort-order'),
+		},
+
+		/** 快捷预设按钮 */
+		presetBtn: {
+			btn: bem(BLOCKS.TOOLBAR, 'preset-btn'),
+			btnActive: bem(BLOCKS.TOOLBAR, 'preset-btn', 'active'),
+			dropdown: bem(BLOCKS.TOOLBAR, 'preset-dropdown'),
+			item: bem(BLOCKS.TOOLBAR, 'preset-item'),
+			itemActive: bem(BLOCKS.TOOLBAR, 'preset-item', 'active'),
+			itemDefault: bem(BLOCKS.TOOLBAR, 'preset-item', 'default'),
+			name: bem(BLOCKS.TOOLBAR, 'preset-name'),
+			icon: bem(BLOCKS.TOOLBAR, 'preset-icon'),
 		},
 	},
 };
@@ -588,11 +631,14 @@ export const WeekViewClasses = {
 	modifiers: {
 		today: bem(BLOCKS.WEEK_VIEW, 'header-cell', 'today'),
 		tasksColumnToday: bem(BLOCKS.WEEK_VIEW, 'tasks-column', 'today'),
-		ganttBarHigh: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'high'),
-		ganttBarNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'normal'),
-		ganttBarLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'low'),
+		// 甘特条任务类型修饰
+		ganttBarTodo: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'todo'),
 		ganttBarReminder: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'reminder'),
 		ganttBarCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'completed'),
+		// 甘特条优先级修饰（与类型修饰组合使用）
+		ganttBarPriorityHigh: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-high'),
+		ganttBarPriorityNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-normal'),
+		ganttBarPriorityLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-low'),
 		ganttGridLineToday: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-line', 'today'),
 	},
 };

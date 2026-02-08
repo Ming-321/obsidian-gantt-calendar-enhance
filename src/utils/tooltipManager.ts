@@ -182,10 +182,10 @@ export class TooltipManager {
 		const typeLabel = task.type === 'reminder' ? '提醒' : '待办';
 		this.cachedElements.description.innerHTML = `<span class="gc-task-tooltip__type-badge gc-task-tooltip__type-badge--${task.type}">${typeIcon} ${typeLabel}</span> <strong>${this.escapeHtml(displayText)}</strong>`;
 
-		// 更新优先级
+		// 更新优先级（6 级内部类型映射到 3 级显示）
 		if (task.priority && this.cachedElements.priority) {
 			const priorityIcon = this.getPriorityIcon(task.priority);
-			const priorityLabel = task.priority === 'high' ? '高' : task.priority === 'low' ? '低' : '普通';
+			const priorityLabel = this.getPriorityLabel(task.priority);
 			this.cachedElements.priority.innerHTML = `<span class="priority-${task.priority}">${priorityIcon} 优先级: ${priorityLabel}</span>`;
 			this.cachedElements.priority.style.display = '';
 		} else if (this.cachedElements.priority) {
@@ -406,14 +406,32 @@ export class TooltipManager {
 	}
 
 	/**
-	 * 获取优先级图标
+	 * 获取优先级图标（6 级映射到 3 级图标）
 	 */
 	private getPriorityIcon(priority?: string): string {
 		switch (priority) {
+			case 'highest':
 			case 'high': return '🔴';
+			case 'medium':
 			case 'normal': return '⚪';
-			case 'low': return '🔵';
+			case 'low':
+			case 'lowest': return '🔵';
 			default: return '';
+		}
+	}
+
+	/**
+	 * 获取优先级标签（6 级映射到 3 级标签）
+	 */
+	private getPriorityLabel(priority?: string): string {
+		switch (priority) {
+			case 'highest':
+			case 'high': return '重要';
+			case 'medium':
+			case 'normal': return '正常';
+			case 'low':
+			case 'lowest': return '不重要';
+			default: return '正常';
 		}
 	}
 

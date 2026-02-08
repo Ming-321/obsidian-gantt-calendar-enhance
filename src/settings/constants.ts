@@ -7,12 +7,11 @@ import { DEFAULT_TASK_STATUSES } from '../tasks/taskStatus';
 export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	mySetting: 'default',
 	startOnMonday: true,
+	semesterStartDates: [], // 为空使用自然年周数
 	solarFestivalColor: '#e74c3c',  // 阳历节日 - 红色
 	lunarFestivalColor: '#e8a041',  // 农历节日 - 橙色
 	solarTermColor: '#52c41a',      // 节气 - 绿色
-	globalTaskFilter: '🎯 ',        // 全局任务筛选标记
 	enabledTaskFormats: ['tasks'], // 启用的任务格式
-	showGlobalFilterInTaskText: true, // 默认显示 global filter
 	dateFilterField: 'dueDate', // 默认使用截止日期作为筛选字段
 	dailyNotePath: 'DailyNotes', // 默认 daily note 文件夹路径
 	dailyNoteNameFormat: 'yyyy-MM-dd', // 默认文件名格式
@@ -25,9 +24,30 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	newTaskHeading: undefined, // 默认添加到文件末尾
 	enableTemplaterForDailyNote: false, // 默认不使用 Templater
 	templaterTemplatePath: '', // 默认模板路径
-	defaultTaskPriority: 'medium', // 默认中等优先级
+	defaultTaskPriority: 'normal', // 默认正常优先级
 	enableDebugMode: false, // 默认关闭开发者模式
 	showViewNavButtonText: true, // 默认显示视图导航按钮文本
+
+	// ========== 任务视图显示模式 ==========
+	taskViewDisplayMode: 'compact', // 默认简洁模式
+	taskViewCompactFields: {
+		showTags: false,
+		showDetail: false,
+		showCreatedDate: false,
+		showStartDate: false,
+		showDueDate: true,
+		showCompletionDate: false,
+		showFileLocation: false,
+	},
+	taskViewFullFields: {
+		showTags: true,
+		showDetail: true,
+		showCreatedDate: true,
+		showStartDate: false,
+		showDueDate: true,
+		showCompletionDate: false,
+		showFileLocation: false,
+	},
 
 	// ========== 持久化筛选和排序状态默认值 ==========
 
@@ -60,6 +80,42 @@ export const DEFAULT_SETTINGS: GanttCalendarSettings = {
 	monthViewShowTags: true,
 	monthViewShowPriority: false,  // 月视图空间有限，默认不显示优先级
 
+	// 快捷预设
+	viewPresets: [
+		{
+			id: 'due-3-days',
+			name: '三天内截止',
+			icon: 'clock',
+			isDefault: true,
+			filters: {
+				statuses: ['todo'],
+				sortField: 'dueDate',
+				sortOrder: 'asc',
+				dateRangeMode: 'week',
+			},
+		},
+		{
+			id: 'all-this-week',
+			name: '本周全部',
+			icon: 'calendar',
+			isDefault: false,
+			filters: {
+				statuses: [],
+				dateRangeMode: 'week',
+			},
+		},
+		{
+			id: 'completed',
+			name: '已完成',
+			icon: 'check-circle',
+			isDefault: false,
+			filters: {
+				statuses: ['done'],
+				sortField: 'completionDate',
+				sortOrder: 'desc',
+			},
+		},
+	],
 };
 
 /**

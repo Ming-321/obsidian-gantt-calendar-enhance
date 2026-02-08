@@ -51,6 +51,38 @@ export function isThisWeek(date: Date, startOnMonday: boolean = true): boolean {
 }
 
 /**
+ * 从指定日期开始生成连续 7 天的数据（滚动 7 日模式）
+ * weekNumber 设为 0 表示非标准周
+ */
+export function getRolling7Days(startDate: Date): CalendarWeek {
+	const start = new Date(startDate);
+	start.setHours(0, 0, 0, 0);
+
+	const days: CalendarDay[] = [];
+	for (let i = 0; i < 7; i++) {
+		const currentDate = new Date(start);
+		currentDate.setDate(start.getDate() + i);
+		const lunarInfo = solarToLunar(currentDate);
+		days.push({
+			date: currentDate,
+			day: currentDate.getDate(),
+			isCurrentMonth: true,
+			isToday: isToday(currentDate),
+			weekday: currentDate.getDay(),
+			lunarText: getShortLunarText(currentDate),
+			festival: lunarInfo.festival,
+		});
+	}
+
+	return {
+		weekNumber: 0, // 非标准周
+		days,
+		startDate: start,
+		endDate: new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000),
+	};
+}
+
+/**
  * Get week data for a specific date
  */
 export function getWeekOfDate(date: Date, baseYear?: number, startOnMonday: boolean = true): CalendarWeek {

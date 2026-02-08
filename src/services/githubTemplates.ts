@@ -207,17 +207,21 @@ function formatDateCN(d) {
 
 function priorityIcon(p) {
   switch(p) {
+    case 'highest':
     case 'high': return '🔴';
-    case 'low': return '🔵';
+    case 'low':
+    case 'lowest': return '🔵';
     default: return '⚪';
   }
 }
 
 function priorityLabel(p) {
   switch(p) {
-    case 'high': return '高';
-    case 'low': return '低';
-    default: return '普通';
+    case 'highest':
+    case 'high': return '重要';
+    case 'low':
+    case 'lowest': return '不重要';
+    default: return '正常';
   }
 }
 
@@ -244,8 +248,9 @@ function generateMorningEmail(tasks, today) {
   const pendingTodos = tasks.filter(t =>
     t.type === 'todo' && !t.completed && !t.archived && !t.cancelled
   ).sort((a, b) => {
-    const pa = a.priority === 'high' ? 0 : a.priority === 'low' ? 2 : 1;
-    const pb = b.priority === 'high' ? 0 : b.priority === 'low' ? 2 : 1;
+    const pw = (p) => (p === 'highest' || p === 'high') ? 0 : (p === 'low' || p === 'lowest') ? 2 : 1;
+    const pa = pw(a.priority);
+    const pb = pw(b.priority);
     if (pa !== pb) return pa - pb;
     const da = parseDate(a.dueDate);
     const db = parseDate(b.dueDate);
@@ -363,8 +368,9 @@ function generateFocusEmail(tasks, today, period) {
     const due = parseDate(t.dueDate);
     return due && (toDateStr(due) <= toDateStr(today));
   }).sort((a, b) => {
-    const pa = a.priority === 'high' ? 0 : a.priority === 'low' ? 2 : 1;
-    const pb = b.priority === 'high' ? 0 : b.priority === 'low' ? 2 : 1;
+    const pw = (p) => (p === 'highest' || p === 'high') ? 0 : (p === 'low' || p === 'lowest') ? 2 : 1;
+    const pa = pw(a.priority);
+    const pb = pw(b.priority);
     return pa - pb;
   });
 

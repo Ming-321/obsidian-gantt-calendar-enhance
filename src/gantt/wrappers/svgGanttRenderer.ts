@@ -788,12 +788,7 @@ export class SvgGanttRenderer {
 				}
 			});
 
-			// 使用用户设置 showGlobalFilterInTaskText 控制是否显示全局过滤词
-			const gf = (this.plugin?.settings?.globalTaskFilter || '').trim();
-			const displayText = (this.plugin?.settings?.showGlobalFilterInTaskText && gf)
-				? gf + ' ' + task.name
-				: task.name;
-			this.renderTaskDescriptionWithLinks(textContainer, displayText);
+			this.renderTaskDescriptionWithLinks(textContainer, task.name);
 			contentDiv.appendChild(textContainer);
 
 			contentForeignObj.appendChild(contentDiv);

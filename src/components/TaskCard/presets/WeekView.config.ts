@@ -12,10 +12,11 @@ export const WeekViewConfig: TaskCardConfig = {
 	showCheckbox: true,
 	showDescription: true,
 	showTags: true,
-	showPriority: true,
+	showPriority: false,       // 优先级通过背景色展示
 	showFileLocation: false,
 	showWarning: true,
 	showGlobalFilter: false,   // 周视图不显示全局过滤词
+	priorityAsBackground: true, // 使用类型色+优先级透明度
 
 	// 时间属性配置
 	showTimes: false,

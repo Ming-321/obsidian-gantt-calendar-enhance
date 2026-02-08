@@ -9,6 +9,7 @@ import type { GCTask } from '../types';
 import { createNoteFromTask } from './commands/createNoteFromTask';
 import { createNoteFromTaskAlias } from './commands/createNoteFromTaskAlias';
 import { openEditTaskModal } from '../modals/EditTaskModal';
+import { CreateTaskModal } from '../modals/CreateTaskModal';
 import { deleteTask } from './commands/deleteTask';
 import { cancelTask } from './commands/cancelTask';
 import { restoreTask } from './commands/restoreTask';
@@ -78,9 +79,9 @@ export function registerTaskContextMenu(
 
 		// 优先级设置（三级）
 		const priorities: Array<{ value: 'high' | 'normal' | 'low', label: string, icon: string }> = [
-			{ value: 'high', label: '高', icon: '🔴' },
-			{ value: 'normal', label: '普通', icon: '⚪' },
-			{ value: 'low', label: '低', icon: '🔵' },
+			{ value: 'high', label: '重要', icon: '🔴' },
+			{ value: 'normal', label: '正常', icon: '⚪' },
+			{ value: 'low', label: '不重要', icon: '🔵' },
 		];
 
 		priorities.forEach(p => {
@@ -153,4 +154,32 @@ export function registerTaskContextMenu(
 
 		menu.showAtMouseEvent(e);
 	});
+}
+
+/**
+ * 在空白区域右键直接打开创建任务弹窗
+ * @param e 鼠标事件
+ * @param app Obsidian App 实例
+ * @param plugin 插件实例
+ * @param targetDate 目标日期（新任务的到期日期）
+ * @param onRefresh 创建成功后的刷新回调
+ */
+export function showCreateTaskMenu(
+	e: MouseEvent,
+	app: App,
+	plugin: GanttCalendarPlugin,
+	targetDate: Date,
+	onRefresh: () => void
+): void {
+	e.preventDefault();
+	e.stopPropagation();
+
+	const modal = new CreateTaskModal({
+		app,
+		plugin,
+		targetDate,
+		defaultType: 'todo',
+		onSuccess: onRefresh,
+	});
+	modal.open();
 }

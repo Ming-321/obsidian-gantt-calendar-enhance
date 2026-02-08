@@ -9,6 +9,7 @@ import { TooltipManager } from '../utils/tooltipManager';
 import { updateTaskDateField } from '../tasks/taskUpdater';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
+import { showCreateTaskMenu } from '../contextMenu/contextMenuIndex';
 
 /**
  * 月视图渲染器
@@ -207,6 +208,16 @@ export class MonthViewRenderer extends BaseViewRenderer {
 				// 设置拖放目标
 				this.setupDragDropForDayCell(dayEl, day.date);
 
+				// 右键创建任务菜单
+				dayEl.addEventListener('contextmenu', (e: MouseEvent) => {
+					// 点击已有任务卡片时不触发（任务卡片有自己的右键菜单）
+					if ((e.target as HTMLElement).closest(`.${TaskCardClasses.block}`)) return;
+
+					showCreateTaskMenu(e, this.app, this.plugin, day.date, () => {
+						this.refreshTasks();
+					});
+				});
+
 				if (!day.isCurrentMonth) {
 					dayEl.addClass(MonthViewClasses.modifiers.outsideMonth);
 				}
@@ -269,16 +280,8 @@ export class MonthViewRenderer extends BaseViewRenderer {
 				return;
 			}
 
-			// 限制显示数量
-			const taskLimit = this.plugin.settings.monthViewTaskLimit || 5;
-			const displayTasks = currentDayTasks.slice(0, taskLimit);
-			displayTasks.forEach(task => this.renderTaskItem(task, container));
-
-			// 显示更多任务提示
-			if (currentDayTasks.length > taskLimit) {
-				const moreCount = container.createDiv(MonthViewClasses.elements.taskMore);
-				moreCount.setText(`+${currentDayTasks.length - taskLimit} more`);
-			}
+			// 渲染所有任务（日格内支持滚动）
+			currentDayTasks.forEach(task => this.renderTaskItem(task, container));
 		} catch (error) {
 			Logger.error('MonthView', 'Error loading month view tasks', error);
 		}

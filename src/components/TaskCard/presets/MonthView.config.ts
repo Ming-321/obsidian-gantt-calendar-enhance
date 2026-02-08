@@ -12,10 +12,11 @@ export const MonthViewConfig: TaskCardConfig = {
 	showCheckbox: true,
 	showDescription: true,
 	showTags: true,
-	showPriority: false,        // 月视图空间有限，不显示优先级
+	showPriority: false,        // 优先级通过背景色展示
 	showFileLocation: false,
 	showWarning: false,         // 月视图不显示警告
 	showGlobalFilter: false,
+	priorityAsBackground: true, // 使用类型色+优先级透明度
 
 	// 时间属性配置
 	showTimes: false,

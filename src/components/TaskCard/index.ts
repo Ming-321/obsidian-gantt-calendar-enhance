@@ -30,6 +30,6 @@ export { TaskCardRenderer } from './TaskCardRenderer';
 export type { TaskCardConfig, TaskCardProps, TaskCardRenderResult, TimeFieldConfig, ViewModifier } from './TaskCardConfig';
 
 // 预设配置
-export { TaskViewConfig } from './presets/TaskView.config';
+export { TaskViewConfig, getTaskViewConfig } from './presets/TaskView.config';
 export { WeekViewConfig } from './presets/WeekView.config';
 export { MonthViewConfig } from './presets/MonthView.config';

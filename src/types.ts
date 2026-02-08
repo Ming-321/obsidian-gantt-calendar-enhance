@@ -11,9 +11,10 @@ export type CalendarViewType = 'month' | 'week' | 'task';
 export type TaskType = 'todo' | 'reminder';
 
 /**
- * 任务优先级（三级）
+ * 任务优先级（六级）
+ * highest: 最高 | high: 高 | medium: 中 | normal: 普通 | low: 低 | lowest: 最低
  */
-export type TaskPriority = 'high' | 'normal' | 'low';
+export type TaskPriority = 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
 
 // 甘特图时间颗粒度类型（仅支持周视图）
 export type GanttTimeGranularity = 'week';
@@ -97,7 +98,7 @@ export interface GCTask {
 	completed: boolean;            // 任务是否已完成
 	cancelled?: boolean;           // 任务是否已取消
 	status?: TaskStatusType;       // 任务状态类型
-	priority: TaskPriority;        // 优先级：high, normal, low
+	priority: TaskPriority;        // 优先级：highest, high, medium, normal, low, lowest
 	tags?: string[];               // 任务标签列表
 	createdDate?: Date;            // 创建日期
 	startDate?: Date;              // 开始日期（默认为创建时间）
