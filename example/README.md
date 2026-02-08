@@ -77,7 +77,7 @@ example/
 - [ ] 任务标题 ⏫ ➕ 2024-01-10 📅 2024-01-15
 ```
 
-**优先级 Emoji**：🔺(最高) ⏫(高) 🔼(中) 🔽(低) ⏬(最低)
+**优先级 Emoji**：🔴(重要) ⚪(正常) 🔵(不重要)
 **日期 Emoji**：➕(创建) 🛫(开始) ⏳(计划) 📅(到期) ✅(完成) ❌(取消)
 
 ### Dataview 格式 (Field)
@@ -86,7 +86,7 @@ example/
 - [ ] 任务标题 [priority:: high] [created:: 2024-01-10] [due:: 2024-01-15]
 ```
 
-**优先级值**：highest, high, medium, low, lowest
+**优先级值**：high, normal, low
 **日期字段**：created, start, scheduled, due, completion, cancelled
 
 ## 🎯 功能概览
@@ -135,11 +135,10 @@ example/
 
 ```json
 {
-  "defaultView": "month",
-  "taskFormat": "tasks",
-  "dateFormat": "yyyy-MM-dd",
-  "showWeekNumbers": true,
-  "startOfWeek": 1
+  "defaultView": "week",
+  "defaultWeekMode": "rolling7",
+  "startOnMonday": true,
+  "enableDebugMode": false
 }
 ```
 

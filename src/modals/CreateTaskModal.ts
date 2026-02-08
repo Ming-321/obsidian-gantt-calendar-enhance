@@ -141,12 +141,11 @@ export class CreateTaskModal extends BaseTaskModal {
 				detail: this.detailInput.value.trim() || undefined,
 				completed: false,
 				priority: this.priority,
-				tags: this.selectedTags.length > 0 ? this.selectedTags : undefined,
-				createdDate: this.createdDate || new Date(),
-				startDate: this.startDate || new Date(),
-				dueDate: this.dueDate,
-				time: this.taskTime || undefined,
-				repeat: this.repeat || undefined,
+			tags: this.selectedTags.length > 0 ? this.selectedTags : undefined,
+			createdDate: new Date(),
+			startDate: this.startDate || new Date(),
+			dueDate: this.dueDate,
+			repeat: this.repeat || undefined,
 				archived: false,
 			};
 

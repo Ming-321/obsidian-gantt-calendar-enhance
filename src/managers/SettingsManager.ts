@@ -1,14 +1,12 @@
 /**
  * 设置管理器
  *
- * 负责设置的加载、保存、迁移和 CSS 变量更新
+ * 负责设置的加载、保存和迁移
  */
 
-import { Notice } from 'obsidian';
 import type GanttCalendarPlugin from '../../main';
 import { DEFAULT_SETTINGS } from '../settings/constants';
 import type { GanttCalendarSettings } from '../settings/types';
-import { TaskStatus, ThemeColors } from '../tasks/taskStatus';
 import { Logger } from '../utils/logger';
 
 /**
@@ -25,20 +23,15 @@ export class SettingsManager {
 	 * 加载设置（包含迁移逻辑）
 	 */
 	async loadSettings(): Promise<GanttCalendarSettings> {
+		const rawData = await this.plugin.loadData() || {};
 		const settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			await this.plugin.loadData()
+			rawData
 		) as GanttCalendarSettings;
 
-		// 迁移旧的颜色格式到新的主题分离格式
-		await this.migrateTaskStatusColors(settings);
-
-		// 迁移旧的 semesterStartDate 到 semesterStartDates 列表
-		await this.migrateSemesterStartDate(settings);
-
-		// 更新 CSS 变量
-		this.updateCSSVariables(settings);
+		// 清理旧字段
+		await this.cleanLegacyFields(rawData, settings);
 
 		return settings;
 	}
@@ -48,118 +41,76 @@ export class SettingsManager {
 	 */
 	async saveSettings(settings: GanttCalendarSettings): Promise<void> {
 		await this.plugin.saveData(settings);
-		this.updateCSSVariables(settings);
 	}
 
 	/**
-	 * 更新 CSS 变量
+	 * 清理旧字段（一次性迁移）
 	 */
-	updateCSSVariables(settings: GanttCalendarSettings): void {
-		document.documentElement.style.setProperty('--festival-solar-color', settings.solarFestivalColor);
-		document.documentElement.style.setProperty('--festival-lunar-color', settings.lunarFestivalColor);
-		document.documentElement.style.setProperty('--festival-solar-term-color', settings.solarTermColor);
-	}
-
-	/**
-	 * 迁移任务状态颜色格式
-	 * 将旧的 backgroundColor/textColor 迁移到 lightColors/darkColors
-	 * 确保所有状态都有完整的主题颜色配置
-	 */
-	private async migrateTaskStatusColors(settings: GanttCalendarSettings): Promise<void> {
+	private async cleanLegacyFields(rawData: Record<string, unknown>, settings: GanttCalendarSettings): Promise<void> {
 		let needsSave = false;
 
-		for (const status of settings.taskStatuses) {
-			// 检查是否需要迁移（存在旧的已弃用属性）
-			const hasOldColors = 'backgroundColor' in status || 'textColor' in status;
-			const needsInitialization = !status.lightColors || !status.darkColors;
-
-			if (hasOldColors && needsInitialization) {
-				// 将旧颜色作为亮色主题的默认值
-				if (!status.lightColors) {
-					status.lightColors = {
-						backgroundColor: '#FFFFFF',
-						textColor: '#333333'
-					};
+		// 迁移旧的 semesterStartDate 到 semesterStartDates
+		if (rawData.semesterStartDate && typeof rawData.semesterStartDate === 'string') {
+			const oldDate = (rawData.semesterStartDate as string).trim();
+			if (oldDate) {
+				if (!settings.semesterStartDates) {
+					settings.semesterStartDates = [];
 				}
-
-				// 为暗色主题生成默认值
-				if (!status.darkColors) {
-					status.darkColors = this.generateDarkThemeColors(
-						status.lightColors.backgroundColor,
-						status.lightColors.textColor
-					);
+				if (!settings.semesterStartDates.includes(oldDate)) {
+					settings.semesterStartDates.push(oldDate);
+					settings.semesterStartDates.sort();
 				}
+				Logger.info('SettingsManager', 'Migrated semesterStartDate to semesterStartDates', {
+					dates: settings.semesterStartDates,
+				});
+			}
+			needsSave = true;
+		}
 
-				// 清理已弃用的属性
-				// @ts-ignore - 迁移代码，有意删除已弃用属性
-				delete status.backgroundColor;
-				// @ts-ignore - 迁移代码，有意删除已弃用属性
-				delete status.textColor;
+		// 清理已移除的字段（从原始数据中检测）
+		const legacyFields = [
+			'mySetting', 'semesterStartDate', 'enabledTaskFormats',
+			'dailyNotePath', 'dailyNoteNameFormat', 'taskNotePath',
+			'newTaskHeading', 'enableTemplaterForDailyNote', 'templaterTemplatePath',
+			'taskStatuses', 'syncConfiguration',
+			// 设置界面重构移除的字段
+			'solarFestivalColor', 'lunarFestivalColor', 'solarTermColor',
+			'monthViewTaskLimit', 'taskSortField', 'taskSortOrder', 'defaultTaskPriority',
+			'weekViewShowCheckbox', 'weekViewShowTags', 'weekViewShowPriority',
+			'monthViewShowCheckbox', 'monthViewShowTags', 'monthViewShowPriority',
+			'dateFilterField', 'showViewNavButtonText',
+		];
 
-				needsSave = true;
-			} else if (needsInitialization) {
-				// 对于没有颜色配置的状态，初始化为默认值
-				if (!status.lightColors) {
-					status.lightColors = {
-						backgroundColor: '#FFFFFF',
-						textColor: '#333333'
-					};
-				}
-
-				if (!status.darkColors) {
-					status.darkColors = {
-						backgroundColor: '#2d333b',
-						textColor: '#adbac7'
-					};
-				}
-
-				needsSave = true;
-			} else if (hasOldColors) {
-				// 即使已有新格式，也清理已弃用的属性
-				// @ts-ignore - 迁移代码，有意删除已弃用属性
-				delete status.backgroundColor;
-				// @ts-ignore - 迁移代码，有意删除已弃用属性
-				delete status.textColor;
+		for (const field of legacyFields) {
+			if (field in rawData) {
+				// @ts-ignore - 清理旧字段
+				delete (settings as any)[field];
 				needsSave = true;
 			}
+		}
+
+		// v2.0.0 迁移：重置排序设置为新的默认值（支持二级排序）
+		// _sortMigratedV2 标志确保此迁移只执行一次
+		if (!rawData._sortMigratedV2) {
+			const sortDefaults: Partial<GanttCalendarSettings> = {
+				weekViewSortField: DEFAULT_SETTINGS.weekViewSortField,
+				weekViewSortOrder: DEFAULT_SETTINGS.weekViewSortOrder,
+				weekViewSecondarySortField: DEFAULT_SETTINGS.weekViewSecondarySortField,
+				weekViewSecondarySortOrder: DEFAULT_SETTINGS.weekViewSecondarySortOrder,
+				monthViewSortField: DEFAULT_SETTINGS.monthViewSortField,
+				monthViewSortOrder: DEFAULT_SETTINGS.monthViewSortOrder,
+				monthViewSecondarySortField: DEFAULT_SETTINGS.monthViewSecondarySortField,
+				monthViewSecondarySortOrder: DEFAULT_SETTINGS.monthViewSecondarySortOrder,
+				taskViewSecondarySortField: DEFAULT_SETTINGS.taskViewSecondarySortField,
+				taskViewSecondarySortOrder: DEFAULT_SETTINGS.taskViewSecondarySortOrder,
+			};
+			Object.assign(settings, sortDefaults);
+			(settings as any)._sortMigratedV2 = true;
+			needsSave = true;
 		}
 
 		if (needsSave) {
 			await this.plugin.saveData(settings);
 		}
-	}
-
-	/**
-	 * 迁移旧的 semesterStartDate（单一字符串）到 semesterStartDates（列表）
-	 */
-	private async migrateSemesterStartDate(settings: GanttCalendarSettings): Promise<void> {
-		if (settings.semesterStartDate && settings.semesterStartDate.trim()) {
-			if (!settings.semesterStartDates) {
-				settings.semesterStartDates = [];
-			}
-			// 仅在列表中不存在时添加
-			if (!settings.semesterStartDates.includes(settings.semesterStartDate.trim())) {
-				settings.semesterStartDates.push(settings.semesterStartDate.trim());
-				settings.semesterStartDates.sort();
-			}
-			// 清空旧字段
-			settings.semesterStartDate = undefined;
-			await this.plugin.saveData(settings);
-			Logger.info('SettingsManager', 'Migrated semesterStartDate to semesterStartDates', {
-				dates: settings.semesterStartDates,
-			});
-		}
-	}
-
-	/**
-	 * 根据亮色主题颜色生成暗色主题颜色
-	 */
-	private generateDarkThemeColors(lightBg: string, lightText: string): ThemeColors {
-		// 简单的颜色反转逻辑
-		// 对于大多数情况，使用预设的暗色主题默认值
-		return {
-			backgroundColor: '#2d333b',
-			textColor: '#adbac7'
-		};
 	}
 }

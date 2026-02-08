@@ -25,9 +25,6 @@ export const BLOCKS = {
 	WEEK_VIEW: 'week-view',
 	/** 月视图 */
 	MONTH_VIEW: 'month-view',
-	/** 甘特图 */
-	GANTT: 'gantt-view',
-
 	/** 工具栏 */
 	TOOLBAR: 'toolbar',
 
@@ -128,11 +125,9 @@ export const TimeBadgeClasses = {
  * 优先级类名常量
  */
 export const PriorityClasses = {
-	highest: bem(BLOCKS.TASK_CARD, 'priority-badge', 'highest'),
 	high: bem(BLOCKS.TASK_CARD, 'priority-badge', 'high'),
-	medium: bem(BLOCKS.TASK_CARD, 'priority-badge', 'medium'),
+	normal: bem(BLOCKS.TASK_CARD, 'priority-badge', 'normal'),
 	low: bem(BLOCKS.TASK_CARD, 'priority-badge', 'low'),
-	lowest: bem(BLOCKS.TASK_CARD, 'priority-badge', 'lowest'),
 };
 
 
@@ -210,44 +205,7 @@ export const LinkClasses = {
 	},
 };
 
-/**
- * 甘特图类名常量
- */
-export const GanttClasses = {
-	block: bem(BLOCKS.GANTT),
 
-	/** Elements */
-	elements: {
-		mainGrid: bem(BLOCKS.GANTT, 'main-grid'),
-		layout: bem(BLOCKS.GANTT, 'layout'),
-		corner: bem(BLOCKS.GANTT, 'corner'),
-		cornerSvg: bem(BLOCKS.GANTT, 'corner-svg'),
-		header: bem(BLOCKS.GANTT, 'header'),
-		headerSvg: bem(BLOCKS.GANTT, 'header-svg'),
-		tasklist: bem(BLOCKS.GANTT, 'tasklist'),
-		tasklistSvg: bem(BLOCKS.GANTT, 'tasklist-svg'),
-		taskNumberCell: bem(BLOCKS.GANTT, 'task-number-cell'),
-		taskNumberText: bem(BLOCKS.GANTT, 'task-number-text'),
-		taskContentCell: bem(BLOCKS.GANTT, 'task-content-cell'),
-		taskCheckbox: bem(BLOCKS.GANTT, 'task-checkbox'),
-		chart: bem(BLOCKS.GANTT, 'chart'),
-		chartSvg: bem(BLOCKS.GANTT, 'chart-svg'),
-		resizer: bem(BLOCKS.GANTT, 'resizer'),
-		grid: bem(BLOCKS.GANTT, 'grid'),
-		tasks: bem(BLOCKS.GANTT, 'tasks'),
-		barGroup: bem(BLOCKS.GANTT, 'bar-group'),
-		container: bem(BLOCKS.GANTT, 'container'),
-		root: bem(BLOCKS.GANTT, 'root'),
-		rowBg: bem(BLOCKS.GANTT, 'row-bg'),
-		rowHighlight: bem(BLOCKS.GANTT, 'row-highlight'),
-		// 保留旧类名以兼容
-		headerContainer: bem(BLOCKS.GANTT, 'header-container'),
-		tasklistContainer: bem(BLOCKS.GANTT, 'tasklist-container'),
-		chartContainer: bem(BLOCKS.GANTT, 'chart-container'),
-		stickyHeader: bem(BLOCKS.GANTT, 'sticky-header'),
-	},
-
-};
 
 
 /**
@@ -267,7 +225,6 @@ export const ToolbarClasses = {
 
 	/** Modifiers - 视图修饰符 */
 	modifiers: {
-		gantt: bem(BLOCKS.TOOLBAR, undefined, 'gantt'),
 		task: bem(BLOCKS.TOOLBAR, undefined, 'task'),
 		/** 响应式紧凑模式 - 左侧按钮只显示图标 */
 		compact: bem(BLOCKS.TOOLBAR, undefined, 'compact'),
@@ -346,11 +303,9 @@ export const ToolbarClasses = {
 		/** 字段选择器 */
 		fieldSelector: {
 			group: bem(BLOCKS.TOOLBAR, 'field-selector-group'),
-			groupGantt: bem(BLOCKS.TOOLBAR, 'field-selector-group', 'gantt'),
 			label: bem(BLOCKS.TOOLBAR, 'field-selector-label'),
 			select: bem(BLOCKS.TOOLBAR, 'field-selector-select'),
 			dualWrapper: bem(BLOCKS.TOOLBAR, 'field-selector-dual-wrapper'),
-			dualWrapperGantt: bem(BLOCKS.TOOLBAR, 'field-selector-dual-wrapper', 'gantt'),
 		},
 
 		/** 导航按钮组 */

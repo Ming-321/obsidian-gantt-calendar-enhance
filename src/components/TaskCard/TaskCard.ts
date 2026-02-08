@@ -96,30 +96,14 @@ export class TaskCardComponent {
 			}
 		}
 
-		// 优先级背景色模式：将优先级映射到三级（重要/正常/不重要）修饰类
-		// 配合任务类型修饰类（type-todo/type-reminder）使用不同颜色
+		// 优先级背景色模式：配合任务类型修饰类使用不同颜色和透明度
 		if (config.priorityAsBackground && task.priority) {
-			// 6 级 → 3 级映射：highest/high → high, medium/normal → normal, low/lowest → low
-			let visualPriority: 'high' | 'normal' | 'low';
-			switch (task.priority) {
-				case 'highest':
-				case 'high':
-					visualPriority = 'high';
-					break;
-				case 'low':
-				case 'lowest':
-					visualPriority = 'low';
-					break;
-				default: // medium, normal
-					visualPriority = 'normal';
-					break;
-			}
 			const priorityModifierMap: Record<string, string> = {
 				high: TaskCardClasses.modifiers.priorityHigh,
 				normal: TaskCardClasses.modifiers.priorityNormal,
 				low: TaskCardClasses.modifiers.priorityLow,
 			};
-			card.addClass(priorityModifierMap[visualPriority]);
+			card.addClass(priorityModifierMap[task.priority] ?? TaskCardClasses.modifiers.priorityNormal);
 		}
 
 		// 应用自定义状态颜色

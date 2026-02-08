@@ -207,20 +207,16 @@ function formatDateCN(d) {
 
 function priorityIcon(p) {
   switch(p) {
-    case 'highest':
     case 'high': return '🔴';
-    case 'low':
-    case 'lowest': return '🔵';
+    case 'low': return '🔵';
     default: return '⚪';
   }
 }
 
 function priorityLabel(p) {
   switch(p) {
-    case 'highest':
     case 'high': return '重要';
-    case 'low':
-    case 'lowest': return '不重要';
+    case 'low': return '不重要';
     default: return '正常';
   }
 }
@@ -248,7 +244,7 @@ function generateMorningEmail(tasks, today) {
   const pendingTodos = tasks.filter(t =>
     t.type === 'todo' && !t.completed && !t.archived && !t.cancelled
   ).sort((a, b) => {
-    const pw = (p) => (p === 'highest' || p === 'high') ? 0 : (p === 'low' || p === 'lowest') ? 2 : 1;
+    const pw = (p) => p === 'high' ? 0 : p === 'low' ? 2 : 1;
     const pa = pw(a.priority);
     const pb = pw(b.priority);
     if (pa !== pb) return pa - pb;
@@ -338,8 +334,7 @@ function generateMorningEmail(tasks, today) {
       html += \`<div style="margin: 12px 0 4px; font-weight: bold; color: #555;">\${label}</div>\`;
 
       grouped[dateKey].forEach(t => {
-        const timeStr = t.time ? \`<span style="color: #4299e1; margin-right: 6px;">\${t.time}</span>\` : '';
-        html += \`<div style="padding: 4px 0 4px 16px; color: #333;">\${timeStr}\${t.description || t.title || '无标题'}</div>\`;
+        html += \`<div style="padding: 4px 0 4px 16px; color: #333;">\${t.description || t.title || '无标题'}</div>\`;
       });
     });
   }
@@ -368,7 +363,7 @@ function generateFocusEmail(tasks, today, period) {
     const due = parseDate(t.dueDate);
     return due && (toDateStr(due) <= toDateStr(today));
   }).sort((a, b) => {
-    const pw = (p) => (p === 'highest' || p === 'high') ? 0 : (p === 'low' || p === 'lowest') ? 2 : 1;
+    const pw = (p) => p === 'high' ? 0 : p === 'low' ? 2 : 1;
     const pa = pw(a.priority);
     const pb = pw(b.priority);
     return pa - pb;
@@ -412,8 +407,7 @@ function generateFocusEmail(tasks, today, period) {
     html += '<p style="color: #999;">暂无今日提醒</p>';
   } else {
     todayReminders.forEach(t => {
-      const timeStr = t.time ? \`<span style="color: #4299e1; margin-right: 6px;">\${t.time}</span>\` : '';
-      html += \`<div style="padding: 4px 0; color: #333;">\${timeStr}\${t.description || t.title || '无标题'}</div>\`;
+      html += \`<div style="padding: 4px 0; color: #333;">\${t.description || t.title || '无标题'}</div>\`;
     });
   }
 

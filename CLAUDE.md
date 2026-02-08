@@ -14,13 +14,25 @@ npm run build           # 生产构建（运行 tsc + esbuild）
 
 ## 项目概述
 
-这是一个 Obsidian 插件，提供带有甘特图功能的日历视图和任务管理。支持 Tasks 插件（emoji 格式）和 Dataview 插件（field 格式）两种任务格式。
+本项目 fork 自 [sustcsugar/obsidian-gantt-calendar](https://github.com/sustcsugar/obsidian-gantt-calendar)，在原项目基础上借鉴了日历视图框架和 UI 设计，但进行了以下关键性修改：
+
+1. **彻底重构任务数据系统**：抛弃原有的 Markdown 解析方式（Tasks/Dataview 格式），改为专用 JSON 文件存储（`data/tasks.json`），提供独立的 CRUD 接口和数据层抽象
+2. **大幅改造视图系统**：重写周视图（甘特图风格 bar 布局）、月视图（简化显示逻辑）、任务视图（新增简洁/完整双模式），以及全新的工具栏、排序、筛选系统
+3. **实现 GitHub 数据同步**：新增 GitHub Sync Service，支持通过 GitHub Actions 定时推送任务日报和提醒到 Issue，实现跨设备数据备份
+
+当前版本：**2.0.0**
 
 ## 架构
 
 ### 入口点
 - `main.ts` - 插件生命周期（onload/onunload），注册视图、命令和事件监听器
 - `GCMainView.ts` - 主视图容器，管理所有子视图
+
+### 数据层
+- `src/data-layer/JsonDataSource.ts` - 主数据源，任务存储在 `.obsidian/plugins/obsidian-gantt-calendar/data/tasks.json`
+- `src/TaskStore.ts` - TaskStore 门面，提供统一的 CRUD 接口，集成 GitHub 同步
+- `src/data-layer/EventBus.ts` - 事件总线，用于组件间通信
+- `src/data-layer/TaskRepository.ts` - 仓储模式，管理任务缓存和查询
 
 ### 视图系统
 插件使用基类模式构建视图：
@@ -33,10 +45,10 @@ npm run build           # 生产构建（运行 tsc + esbuild）
 周视图采用甘特图布局，每个任务显示为一行横向 bar：
 - Header：7 列日期头（周几 + 日期数字），高亮今天，不显示农历
 - Body：每个待办占独立一行，提醒类任务通过贪心装箱合并到共享行
-- Bar 颜色按优先级区分：红色=高、蓝色=普通、灰色=低、橙色虚线=提醒、绿色=已完成
-- 交互：hover 显示 tooltip、点击打开编辑弹窗、支持状态/标签筛选、待办任务显示可点击复选框（受 `weekViewShowCheckbox` 设置控制）
+- Bar 颜色按类型区分：蓝色=待办、橙色虚线=提醒、绿色=已完成；同类型内通过透明度区分优先级（高=深、普通=中、低=浅）
+- 交互：hover 显示 tooltip、点击打开编辑弹窗、支持状态/标签筛选、待办任务显示可点击复选框
 - 标题格式：`第X周 (M.D-M.D)`，支持通过 `semesterStartDates` 学期起始日列表实现自定义周数（自动选择最近的过去日期）
-- 动态 7 日模式：长按标题进入「今天起7天」模式（无翻页箭头），单击标题切回标准周
+- 动态 7 日模式：长按标题进入「今天起7天」模式（无翻页箭头），单击标题切回标准周；可通过 `defaultWeekMode: 'rolling7'` 设为默认启动模式
 
 #### 月视图
 - 待办仅在截止日期（dueDate）当天显示
@@ -61,30 +73,21 @@ npm run build           # 生产构建（运行 tsc + esbuild）
 - **响应式** `toolbar-responsive.ts`：紧凑模式下隐藏按钮文字标签
 
 ### 任务管理
-- `src/tasks/taskParser.ts` - 解析 Tasks（emoji）和 Dataview（field）格式
 - `src/tasks/taskSearch.ts` - 按日期/状态过滤任务
-- `src/data-layer` - 负责任务缓存的管理
+- `src/tasks/taskUpdater.ts` - 更新任务属性
+- `src/tasks/taskSorter.ts` - 任务排序逻辑
+- `src/tasks/taskStatus.ts` - 任务状态定义（7 种默认状态，固定不可自定义）
+- `src/data-layer/` - 负责任务缓存的管理
 
-### 任务格式兼容性
-
-**Tasks 格式（emoji）**：
-```
-- [x] 🎯  任务全格式 🔺 🔁 every day ➕ 2026-01-15 🛫 2026-01-19 ⏳ 2026-01-17 📅 2026-01-21 ✅ 2026-01-15
-```
-
-**Dataview 格式（field）**：
-```
-- [x] 🎯  dataview任务格式  [priority:: highest]  [repeat:: every day]  [created:: 2026-01-15]  [start:: 2026-01-16]  [scheduled:: 2026-01-16]  [due:: 2026-01-15]  [completion:: 2026-01-15]
-```
-
-优先级：`🔺`（最高）、`⏫`（高）、`🔼`（中）、`🔽`（低）、`⏬`（最低）
-日期 emoji：`➕`（创建日期）、`🛫`（开始日期）、`⏳`（计划日期）、`📅`（到期日期）、`✅`（完成日期）、`❌`（取消日期）
-重复任务: `🔁` every day
+### 服务
+- `src/services/GitHubSyncService.ts` - GitHub 数据同步服务
+- `src/services/githubTemplates.ts` - GitHub Action 工作流模板
 
 ## 代码统一管理规范
 DOM类名统一使用 ./src/utils/bem.ts 进行管理, 新建类名需在此文件中进行定义并引用
 修改DOM结构或者样式之前,请先检查是否有相关的旧类未移除,移除未使用的旧类.
 正则表达式统一使用 ./src/utils/RegularExpression.ts 进行管理.
+优先级相关逻辑（图标、标签、CSS类名、排序权重）统一使用 ./src/utils/priorityUtils.ts 管理，三级：high/normal/low.
 全局任务悬浮窗统一复用 ./src/utils/tooltipManager.ts
 任务条目更新统一复用 updateTaskProperties函数进行.
 

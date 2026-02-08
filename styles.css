@@ -23,6 +23,7 @@ Author: sugar
 	--task-pending-color: #ff7a45;
 }
 
+
 /* ========================================
    LAYER 2: Tools (工具层)
    Not applicable for plain CSS
@@ -62,14 +63,6 @@ Author: sugar
 	overflow-x: hidden;
 }
 
-.calendar-content.gantt-mode {
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	min-height: 0;
-}
-
 /* Calendar Grid Layouts */
 .gc-week-view__grid {
 	display: flex;
@@ -101,60 +94,6 @@ Author: sugar
 	flex: 1 1 auto;
 	min-height: 0;
 	position: relative;
-}
-
-/* Gantt Layout Objects */
-/* BEM命名: gc-view--gantt */
-.gc-view.gc-view--gantt {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	width: 100%;
-	height: 100%;
-	min-height: 0;
-	position: relative;
-}
-
-.gc-gantt-view__body {
-	flex: 1 1 auto;
-	min-height: 0;
-	display: flex;
-	gap: 0;
-	overflow: hidden;
-}
-
-.gc-gantt-view__task-list {
-	flex: 1 1 auto;
-	overflow-y: auto;
-	overflow-x: hidden;
-	min-height: 0;
-	padding-right: 4px;
-	display: grid;
-	grid-auto-rows: 40px;
-	gap: 6px;
-	align-content: start;
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-}
-
-.gc-gantt-view__task-list::-webkit-scrollbar {
-	display: none;
-}
-
-.gc-gantt-view__time {
-	flex: 1 1 auto;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	position: relative;
-	overflow: hidden;
-}
-
-.gc-gantt-view__bars-grid {
-	display: grid;
-	grid-auto-rows: 40px;
-	gap: 6px;
-	align-content: start;
 }
 
 /* ========================================
@@ -966,55 +905,6 @@ button.gc-toolbar__center-nav-next svg {
 	color: var(--text-normal);
 }
 
-/* 通用按钮组样式 - 下凹设计 */
-.gc-toolbar__time-granularity-group--gantt,
-.gc-toolbar__field-selector-dual-wrapper--gantt {
-	display: inline-flex;
-	align-items: center;
-	gap: 1px;
-	padding: 1px;
-	border-radius: 8px;
-	background-color: color-mix(in srgb, var(--background-secondary) 35%, #888 5%);
-	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* 甘特图时间颗粒度组内的按钮样式 */
-.gc-toolbar__time-granularity-group--gantt .gc-toolbar__today-btn,
-.gc-toolbar__time-granularity-group--gantt .gc-toolbar__time-granularity-btn {
-	padding: 4px 6px;
-	border: none;
-	border-radius: 0;
-	background-color: transparent;
-	color: var(--text-muted);
-	font-size: 13px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.gc-toolbar__time-granularity-group--gantt .gc-toolbar__today-btn {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.gc-toolbar__time-granularity-group--gantt .gc-toolbar__today-btn:hover,
-.gc-toolbar__time-granularity-group--gantt .gc-toolbar__time-granularity-btn:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.gc-toolbar__time-granularity-group--gantt .gc-toolbar__time-granularity-btn--active {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	font-weight: 600;
-}
-
-/* 字段选择器组 */
-.gc-toolbar__field-selector-group--gantt {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-}
-
 /* 时间颗粒度按钮 */
 .gc-toolbar__today-btn {
 	padding: 4px 10px;
@@ -1622,19 +1512,6 @@ button.gc-toolbar__center-nav-next svg {
 	border-radius: 3px;
 }
 
-.gc-task-card--gantt {
-	padding: 8px 12px;
-	border-left: 3px solid var(--interactive-accent);
-	border-top: 1px solid var(--background-modifier-border);
-	border-right: 1px solid var(--background-modifier-border);
-	border-bottom: 1px solid var(--background-modifier-border);
-	display: flex;
-	align-items: center;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
 /* ==================== Task Tags Component ==================== */
 /* BEM命名: gc-tag (独立Block), gc-task-card__tags (作为任务卡Element) */
 
@@ -2018,23 +1895,15 @@ button.gc-toolbar__center-nav-next svg {
 	font-weight: 500;
 }
 
-.gc-task-tooltip .priority-highest {
+.gc-task-tooltip .priority-high {
 	color: #d73a49;
 }
 
-.gc-task-tooltip .priority-high {
-	color: #e36209;
-}
-
-.gc-task-tooltip .priority-medium {
-	color: #ffd33d;
+.gc-task-tooltip .priority-normal {
+	color: #6b7280;
 }
 
 .gc-task-tooltip .priority-low {
-	color: #28a745;
-}
-
-.gc-task-tooltip .priority-lowest {
 	color: #0366d6;
 }
 
@@ -2223,23 +2092,15 @@ button.gc-toolbar__center-nav-next svg {
 	flex-shrink: 0;
 }
 
-.gc-task-card__priority-badge--highest {
+.gc-task-card__priority-badge--high {
 	background-color: rgba(239, 68, 68, 0.1);
 }
 
-.gc-task-card__priority-badge--high {
-	background-color: rgba(249, 115, 22, 0.1);
-}
-
-.gc-task-card__priority-badge--medium {
-	background-color: rgba(234, 179, 8, 0.1);
+.gc-task-card__priority-badge--normal {
+	background-color: rgba(107, 114, 128, 0.08);
 }
 
 .gc-task-card__priority-badge--low {
-	background-color: rgba(34, 197, 94, 0.1);
-}
-
-.gc-task-card__priority-badge--lowest {
 	background-color: rgba(59, 130, 246, 0.1);
 }
 
@@ -2517,16 +2378,6 @@ button.gc-toolbar__center-nav-next svg {
 	opacity: 0.5;
 }
 
-/* Gantt View */
-.gc-task-card--gantt.gc-task-card--completed {
-	opacity: 0.7;
-	border-left-color: var(--task-completed-color);
-}
-
-.gc-task-card--gantt.gc-task-card--pending {
-	border-left-color: var(--task-pending-color);
-}
-
 /* 7.2 Interactive States (hover, active) */
 .gc-task-card--day:hover {
 	transform: translateX(4px);
@@ -2541,11 +2392,6 @@ button.gc-toolbar__center-nav-next svg {
 .gc-task-card--month:hover {
 	transform: translateX(1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.gc-task-card--gantt:hover {
-	transform: translateX(2px);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .gc-task-card--task:hover {
@@ -2646,8 +2492,7 @@ button.gc-toolbar__center-nav-next svg {
 /* 排除自定义状态的已完成任务，使用自定义文字颜色 */
 .gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
 .gc-month-view__tasks .gc-task-card--month.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
-.gc-view--task .gc-task-card--task.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
-.gc-task-card--gantt.gc-task-card--completed:not(.task-with-status) .gc-task-card__text {
+.gc-view--task .gc-task-card--task.gc-task-card--completed:not(.task-with-status) .gc-task-card__text {
 	text-decoration: line-through;
 	color: var(--text-muted);
 }
@@ -2660,436 +2505,6 @@ button.gc-toolbar__center-nav-next svg {
 /* No utility classes currently defined */
 /* Future utility classes can be added here as needed */
 
-
-/* ============================================
-   ============================================
-   甘特图样式 (BEM 规范)
-   ============================================ */
-
-/* 甘特图容器 */
-.gc-gantt-view__container {
-	flex: 1 1 auto;
-	min-height: 0;
-	display: flex;
-	flex-direction: column;
-	overflow: visible;  /* 改为 visible 以允许内部 sticky 定位生效 */
-	width: 100%;
-	height: 100%;
-}
-
-/* 甘特图根容器 */
-.gc-gantt-view__root {
-	flex: 1 1 auto;
-	min-height: 500px;
-	min-width: 100%;
-	position: relative;
-	overflow: visible;
-	background-color: var(--background-primary);
-	border-radius: 8px;
-	padding: 8px;
-}
-
-/* ============================================
-   BEM 布局结构 - 单个 Grid 布局
-   使用 CSS 变量 --task-column-width 控制任务列宽度
-   Grid 结构：
-   ┌────────────┬──────────────────────────────┐
-   │ 空白区域   │ 时间轴（sticky）             │
-   ├────────────┼──────────────────────────────┤
-   │ 任务列表   │ 甘特图（双向滚动）           │
-   └────────────┴──────────────────────────────┘
-   ============================================ */
-
-/* 单个 Grid 容器 - 包含所有甘特图元素 */
-.gc-gantt-view__main-grid {
-	--task-column-width: 240px;  /* 默认任务列宽度，可通过 JS 动态修改 */
-
-	display: grid;
-	grid-template-columns: var(--task-column-width) 4px 1fr;
-	grid-template-areas:
-		"corner resizer header"
-		"tasklist resizer chart";
-	grid-template-rows: 50px 1fr;
-
-	width: 100%;
-	min-height: 400px;
-	gap: 0;
-	position: relative;
-}
-
-/* 左上角空白区域（sticky） */
-.gc-gantt-view__corner {
-	grid-area: corner;
-	position: sticky;
-	top: 8px;
-	z-index: 50;
-	height: 50px;
-	overflow: hidden;
-	border-right: 1px solid var(--background-modifier-border);
-	border-bottom: 1px solid var(--background-modifier-border);
-	background-color: var(--background-secondary);
-	min-height: 0;
-	min-width: 0;
-}
-
-.gc-gantt-view__corner-svg {
-	display: block;
-}
-
-/* 顶部时间轴容器（sticky，可水平滚动） */
-.gc-gantt-view__header {
-	grid-area: header;
-	position: sticky;
-	top: 8px;
-	z-index: 50;
-	height: 50px;
-	overflow-x: auto;
-	overflow-y: hidden;
-	border-bottom: 1px solid var(--background-modifier-border);
-	background-color: var(--background-secondary);
-	min-height: 0;
-	min-width: 0;
-	/* 隐藏滚动条但保留滚动功能 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE 10+ */
-}
-
-.gc-gantt-view__header::-webkit-scrollbar {
-	display: none; /* Chrome, Safari, Opera */
-}
-
-.gc-gantt-view__header-svg {
-	display: block;
-}
-
-/* 左侧任务列表容器 */
-.gc-gantt-view__tasklist {
-	grid-area: tasklist;
-	overflow-x: hidden;
-	overflow-y: auto;
-	border-right: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	min-height: 0;
-	/* 隐藏滚动条但保留滚动功能 */
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE 10+ */
-}
-
-.gc-gantt-view__tasklist::-webkit-scrollbar {
-	display: none; /* Chrome, Safari, Opera */
-}
-
-.gc-gantt-view__tasklist-svg {
-	display: block;
-}
-
-/* 右侧甘特图容器（双向滚动） */
-.gc-gantt-view__chart {
-	grid-area: chart;
-	overflow: auto;
-	background-color: var(--background-primary);
-	min-height: 0;
-}
-
-.gc-gantt-view__chart::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
-}
-
-.gc-gantt-view__chart::-webkit-scrollbar-track {
-	background: var(--background-primary);
-}
-
-.gc-gantt-view__chart::-webkit-scrollbar-thumb {
-	background: var(--background-modifier-border);
-	border-radius: 4px;
-}
-
-.gc-gantt-view__chart::-webkit-scrollbar-thumb:hover {
-	background: var(--text-muted);
-}
-
-/* 分隔条 - 覆盖在 Grid 上，使用绝对定位配合 CSS 变量 */
-.gc-gantt-view__resizer {
-	position: absolute;
-	left: var(--task-column-width);
-	top: 0;
-	bottom: 0;
-	width: 4px;
-	background-color: var(--background-modifier-border);
-	cursor: col-resize;
-	transition: background-color 0.2s ease;
-	z-index: 60;
-}
-
-.gc-gantt-view__resizer:hover {
-	background-color: var(--interactive-accent);
-}
-
-.gc-gantt-view__resizer:active {
-	background-color: var(--interactive-accent-hover);
-}
-
-.gc-gantt-view__chart-svg {
-	display: block;
-}
-
-/* ========================================
-   旧样式兼容（保留以避免破坏现有功能）
-   ======================================== */
-
-/* 甘特图容器 */
-.gc-gantt-view__container {
-	flex: 1 1 auto;
-	min-height: 0;
-	display: flex;
-	flex-direction: column;
-	overflow: visible;
-	width: 100%;
-	height: 100%;
-}
-
-/* 甘特图根容器 */
-.gc-gantt-view__root {
-	flex: 1 1 auto;
-	min-height: 500px;
-	min-width: 100%;
-	position: relative;
-	overflow: visible;
-	background-color: var(--background-primary);
-	border-radius: 8px;
-	padding: 8px;
-}
-
-/* Sticky 时间线容器（旧版，保留兼容） */
-.gc-gantt-view__sticky-header {
-	display: grid;
-	grid-template-columns: 240px 4px 1fr;
-	grid-template-areas: "corner resizer header";
-	position: sticky;
-	top: 8px;
-	z-index: 50;
-	background-color: var(--background-secondary);
-	border-radius: 8px 8px 0 0;
-	height: 50px;
-	flex-shrink: 0;
-}
-
-/* Sticky 区域的分隔条不响应鼠标事件 */
-.gc-gantt-view__sticky-header .gc-gantt-view__resizer {
-	pointer-events: none;
-}
-
-/* 主布局容器（旧版，保留兼容） */
-.gc-gantt-view__layout {
-	display: grid;
-	grid-template-columns: 240px 4px 1fr;
-	grid-template-areas: "tasklist resizer chart";
-	width: 100%;
-	min-height: 400px;
-	gap: 0;
-	overflow: hidden;
-}
-
-/* 旧版类名兼容 */
-.gc-gantt-view__header-container {
-	grid-area: header;
-	overflow-x: auto;
-	overflow-y: hidden;
-	border-bottom: 1px solid var(--background-modifier-border);
-	background-color: var(--background-secondary);
-	min-height: 0;
-	min-width: 0;
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-}
-
-.gc-gantt-view__header-container::-webkit-scrollbar {
-	display: none;
-}
-
-.gc-gantt-view__tasklist-container {
-	grid-area: tasklist;
-	overflow-x: hidden;
-	overflow-y: auto;
-	border-right: 1px solid var(--background-modifier-border);
-	background-color: var(--background-primary);
-	min-height: 0;
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-}
-
-.gc-gantt-view__tasklist-container::-webkit-scrollbar {
-	display: none;
-}
-
-.gc-gantt-view__chart-container {
-	grid-area: chart;
-	overflow: auto;
-	background-color: var(--background-primary);
-	min-height: 0;
-}
-
-/* ============================================
-   甘特图内部元素样式
-   ============================================ */
-
-/* 甘特图网格 */
-.gc-gantt-view__grid line {
-	stroke: var(--background-modifier-border);
-	stroke-width: 1;
-}
-
-/* 甘特图任务条 */
-.gc-gantt-view__bar-group rect {
-	transition: all 0.15s ease;
-	cursor: pointer;
-}
-
-.gc-gantt-view__bar-group:hover rect {
-	opacity: 1 !important;
-	filter: brightness(1.1);
-}
-
-/* 任务状态颜色 */
-.gc-gantt-view__bar-group .task-completed {
-	fill: var(--task-completed-color, #52c41a);
-}
-
-.gc-gantt-view__bar-group .task-cancelled {
-	fill: var(--text-muted, #999);
-	opacity: 0.5;
-}
-
-/* 优先级颜色 */
-.gc-gantt-view__bar-group .priority-highest {
-	fill: var(--priority-highest-color, #ef4444);
-}
-
-.gc-gantt-view__bar-group .priority-high {
-	fill: var(--priority-high-color, #f97316);
-}
-
-.gc-gantt-view__bar-group .priority-medium {
-	fill: var(--priority-medium-color, #eab308);
-}
-
-.gc-gantt-view__bar-group .priority-low {
-	fill: var(--priority-low-color, #22c55e);
-}
-
-.gc-gantt-view__bar-group .priority-lowest {
-	fill: var(--priority-lowest-color, #3b82f6);
-}
-
-/* ============================================
-   其他甘特图样式
-   ============================================ */
-
-/* 任务标签文字 */
-.gc-gantt-view__bar-group text {
-	font-family: var(--font-ui-medium);
-	-webkit-user-select: none;
-	user-select: none;
-	pointer-events: none;
-}
-
-/* 任务复选框 */
-.gc-gantt-view__task-checkbox {
-	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
-	cursor: pointer;
-	margin: 0;
-	accent-color: var(--interactive-accent);
-}
-
-/* 拖动手柄 */
-.gc-gantt-view__handle-left,
-.gc-gantt-view__handle-right {
-	opacity: 0.5;
-	transition: opacity 0.15s ease;
-}
-
-.gc-gantt-view__bar-group:hover .gc-gantt-view__handle-left,
-.gc-gantt-view__bar-group:hover .gc-gantt-view__handle-right {
-	opacity: 1;
-}
-
-
-/* 空状态 */
-.gantt-empty-state {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 60px 20px;
-	text-align: center;
-	color: var(--text-muted);
-}
-
-.gantt-empty-icon {
-	font-size: 48px;
-	margin-bottom: 16px;
-	opacity: 0.5;
-}
-
-.gantt-empty-title {
-	font-size: 18px;
-	font-weight: 600;
-	color: var(--text-normal);
-	margin-bottom: 8px;
-}
-
-.gantt-empty-reason {
-	font-size: 14px;
-	color: var(--text-muted);
-	margin-bottom: 4px;
-}
-
-.gantt-empty-hint {
-	font-size: 12px;
-	color: var(--text-faint);
-}
-
-/* 错误状态 */
-.gantt-error {
-	padding: 16px;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--text-error);
-	border-radius: 8px;
-	color: var(--text-error);
-	text-align: center;
-}
-
-/* 控制面板 */
-.gantt-control-panel {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 16px;
-	background-color: var(--background-secondary);
-	border-radius: 8px;
-	margin-bottom: 12px;
-}
-
-.gantt-stats {
-	display: flex;
-	gap: 16px;
-	align-items: center;
-}
-
-.gantt-stat-item {
-	font-size: 13px;
-	color: var(--text-muted);
-}
-
-.gantt-stat-item strong {
-	color: var(--text-normal);
-	font-weight: 600;
-}
-
-
 .gc-tag--popup {
 	display: inline-block;
 	padding: 2px 6px;
@@ -3099,26 +2514,6 @@ button.gc-toolbar__center-nav-next svg {
 	color: var(--tag-color);
 	border-radius: 4px;
 	font-size: 11px;
-}
-
-/* 响应式适配 */
-@media (max-width: 768px) {
-	.gc-gantt-view__root {
-		min-height: 300px;
-		padding: 8px;
-	}
-
-	.gantt-control-panel {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 8px;
-	}
-
-	.gantt-stats {
-		flex-direction: column;
-		gap: 4px;
-		align-items: flex-start;
-	}
 }
 
 /* ========================================
@@ -3231,21 +2626,6 @@ button.gc-toolbar__center-nav-next svg {
 .gc-create-task-btn--toolbar {
 	padding: 4px 8px;
 	min-width: 32px;
-}
-
-/* ============================================
-   甘特图行悬停高亮样式
-   ============================================ */
-
-/* 基础行背景 */
-.gc-gantt-view__row-bg {
-	transition: fill 0.15s ease, opacity 0.15s ease;
-}
-
-/* 行高亮状态 */
-.gc-gantt-view__row-highlight {
-	fill: var(--background-modifier-hover) !important;
-	opacity: 1 !important;
 }
 
 /* ============================================

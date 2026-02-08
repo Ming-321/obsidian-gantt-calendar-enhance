@@ -41,7 +41,6 @@ class EditTaskModal extends BaseTaskModal {
 	private descriptionChanged = false;
 	private detailChanged = false;
 	private tagsChanged = false;
-	private timeChanged = false;
 
 	// 编辑状态
 	private descriptionValue: string;
@@ -67,7 +66,6 @@ class EditTaskModal extends BaseTaskModal {
 		this.dueDate = task.dueDate || null;
 		this.cancelledDate = task.cancelledDate || null;
 		this.completionDate = task.completionDate || null;
-		this.taskTime = task.time || null;
 		this.selectedTags = task.tags ? [...task.tags] : [];
 		this.descriptionValue = task.description || '';
 		this.detailValue = task.detail || '';
@@ -176,9 +174,8 @@ class EditTaskModal extends BaseTaskModal {
 				hasChanges = true;
 			}
 
-			// 日期变更
+			// 日期变更（createdDate 不允许编辑，不纳入变更）
 			if (this.datesChanged) {
-				changes.createdDate = this.createdDate || undefined;
 				changes.startDate = this.startDate || undefined;
 				changes.dueDate = this.dueDate || undefined;
 				changes.completionDate = this.completionDate || undefined;
@@ -186,13 +183,7 @@ class EditTaskModal extends BaseTaskModal {
 				hasChanges = true;
 			}
 
-			// 时间变更
-			if (this.timeChanged) {
-				changes.time = this.taskTime || undefined;
-				hasChanges = true;
-			}
-
-			// 标签变更
+		// 标签变更
 			if (this.tagsChanged) {
 				changes.tags = this.selectedTags;
 				hasChanges = true;
@@ -341,7 +332,7 @@ class EditTaskModal extends BaseTaskModal {
 	}
 
 	/**
-	 * 重写日期区域以加入时间字段变更跟踪
+	 * 重写日期区域以跟踪变更
 	 */
 	protected renderDatesSection(container: HTMLElement): void {
 		const { EditTaskModalClasses } = require('../utils/bem') as typeof import('../utils/bem');
@@ -357,33 +348,6 @@ class EditTaskModal extends BaseTaskModal {
 
 		this.renderDateField(datesGrid, '📅 截止/提醒', this.dueDate, (d) => this.dueDate = d);
 		this.renderDateField(datesGrid, '🛫 开始', this.startDate, (d) => this.startDate = d);
-		this.renderDateField(datesGrid, '➕ 创建', this.createdDate, (d) => this.createdDate = d);
-
-		// 时间字段（可选）- 带变更跟踪
-		const timeItem = datesGrid.createDiv(EditTaskModalClasses.elements.dateItem);
-		timeItem.createEl('label', {
-			text: '🕐 时间（可选）',
-			cls: EditTaskModalClasses.elements.dateLabel
-		});
-		const timeInputContainer = timeItem.createDiv(EditTaskModalClasses.elements.dateInputContainer);
-		const timeInput = timeInputContainer.createEl('input', {
-			type: 'time',
-			cls: EditTaskModalClasses.elements.dateInput
-		});
-		if (this.taskTime) timeInput.value = this.taskTime;
-		timeInput.addEventListener('change', () => {
-			this.taskTime = timeInput.value || null;
-			this.timeChanged = true;
-		});
-		const timeClearBtn = timeInputContainer.createEl('button', {
-			cls: EditTaskModalClasses.elements.dateClear,
-			text: '×'
-		});
-		timeClearBtn.addEventListener('click', () => {
-			timeInput.value = '';
-			this.taskTime = null;
-			this.timeChanged = true;
-		});
 	}
 
 	/**

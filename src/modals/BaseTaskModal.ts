@@ -54,7 +54,6 @@ export abstract class BaseTaskModal extends Modal {
 	protected dueDate: Date | null = null;
 	protected cancelledDate: Date | null = null;
 	protected completionDate: Date | null = null;
-	protected taskTime: string | null = null;
 	protected selectedTags: string[] = [];
 	protected tagSelector: TagSelector;
 
@@ -262,32 +261,6 @@ export abstract class BaseTaskModal extends Modal {
 		const datesGrid = dateContainer.createDiv(EditTaskModalClasses.elements.datesGrid);
 
 		this.renderDateField(datesGrid, '📅 截止/提醒', this.dueDate, (d) => this.dueDate = d);
-		this.renderDateField(datesGrid, '🛫 开始', this.startDate, (d) => this.startDate = d);
-		this.renderDateField(datesGrid, '➕ 创建', this.createdDate, (d) => this.createdDate = d);
-
-		// 时间字段（可选）
-		const timeItem = datesGrid.createDiv(EditTaskModalClasses.elements.dateItem);
-		timeItem.createEl('label', {
-			text: '🕐 时间（可选）',
-			cls: EditTaskModalClasses.elements.dateLabel
-		});
-		const timeInputContainer = timeItem.createDiv(EditTaskModalClasses.elements.dateInputContainer);
-		const timeInput = timeInputContainer.createEl('input', {
-			type: 'time',
-			cls: EditTaskModalClasses.elements.dateInput
-		});
-		if (this.taskTime) timeInput.value = this.taskTime;
-		timeInput.addEventListener('change', () => {
-			this.taskTime = timeInput.value || null;
-		});
-		const timeClearBtn = timeInputContainer.createEl('button', {
-			cls: EditTaskModalClasses.elements.dateClear,
-			text: '×'
-		});
-		timeClearBtn.addEventListener('click', () => {
-			timeInput.value = '';
-			this.taskTime = null;
-		});
 	}
 
 	/**

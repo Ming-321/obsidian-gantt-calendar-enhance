@@ -8,7 +8,6 @@ import { Logger } from '../../utils/logger';
  * @param app Obsidian App 实例
  * @param task 任务对象
  * @param priority 优先级值
- * @param enabledFormats 启用的任务格式
  * @param onRefresh 刷新回调
  */
 export async function setTaskPriority(

@@ -3,12 +3,12 @@ import type { GCTask } from '../types';
 import { DEFAULT_TAG_FILTER_STATE, DEFAULT_STATUS_FILTER_STATE, type TagFilterState, type StatusFilterState } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { openFileInExistingLeaf } from '../utils/fileOpener';
-import { getStatusColor, DEFAULT_TASK_STATUSES, getStatusByKey } from '../tasks/taskStatus';
-import type { TaskStatus } from '../tasks/taskStatus';
+import { getStatusColor, DEFAULT_TASK_STATUSES } from '../tasks/taskStatus';
 import { RegularExpressions } from '../utils/RegularExpressions';
 import { Logger } from '../utils/logger';
 import { TooltipClasses } from '../utils/bem';
 import { LinkRenderer } from '../utils/linkRenderer';
+import { getPriorityIcon, getPriorityClass } from '../utils/priorityUtils';
 
 /**
  * 日历渲染器基类
@@ -44,31 +44,17 @@ export abstract class BaseViewRenderer {
 	}
 
 	/**
-	 * 获取优先级图标
+	 * 获取优先级图标（委托给集中工具函数）
 	 */
 	protected getPriorityIcon(priority?: string): string {
-		switch (priority) {
-			case 'highest': return '🔺';
-			case 'high': return '⏫';
-			case 'medium': return '🔼';
-			case 'low': return '🔽';
-			case 'lowest': return '⏬';
-			default: return '';
-		}
+		return getPriorityIcon(priority);
 	}
 
 	/**
-	 * 获取优先级CSS类名
+	 * 获取优先级CSS类名（委托给集中工具函数）
 	 */
 	protected getPriorityClass(priority?: string): string {
-		switch (priority) {
-			case 'highest': return 'priority-highest';
-			case 'high': return 'priority-high';
-			case 'medium': return 'priority-medium';
-			case 'low': return 'priority-low';
-			case 'lowest': return 'priority-lowest';
-			default: return '';
-		}
+		return getPriorityClass(priority);
 	}
 
 	/**
@@ -78,8 +64,7 @@ export abstract class BaseViewRenderer {
 	protected getStatusColors(task: GCTask): { bg: string; text: string } | null {
 		if (!task.status) return null;
 
-		const taskStatuses = this.plugin?.settings?.taskStatuses || DEFAULT_TASK_STATUSES;
-		return getStatusColor(task.status, taskStatuses) || null;
+		return getStatusColor(task.status, DEFAULT_TASK_STATUSES) || null;
 	}
 
 	/**

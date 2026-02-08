@@ -1,6 +1,23 @@
-import { Setting, SettingGroup, Notice, setIcon } from 'obsidian';
+import { Setting, SettingGroup, Notice } from 'obsidian';
 import { BaseBuilder } from './BaseBuilder';
 import type { BuilderConfig } from '../types';
+import type { SortField, SortOrder } from '../../types';
+
+/**
+ * 排序字段选项
+ */
+const SORT_FIELD_OPTIONS: Record<string, string> = {
+	'priority': '优先级',
+	'dueDate': '截止日期',
+	'createdDate': '创建日期',
+	'startDate': '开始日期',
+	'description': '任务名称',
+};
+
+const SORT_ORDER_OPTIONS: Record<string, string> = {
+	'asc': '升序',
+	'desc': '降序',
+};
 
 /**
  * 周视图设置构建器
@@ -11,9 +28,7 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 	}
 
 	render(): void {
-		// 使用 SettingGroup 替代 h2 标题（兼容旧版本）
-		this.createSettingGroup('周视图设置', (group) => {
-			// 统一添加设置项的方法
+		this.createSettingGroup('周视图', (group) => {
 			const addSetting = (cb: (setting: Setting) => void) => {
 				if (this.isSettingGroupAvailable()) {
 					(group as SettingGroup).addSetting(cb);
@@ -22,38 +37,42 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 				}
 			};
 
-			// 任务卡片显示复选框
+			// 主排序
 			addSetting(setting =>
-				setting.setName('显示复选框')
-					.setDesc('在周视图任务卡片中显示任务复选框')
-					.addToggle(toggle => toggle
-						.setValue(this.plugin.settings.weekViewShowCheckbox)
+				setting.setName('主排序')
+					.setDesc('周视图中任务的主要排序方式')
+					.addDropdown(drop => drop
+						.addOptions(SORT_FIELD_OPTIONS)
+						.setValue(this.plugin.settings.weekViewSortField)
 						.onChange(async (value) => {
-							this.plugin.settings.weekViewShowCheckbox = value;
+							this.plugin.settings.weekViewSortField = value as SortField;
+							await this.saveAndRefresh();
+						}))
+					.addDropdown(drop => drop
+						.addOptions(SORT_ORDER_OPTIONS)
+						.setValue(this.plugin.settings.weekViewSortOrder)
+						.onChange(async (value) => {
+							this.plugin.settings.weekViewSortOrder = value as SortOrder;
 							await this.saveAndRefresh();
 						}))
 			);
 
-			// 任务卡片显示标签
+			// 次排序
 			addSetting(setting =>
-				setting.setName('显示任务标签')
-					.setDesc('在周视图任务卡片中显示任务标签')
-					.addToggle(toggle => toggle
-						.setValue(this.plugin.settings.weekViewShowTags)
+				setting.setName('次排序')
+					.setDesc('主排序值相同时的二级排序规则')
+					.addDropdown(drop => drop
+						.addOptions(SORT_FIELD_OPTIONS)
+						.setValue(this.plugin.settings.weekViewSecondarySortField || 'dueDate')
 						.onChange(async (value) => {
-							this.plugin.settings.weekViewShowTags = value;
+							this.plugin.settings.weekViewSecondarySortField = value as SortField;
 							await this.saveAndRefresh();
 						}))
-			);
-
-			// 任务卡片显示优先级
-			addSetting(setting =>
-				setting.setName('显示任务优先级')
-					.setDesc('在周视图任务卡片中显示任务优先级图标')
-					.addToggle(toggle => toggle
-						.setValue(this.plugin.settings.weekViewShowPriority)
+					.addDropdown(drop => drop
+						.addOptions(SORT_ORDER_OPTIONS)
+						.setValue(this.plugin.settings.weekViewSecondarySortOrder || 'asc')
 						.onChange(async (value) => {
-							this.plugin.settings.weekViewShowPriority = value;
+							this.plugin.settings.weekViewSecondarySortOrder = value as SortOrder;
 							await this.saveAndRefresh();
 						}))
 			);
@@ -67,7 +86,7 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 	 * 渲染学期起始日管理区域
 	 */
 	private renderSemesterSettings(): void {
-		this.createSettingGroup('学期周数设置', (group) => {
+		this.createSettingGroup('学期周数', (group) => {
 			const addSetting = (cb: (setting: Setting) => void) => {
 				if (this.isSettingGroupAvailable()) {
 					(group as SettingGroup).addSetting(cb);
@@ -76,13 +95,11 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 				}
 			};
 
-			// 说明
 			addSetting(setting =>
 				setting.setName('学期起始日')
-					.setDesc('添加学期起始日期后，周视图标题将显示相对于学期开始的周数（如「第3周」）。为空则使用自然年周数。')
+					.setDesc('添加后周视图标题将显示学期周数（如「第3周」），为空则使用自然年周数')
 			);
 
-			// 新增日期输入
 			addSetting(setting => {
 				let inputValue = '';
 				setting.setName('添加起始日期')
@@ -99,26 +116,22 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 									new Notice('请输入日期');
 									return;
 								}
-								// 验证格式
 								if (!/^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
 									new Notice('日期格式不正确，请使用 YYYY-MM-DD');
 									return;
 								}
-								// 验证是否为有效日期
 								const parts = inputValue.split('-');
 								const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
 								if (isNaN(date.getTime())) {
 									new Notice('无效的日期');
 									return;
 								}
-								// 验证不能晚于今天
 								const today = new Date();
 								today.setHours(23, 59, 59, 999);
 								if (date.getTime() > today.getTime()) {
 									new Notice('起始日期不能晚于今天');
 									return;
 								}
-								// 检查是否重复
 								if (!this.plugin.settings.semesterStartDates) {
 									this.plugin.settings.semesterStartDates = [];
 								}
@@ -126,7 +139,6 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 									new Notice('该日期已存在');
 									return;
 								}
-								// 添加并排序
 								this.plugin.settings.semesterStartDates.push(inputValue);
 								this.plugin.settings.semesterStartDates.sort();
 								await this.saveAndRefresh();
@@ -136,15 +148,17 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 					});
 			});
 
-			// 已有日期列表（倒序显示）
 			const dates = this.plugin.settings.semesterStartDates || [];
 			const sortedDates = [...dates].sort().reverse();
 
 			if (sortedDates.length > 0) {
 				sortedDates.forEach(dateStr => {
 					addSetting(setting => {
+						const month = parseInt(dateStr.split('-')[1]);
+						const year = dateStr.split('-')[0];
+						const season = month >= 7 ? '秋季学期' : '春季学期';
 						setting.setName(dateStr)
-							.setDesc(this.getSemesterLabel(dateStr))
+							.setDesc(`${year}年${season}`)
 							.addButton(btn => {
 								btn.setButtonText('删除')
 									.setWarning()
@@ -160,17 +174,5 @@ export class WeekViewSettingsBuilder extends BaseBuilder {
 				});
 			}
 		});
-	}
-
-	/**
-	 * 生成学期标签描述
-	 */
-	private getSemesterLabel(dateStr: string): string {
-		const parts = dateStr.split('-');
-		if (parts.length !== 3) return '';
-		const month = parseInt(parts[1]);
-		// 简单判断：7-12月为秋季学期，1-6月为春季学期
-		const season = month >= 7 ? '秋季学期' : '春季学期';
-		return `${parts[0]}年${season}`;
 	}
 }

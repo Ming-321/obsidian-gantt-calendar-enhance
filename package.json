@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-gantt-calendar",
-	"version": "1.5.12",
-	"description": "This is a plugin for the Obsidian note-taking application that adds a calendar view for the Gantt calendar system.",
+	"version": "2.0.0",
+	"description": "A personal task management plugin with Gantt-style week view, month calendar and task list. JSON-based storage with optional GitHub sync.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -24,7 +24,6 @@
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
-		"frappe-gantt": "^1.0.4",
 		"uuid": "^9.0.0"
 	}
 }

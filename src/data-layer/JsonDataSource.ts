@@ -13,6 +13,7 @@
 
 import { App } from 'obsidian';
 import type { GCTask } from '../types';
+import { migratePriority } from '../utils/priorityUtils';
 import { IDataSource, ChangeEventHandler } from './IDataSource';
 import { EventBus } from './EventBus';
 import {
@@ -34,14 +35,13 @@ interface JsonTaskData {
 	completed: boolean;
 	cancelled?: boolean;
 	status?: string;
-	priority: 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
+	priority: string; // 存储层兼容旧数据，读取时做迁移
 	tags?: string[];
 	createdDate?: string;
 	startDate?: string;
 	dueDate?: string;
 	cancelledDate?: string;
 	completionDate?: string;
-	time?: string;
 	repeat?: string;
 	archived: boolean;
 	sourceId?: string;
@@ -88,7 +88,6 @@ function taskToJson(task: GCTask): JsonTaskData {
 		dueDate: task.dueDate?.toISOString(),
 		cancelledDate: task.cancelledDate?.toISOString(),
 		completionDate: task.completionDate?.toISOString(),
-		time: task.time,
 		repeat: task.repeat,
 		archived: task.archived,
 		sourceId: task.sourceId,
@@ -108,14 +107,13 @@ function jsonToTask(json: JsonTaskData): GCTask {
 		completed: json.completed,
 		cancelled: json.cancelled,
 		status: json.status as any,
-		priority: json.priority,
+		priority: (json.priority as GCTask['priority']) || 'normal',
 		tags: json.tags,
 		createdDate: json.createdDate ? new Date(json.createdDate) : undefined,
 		startDate: json.startDate ? new Date(json.startDate) : undefined,
 		dueDate: json.dueDate ? new Date(json.dueDate) : undefined,
 		cancelledDate: json.cancelledDate ? new Date(json.cancelledDate) : undefined,
 		completionDate: json.completionDate ? new Date(json.completionDate) : undefined,
-		time: json.time,
 		repeat: json.repeat,
 		archived: json.archived,
 		sourceId: json.sourceId,
@@ -186,6 +184,9 @@ export class JsonDataSource implements IDataSource {
 		// 读取或创建数据文件
 		const data = await this.readDataFile();
 
+		// 迁移旧的六级优先级到三级（直接修改存储数据）
+		const needsMigration = this.migratePriorityData(data);
+
 		// 加载活跃任务
 		this.tasks.clear();
 		for (const jsonTask of data.tasks) {
@@ -198,6 +199,12 @@ export class JsonDataSource implements IDataSource {
 		for (const jsonTask of data.archive) {
 			const task = jsonToTask(jsonTask);
 			this.archivedTasks.set(task.id, task);
+		}
+
+		// 如果有旧优先级数据，立即回写迁移后的数据
+		if (needsMigration) {
+			Logger.info('JsonDataSource', 'Migrated legacy 6-level priorities to 3-level, saving...');
+			await this.saveToFile();
 		}
 
 		// 自动归档过期提醒
@@ -281,6 +288,29 @@ export class JsonDataSource implements IDataSource {
 		const emptyData = createEmptyTasksFile();
 		await this.writeDataFile(emptyData);
 		return emptyData;
+	}
+
+	/**
+	 * 迁移旧的六级优先级到三级（直接修改 JSON 数据）
+	 * highest/high → high, medium/normal → normal, low/lowest → low
+	 * @returns 是否有数据被修改
+	 */
+	private migratePriorityData(data: TasksJsonFile): boolean {
+		const OLD_PRIORITIES = new Set(['highest', 'medium', 'lowest']);
+		let migrated = false;
+
+		const migrateList = (tasks: JsonTaskData[]) => {
+			for (const task of tasks) {
+				if (OLD_PRIORITIES.has(task.priority)) {
+					task.priority = migratePriority(task.priority);
+					migrated = true;
+				}
+			}
+		};
+
+		migrateList(data.tasks);
+		migrateList(data.archive);
+		return migrated;
 	}
 
 	/**

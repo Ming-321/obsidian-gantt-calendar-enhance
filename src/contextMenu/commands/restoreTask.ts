@@ -8,7 +8,6 @@ import { Logger } from '../../utils/logger';
  * 将任务的复选框从 [/] 改为 [ ]，并清除取消日期
  * @param app Obsidian App 实例
  * @param task 要恢复的任务
- * @param enabledFormats 启用的任务格式
  * @param onRefresh 刷新回调
  */
 export async function restoreTask(

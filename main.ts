@@ -11,10 +11,9 @@ import { Logger } from './src/utils/logger';
 import { SettingsManager } from './src/managers/SettingsManager';
 import { ThemeManager } from './src/managers/ThemeManager';
 import { ViewManager } from './src/managers/ViewManager';
-import { SyncManagerBridge } from './src/managers/SyncManagerBridge';
 
 export default class GanttCalendarPlugin extends Plugin {
-	// 公共属性（保持向后兼容）
+	// 公共属性
 	settings: GanttCalendarSettings;
 	taskCache: TaskStore;
 
@@ -22,7 +21,6 @@ export default class GanttCalendarPlugin extends Plugin {
 	private settingsManager: SettingsManager;
 	private themeManager: ThemeManager;
 	private viewManager: ViewManager;
-	private syncManagerBridge: SyncManagerBridge;
 
 	async onload() {
 		// 1. 初始化设置管理器
@@ -57,15 +55,10 @@ export default class GanttCalendarPlugin extends Plugin {
 
 		// 9. 添加设置标签
 		this.addSettingTab(new GanttCalendarSettingTab(this.app, this));
-
-		// 10. 初始化同步管理器
-		this.syncManagerBridge = new SyncManagerBridge(this);
-		this.syncManagerBridge.initialize(this.settings.syncConfiguration);
 	}
 
 	async onunload() {
 		// 按相反顺序清理
-		this.syncManagerBridge?.destroy();
 		this.themeManager?.destroy();
 		// 保存任务数据后清理
 		await this.taskCache?.flushSave();
@@ -74,19 +67,13 @@ export default class GanttCalendarPlugin extends Plugin {
 		this.app.workspace.getLeavesOfType(GC_VIEW_ID).forEach(leaf => leaf.detach());
 	}
 
-	// ===== 公共方法（保持向后兼容） =====
+	// ===== 公共方法 =====
 
 	/**
 	 * 保存设置
-	 * 供设置面板调用，保存后通知相关模块更新
 	 */
 	async saveSettings(): Promise<void> {
 		await this.settingsManager.saveSettings(this.settings);
-
-		// 更新同步管理器配置
-		if (this.syncManagerBridge) {
-			await this.syncManagerBridge.updateConfiguration(this.settings.syncConfiguration);
-		}
 	}
 
 	/**
@@ -107,7 +94,6 @@ export default class GanttCalendarPlugin extends Plugin {
 
 	/**
 	 * 安排任务缓存初始化
-	 * 布局就绪后延迟触发，加载 JSON 任务数据
 	 */
 	private scheduleTaskCacheInit(): void {
 		this.app.workspace.onLayoutReady(() => {
@@ -133,7 +119,6 @@ export default class GanttCalendarPlugin extends Plugin {
 		this.taskCache.configureGitHubSync(
 			{ token: cfg.token, owner: cfg.owner, repo: cfg.repo },
 			(time) => {
-				// 同步成功回调
 				if (this.settings.githubSync) {
 					this.settings.githubSync.lastSyncTime = time;
 					this.settings.githubSync.lastSyncStatus = 'success';
@@ -143,7 +128,6 @@ export default class GanttCalendarPlugin extends Plugin {
 				new Notice('📤 任务数据已同步到 GitHub');
 			},
 			(error) => {
-				// 同步失败回调
 				if (this.settings.githubSync) {
 					this.settings.githubSync.lastSyncStatus = 'error';
 					this.settings.githubSync.lastSyncError = error;
@@ -160,13 +144,11 @@ export default class GanttCalendarPlugin extends Plugin {
 	 * 注册 UI 元素（ribbon 图标和状态栏）
 	 */
 	private registerUIElements(): void {
-		// 丝带图标
 		const ribbonIconEl = this.addRibbonIcon('calendar-days', '甘特日历', () => {
 			this.activateView();
 		});
 		ribbonIconEl.addClass('gantt-calendar-ribbon');
 
-		// 状态栏项
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText(`${this.manifest.name} v${this.manifest.version}`);
 	}

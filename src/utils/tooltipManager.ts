@@ -1,6 +1,7 @@
 import type { GCTask } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { TagPill } from '../components/tagPill';
+import { getPriorityIcon as getPriorityIconUtil, getPriorityLabel as getPriorityLabelUtil } from './priorityUtils';
 
 interface TooltipConfig {
 	showDelay?: number;
@@ -197,7 +198,7 @@ export class TooltipManager {
 			const hasTimeProperties = task.createdDate || task.startDate ||
 				task.dueDate || task.cancelledDate || task.completionDate;
 
-			if (hasTimeProperties || task.repeat || task.time) {
+			if (hasTimeProperties || task.repeat) {
 				const timeHtml: string[] = [];
 
 				if (task.createdDate) {
@@ -212,9 +213,6 @@ export class TooltipManager {
 						? ' gc-task-tooltip__time-item--overdue'
 						: '';
 					timeHtml.push(`<div class="gc-task-tooltip__time-item${overdueClass}">${dueLabel}: ${formatDate(task.dueDate, 'yyyy-MM-dd')}</div>`);
-				}
-				if (task.time) {
-					timeHtml.push(`<div class="gc-task-tooltip__time-item">🕐 时间: ${task.time}</div>`);
 				}
 				if (task.cancelledDate) {
 					timeHtml.push(`<div class="gc-task-tooltip__time-item">❌ 取消: ${formatDate(task.cancelledDate, 'yyyy-MM-dd')}</div>`);
@@ -406,33 +404,17 @@ export class TooltipManager {
 	}
 
 	/**
-	 * 获取优先级图标（6 级映射到 3 级图标）
+	 * 获取优先级图标（委托给集中工具函数）
 	 */
 	private getPriorityIcon(priority?: string): string {
-		switch (priority) {
-			case 'highest':
-			case 'high': return '🔴';
-			case 'medium':
-			case 'normal': return '⚪';
-			case 'low':
-			case 'lowest': return '🔵';
-			default: return '';
-		}
+		return getPriorityIconUtil(priority);
 	}
 
 	/**
-	 * 获取优先级标签（6 级映射到 3 级标签）
+	 * 获取优先级标签（委托给集中工具函数）
 	 */
 	private getPriorityLabel(priority?: string): string {
-		switch (priority) {
-			case 'highest':
-			case 'high': return '重要';
-			case 'medium':
-			case 'normal': return '正常';
-			case 'low':
-			case 'lowest': return '不重要';
-			default: return '正常';
-		}
+		return getPriorityLabelUtil(priority);
 	}
 
 	/**

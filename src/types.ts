@@ -11,13 +11,10 @@ export type CalendarViewType = 'month' | 'week' | 'task';
 export type TaskType = 'todo' | 'reminder';
 
 /**
- * 任务优先级（六级）
- * highest: 最高 | high: 高 | medium: 中 | normal: 普通 | low: 低 | lowest: 最低
+ * 任务优先级（三级）
+ * high: 重要 | normal: 正常 | low: 不重要
  */
-export type TaskPriority = 'highest' | 'high' | 'medium' | 'normal' | 'low' | 'lowest';
-
-// 甘特图时间颗粒度类型（仅支持周视图）
-export type GanttTimeGranularity = 'week';
+export type TaskPriority = 'high' | 'normal' | 'low';
 
 export interface CalendarDate {
 	year: number;           // 年份（如：2025）
@@ -98,14 +95,13 @@ export interface GCTask {
 	completed: boolean;            // 任务是否已完成
 	cancelled?: boolean;           // 任务是否已取消
 	status?: TaskStatusType;       // 任务状态类型
-	priority: TaskPriority;        // 优先级：highest, high, medium, normal, low, lowest
+	priority: TaskPriority;        // 优先级：high, normal, low
 	tags?: string[];               // 任务标签列表
 	createdDate?: Date;            // 创建日期
 	startDate?: Date;              // 开始日期（默认为创建时间）
 	dueDate?: Date;                // 截止日期 / 提醒日期
 	cancelledDate?: Date;          // 取消日期
 	completionDate?: Date;         // 完成日期
-	time?: string;                 // 可选精确时间 "HH:mm"
 	repeat?: string;               // 周期规则，如 "every day", "every week on Monday"
 	archived: boolean;             // 归档标记（提醒到期后自动归档）
 	// 元数据
@@ -130,11 +126,21 @@ export type SortField =
 export type SortOrder = 'asc' | 'desc';
 
 /**
- * 任务排序状态
+ * 单级排序规则
+ */
+export interface SortRule {
+	field: SortField;
+	order: SortOrder;
+}
+
+/**
+ * 任务排序状态（支持主排序 + 次排序）
  */
 export interface SortState {
 	field: SortField;
 	order: SortOrder;
+	/** 次排序：主排序值相同时的二级排序规则 */
+	secondary?: SortRule;
 }
 
 /**
@@ -142,7 +148,8 @@ export interface SortState {
  */
 export const DEFAULT_SORT_STATE: SortState = {
 	field: 'dueDate',
-	order: 'asc'
+	order: 'asc',
+	secondary: { field: 'priority', order: 'desc' },
 };
 
 /**

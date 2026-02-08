@@ -13,6 +13,7 @@ import type { TaskViewRenderer } from '../views/TaskView';
 import { renderViewMenuButton, type ViewMenuOptions } from './components/view-menu';
 import { renderPresetButton, type PresetButtonOptions } from './components/preset-button';
 import { ToolbarClasses } from '../utils/bem';
+import { DEFAULT_TASK_STATUSES } from '../tasks/taskStatus';
 import { CreateTaskModal } from '../modals/CreateTaskModal';
 import type { ViewPreset } from '../settings/types';
 
@@ -140,7 +141,7 @@ export class ToolbarRight {
 				renderer.setStatusFilterState(state);
 				viewType === 'task' ? onFilterChange() : onRender();
 			},
-			getAvailableStatuses: () => plugin?.settings?.taskStatuses || [],
+			getAvailableStatuses: () => DEFAULT_TASK_STATUSES,
 			getSortState: () => renderer.getSortState(),
 			onSortChange: (state) => {
 				renderer.setSortState(state);

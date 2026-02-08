@@ -8,7 +8,6 @@ import { Logger } from '../../utils/logger';
  * @param app Obsidian App 实例
  * @param task 任务对象
  * @param days 延期天数
- * @param enabledFormats 启用的任务格式
  * @param onRefresh 刷新回调
  * @param fromNow 是否从当前日期计算（true=忽略现有截止日期，false=基于现有截止日期延期）
  */

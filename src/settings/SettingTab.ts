@@ -1,19 +1,14 @@
 import { App, PluginSettingTab, type IconName } from 'obsidian';
 import type GanttCalendarPlugin from '../../main';
 import { GeneralSettingsBuilder } from './builders/GeneralSettingsBuilder';
-import { TaskSettingsBuilder } from './builders/TaskSettingsBuilder';
-import { TaskViewSettingsBuilder } from './builders/TaskViewSettingsBuilder';
-import { CalendarViewSettingsBuilder } from './builders/CalendarViewSettingsBuilder';
 import { WeekViewSettingsBuilder } from './builders/WeekViewSettingsBuilder';
 import { MonthViewSettingsBuilder } from './builders/MonthViewSettingsBuilder';
-import { SyncSettingsBuilder } from './builders/SyncSettingsBuilder';
 import { GitHubSyncSettingsBuilder } from './builders/GitHubSyncSettingsBuilder';
-import type { BuilderConfig } from './types';
 
 /**
  * Gantt Calendar Plugin Settings Tab
  *
- * 重构后的设置标签类，使用构建器模式管理各个设置区域
+ * 单页面布局，按功能分组
  */
 export class GanttCalendarSettingTab extends PluginSettingTab {
 	plugin: GanttCalendarPlugin;
@@ -23,82 +18,42 @@ export class GanttCalendarSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	/**
-	 * 设置标签页图标（Obsidian 1.11+）
-	 */
 	override icon: IconName = 'calendar-days';
 
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// 创建刷新回调
 		const refreshCallback = () => {
 			this.display();
 		};
 
-		// ===== 通用设置 =====
-		const generalBuilder = new GeneralSettingsBuilder({
+		// ===== 基本设置 =====
+		new GeneralSettingsBuilder({
 			containerEl,
 			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		generalBuilder.render();
-
-		// ===== 任务设置 =====
-		const taskSettingsBuilder = new TaskSettingsBuilder({
-			containerEl,
-			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		taskSettingsBuilder.render();
-
-		// // ===== 任务视图设置 =====
-		// const taskViewBuilder = new TaskViewSettingsBuilder({
-		// 	containerEl,
-		// 	plugin: this.plugin,
-		// 	onRefreshSettings: refreshCallback
-		// });
-		// taskViewBuilder.render();
-
-		// ===== 日历视图设置 =====
-		const calendarViewBuilder = new CalendarViewSettingsBuilder({
-			containerEl,
-			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		calendarViewBuilder.render();
+			onRefreshSettings: refreshCallback,
+		}).render();
 
 		// ===== 周视图设置 =====
-		const weekViewBuilder = new WeekViewSettingsBuilder({
+		new WeekViewSettingsBuilder({
 			containerEl,
 			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		weekViewBuilder.render();
+			onRefreshSettings: refreshCallback,
+		}).render();
 
 		// ===== 月视图设置 =====
-		const monthViewBuilder = new MonthViewSettingsBuilder({
+		new MonthViewSettingsBuilder({
 			containerEl,
 			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		monthViewBuilder.render();
+			onRefreshSettings: refreshCallback,
+		}).render();
 
-		// ===== GitHub 同步 & 邮件提醒 =====
-		const githubSyncBuilder = new GitHubSyncSettingsBuilder({
+		// ===== GitHub 同步 =====
+		new GitHubSyncSettingsBuilder({
 			containerEl,
 			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		githubSyncBuilder.render();
-
-		// ===== 同步设置 =====
-		const syncSettingsBuilder = new SyncSettingsBuilder({
-			containerEl,
-			plugin: this.plugin,
-			onRefreshSettings: refreshCallback
-		});
-		syncSettingsBuilder.render();
+			onRefreshSettings: refreshCallback,
+		}).render();
 	}
 }

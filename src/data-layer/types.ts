@@ -39,45 +39,6 @@ export interface DataSourceConfig {
 	syncInterval?: number;
 	conflictResolution: 'local-win' | 'remote-win' | 'newest-win' | 'manual';
 	globalFilter?: string;
-	enabledFormats?: string[];
-	// API 配置（用于第三方同步）
-	api?: {
-		provider: 'feishu' | 'microsoft-todo' | 'custom';
-		apiKey?: string;
-		endpoint?: string;
-
-		// OAuth 配置
-		clientId?: string;           // App ID (用于 OAuth)
-		clientSecret?: string;       // App Secret (用于 OAuth)
-		redirectUri?: string;        // OAuth 回调地址
-
-		// Token
-		accessToken?: string;
-		refreshToken?: string;
-		tokenExpireAt?: number;      // token 过期时间戳
-
-		// 用户信息
-		userId?: string;
-		userName?: string;
-
-		// 旧字段保留兼容（飞书）
-		appId?: string;
-		appSecret?: string;
-		tenantId?: string;
-	};
-	// CalDAV 配置
-	caldav?: {
-		provider: 'google' | 'outlook' | 'apple' | 'custom';
-		url?: string;
-		username?: string;
-		password?: string;
-		clientId?: string;
-		clientSecret?: string;
-		redirectUri?: string;
-		accessToken?: string;
-		refreshToken?: string;
-		calendarPath?: string;
-	};
 }
 
 /**
@@ -87,10 +48,7 @@ export type TaskEvent =
 	| 'task:created'
 	| 'task:updated'
 	| 'task:deleted'
-	| 'task:completed'
-	| 'sync:started'
-	| 'sync:completed'
-	| 'sync:conflict';
+	| 'task:completed';
 
 /**
  * 事件处理器类型
@@ -128,7 +86,6 @@ export interface TaskChanges {
 	dueDate?: Date;
 	cancelledDate?: Date;
 	completionDate?: Date;
-	time?: string;
 	repeat?: string;
 	archived?: boolean;
 }

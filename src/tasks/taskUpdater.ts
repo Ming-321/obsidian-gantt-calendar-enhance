@@ -26,7 +26,6 @@ export interface TaskUpdates {
 	dueDate?: Date | null;
 	cancelledDate?: Date | null;
 	completionDate?: Date | null;
-	time?: string | null;
 	repeat?: string | null;
 	archived?: boolean;
 }
@@ -44,7 +43,6 @@ function updatesToChanges(updates: TaskUpdates): TaskChanges {
 	if (updates.status !== undefined) changes.status = updates.status as any;
 	if (updates.priority !== undefined) changes.priority = updates.priority as any;
 	if (updates.tags !== undefined) changes.tags = updates.tags;
-	if (updates.time !== undefined) changes.time = updates.time ?? undefined;
 	if (updates.repeat !== undefined) changes.repeat = updates.repeat ?? undefined;
 	if (updates.archived !== undefined) changes.archived = updates.archived;
 

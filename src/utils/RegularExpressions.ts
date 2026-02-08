@@ -106,16 +106,12 @@ export class RegularExpressions {
          * 用于匹配和序列化任务优先级
          */
         prioritySymbols: {
-            /** 最高优先级 🔺 */
-            highest: '🔺',
-            /** 高优先级 ⏫ */
-            high: '⏫',
-            /** 中优先级 🔼 */
-            medium: '🔼',
-            /** 低优先级 🔽 */
-            low: '🔽',
-            /** 最低优先级 ⏬ */
-            lowest: '⏬',
+            /** 重要 🔴 */
+            high: '🔴',
+            /** 正常 ⚪ */
+            normal: '⚪',
+            /** 不重要 🔵 */
+            low: '🔵',
         } as const,
 
         /**
@@ -282,7 +278,7 @@ export class RegularExpressions {
          * 优先级值常量
          * Dataview 格式使用文本值表示优先级
          */
-        priorityValues: ['highest', 'high', 'medium', 'normal', 'low', 'lowest'] as const,
+        priorityValues: ['high', 'normal', 'low'] as const,
 
         /**
          * 日期字段名常量
@@ -305,15 +301,14 @@ export class RegularExpressions {
 
         /**
          * 优先级字段正则
-         * 匹配：[priority:: highest|high|medium|low|lowest]
+         * 匹配：[priority:: high|normal|low]
          * 捕获组1为优先级文本值
          * 不区分大小写
          *
          * @example
          * "[priority:: high]" -> 匹配，捕获 "high"
-         * "[priority::HIGHEST]" -> 匹配，捕获 "HIGHEST"
          */
-        priorityRegex: /\[priority::\s*(highest|high|medium|low|lowest)\]/gi,
+        priorityRegex: /\[priority::\s*(high|normal|low)\]/gi,
 
         /**
          * 创建日期正则

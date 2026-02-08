@@ -11,6 +11,7 @@ import { TooltipManager } from '../../utils/tooltipManager';
 import { Logger } from '../../utils/logger';
 import { TagPill } from '../tagPill';
 import { LinkRenderer } from '../../utils/linkRenderer';
+import { getPriorityIcon, getPriorityClass } from '../../utils/priorityUtils';
 
 /**
  * 任务卡片渲染器
@@ -33,33 +34,17 @@ export class TaskCardRenderer {
 	}
 
 	/**
-	 * 获取优先级图标（六级系统）
+	 * 获取优先级图标（委托给集中工具函数）
 	 */
 	getPriorityIcon(priority?: string): string {
-		switch (priority) {
-			case 'highest': return '🔺';
-			case 'high': return '⏫';
-			case 'medium': return '🔼';
-			case 'normal': return '⚪';
-			case 'low': return '🔽';
-			case 'lowest': return '⏬';
-			default: return '';
-		}
+		return getPriorityIcon(priority);
 	}
 
 	/**
-	 * 获取优先级CSS类名（六级系统）
+	 * 获取优先级CSS类名（委托给集中工具函数）
 	 */
 	getPriorityClass(priority?: string): string {
-		switch (priority) {
-			case 'highest': return 'priority-highest';
-			case 'high': return 'priority-high';
-			case 'medium': return 'priority-medium';
-			case 'normal': return 'priority-normal';
-			case 'low': return 'priority-low';
-			case 'lowest': return 'priority-lowest';
-			default: return '';
-		}
+		return getPriorityClass(priority);
 	}
 
 	/**
@@ -67,10 +52,8 @@ export class TaskCardRenderer {
 	 */
 	getStatusColors(task: GCTask): { bg: string; text: string } | null {
 		if (!task.status) return null;
-		const taskStatuses = this.plugin?.settings?.taskStatuses || DEFAULT_TASK_STATUSES;
-		// 根据当前主题获取对应的颜色配置
 		const themeMode = getCurrentThemeMode();
-		return getStatusColor(task.status, taskStatuses, themeMode) || null;
+		return getStatusColor(task.status, DEFAULT_TASK_STATUSES, themeMode) || null;
 	}
 
 	/**
@@ -301,7 +284,7 @@ export class TaskCardRenderer {
 		task: GCTask,
 		onRefresh?: () => void
 	): void {
-		const taskNotePath = this.plugin.settings.taskNotePath || 'Tasks';
+		const taskNotePath = 'Tasks';
 
 		// 获取 TooltipManager 单例
 		const tooltipManager = TooltipManager.getInstance(this.plugin);

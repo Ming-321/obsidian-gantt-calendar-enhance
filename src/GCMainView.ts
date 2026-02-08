@@ -31,8 +31,11 @@ export class GCMainView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: any) {
 		super(leaf);
 		this.plugin = plugin;
-		// 使用设置中的默认视图
-		this.viewType = plugin.settings.defaultView || 'month';
+		// 使用设置中的默认视图和周模式
+		this.viewType = plugin.settings.defaultView || 'week';
+		if (this.viewType === 'week') {
+			this.weekMode = plugin.settings.defaultWeekMode || 'standard';
+		}
 		// 存储 calendarView 引用到 plugin,供子渲染器访问
 		this.plugin.calendarView = this;
 
@@ -58,10 +61,6 @@ export class GCMainView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		// 等待任务缓存准备完成
-		if (this.plugin?.taskCache?.whenReady) {
-			await this.plugin.taskCache.whenReady();
-		}
 		// 设置日历视图渲染器引用（用于排序和筛选功能）
 		this.toolbar.setCalendarRenderers(
 			this.weekRenderer,
@@ -155,7 +154,7 @@ export class GCMainView extends ItemView {
 			currentViewType: this.viewType,
 			currentDate: this.currentDate,
 			titleText: this.getViewTitle(),
-			showViewNavButtonText: this.plugin?.settings?.showViewNavButtonText ?? true,
+			showViewNavButtonText: true,
 			showNav,
 			taskRenderer: this.taskRenderer,
 			plugin: this.plugin,

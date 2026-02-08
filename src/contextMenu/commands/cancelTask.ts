@@ -9,7 +9,6 @@ import { Logger } from '../../utils/logger';
  * 注意：[-] 是取消状态，[/] 是进行中状态
  * @param app Obsidian App 实例
  * @param task 要取消的任务
- * @param enabledFormats 启用的任务格式
  * @param onRefresh 刷新回调
  */
 export async function cancelTask(

@@ -55,6 +55,11 @@ export class TaskViewRenderer extends BaseViewRenderer {
 		if (savedField && savedOrder) {
 			this.sortState = { field: savedField, order: savedOrder };
 		}
+		const secField = settings[`${this.SETTINGS_PREFIX}SecondarySortField`];
+		const secOrder = settings[`${this.SETTINGS_PREFIX}SecondarySortOrder`];
+		if (secField && secOrder) {
+			this.sortState.secondary = { field: secField, order: secOrder };
+		}
 	}
 
 	/**

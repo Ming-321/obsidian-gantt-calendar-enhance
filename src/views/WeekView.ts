@@ -41,6 +41,11 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		if (savedField && savedOrder) {
 			this.sortState = { field: savedField, order: savedOrder };
 		}
+		const secField = settings[`${this.SETTINGS_PREFIX}SecondarySortField`];
+		const secOrder = settings[`${this.SETTINGS_PREFIX}SecondarySortOrder`];
+		if (secField && secOrder) {
+			this.sortState.secondary = { field: secField, order: secOrder };
+		}
 	}
 
 	private async saveSortState(): Promise<void> {
@@ -310,17 +315,15 @@ export class WeekViewRenderer extends BaseViewRenderer {
 			} else {
 				bar.addClass(WeekViewClasses.modifiers.ganttBarTodo);
 			}
-			// 6 级优先级映射到 3 级显示
+			// 三级优先级透明度
 			switch (task.priority) {
-				case 'highest':
 				case 'high':
 					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityHigh);
 					break;
 				case 'low':
-				case 'lowest':
 					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityLow);
 					break;
-				default: // medium, normal
+				default:
 					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityNormal);
 					break;
 			}
@@ -329,8 +332,8 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		// Bar 内容：复选框/图标 + 标题
 		if (task.type === 'reminder') {
 			bar.createSpan({ text: '🔔', cls: WeekViewClasses.elements.ganttBarIcon });
-		} else if (this.plugin.settings.weekViewShowCheckbox) {
-			// 待办任务显示复选框（受设置控制）
+		} else {
+			// 待办任务显示复选框
 			const checkbox = bar.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
 			checkbox.checked = task.completed;
 			checkbox.disabled = false;

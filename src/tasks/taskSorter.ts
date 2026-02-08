@@ -1,13 +1,15 @@
 /**
  * @fileoverview 任务排序逻辑模块
  * @module tasks/taskSorter
+ *
+ * 支持主排序 + 次排序的二级排序机制
  */
 
 import type { GCTask, SortField, SortOrder, SortState } from '../types';
+import { getPriorityWeight } from '../utils/priorityUtils';
 
 /**
  * 排序选项配置
- * 每个选项包含字段标识、显示图标和标签
  */
 export const SORT_OPTIONS: Array<{ field: SortField; icon: string; label: string }> = [
 	{ field: 'priority', icon: '🔺', label: '优先级' },
@@ -18,86 +20,81 @@ export const SORT_OPTIONS: Array<{ field: SortField; icon: string; label: string
 	{ field: 'completionDate', icon: '✅', label: '完成时间' },
 ];
 
-/**
- * 优先级权重映射（六级）
- * 数值越大优先级越高（用于降序排序时高优先级在前）
- */
-const PRIORITY_WEIGHTS: Record<string, number> = {
-	'highest': 6,
-	'high': 5,
-	'medium': 4,
-	'normal': 3,
-	'low': 2,
-	'lowest': 1,
-};
+// 优先级权重已集中到 src/utils/priorityUtils.ts
 
 /**
- * 比较可选日期
- * 无日期的任务排在后面
- * 【修复】日期相同时，按描述文本二级排序，确保顺序一致
+ * 比较可选日期（不含二级兜底）
+ * @returns 0 表示相等，正数 a 大于 b，负数 a 小于 b
  */
-function compareDates(a: Date | undefined, b: Date | undefined, taskA: GCTask, taskB: GCTask): number {
-	if (!a && !b) {
-		// 都没有日期时，按描述文本排序
-		return taskA.description.localeCompare(taskB.description, 'zh-CN', { numeric: true });
-	}
-	if (!a) return 1;  // a 无日期排在后面
-	if (!b) return -1; // b 无日期排在后面
-	const timeDiff = a.getTime() - b.getTime();
-	if (timeDiff !== 0) return timeDiff;
-	// 日期相同时，按描述文本排序
-	return taskA.description.localeCompare(taskB.description, 'zh-CN', { numeric: true });
+function compareDatesRaw(a: Date | undefined, b: Date | undefined): number {
+	if (!a && !b) return 0;
+	if (!a) return 1;  // 无日期排在后面
+	if (!b) return -1;
+	return a.getTime() - b.getTime();
 }
 
 /**
- * 各字段的比较函数
- * 【修复】所有比较函数都添加了二级排序（按描述文本），确保主排序值相同时顺序一致
+ * 各字段的比较函数（纯比较，不含二级排序）
+ * 返回 0 表示在此字段上相等
  */
 const comparators: Record<SortField, (a: GCTask, b: GCTask) => number> = {
 	priority: (a, b) => {
-		// 所有任务都应该有优先级，默认为 'normal'
-		const aPriority = PRIORITY_WEIGHTS[a.priority || 'normal'] ?? 3;
-		const bPriority = PRIORITY_WEIGHTS[b.priority || 'normal'] ?? 3;
-		if (aPriority !== bPriority) {
-			return aPriority - bPriority; // 升序：低优先级在前
-		}
-		// 【修复】优先级相同时，按描述文本字母排序
-		return a.description.localeCompare(b.description, 'zh-CN', { numeric: true });
+		return getPriorityWeight(a.priority) - getPriorityWeight(b.priority);
 	},
-
 	description: (a, b) => {
 		return a.description.localeCompare(b.description, 'zh-CN', { numeric: true });
 	},
-
-	createdDate: (a, b) => compareDates(a.createdDate, b.createdDate, a, b),
-	startDate: (a, b) => compareDates(a.startDate, b.startDate, a, b),
-	dueDate: (a, b) => compareDates(a.dueDate, b.dueDate, a, b),
-	completionDate: (a, b) => compareDates(a.completionDate, b.completionDate, a, b),
+	createdDate: (a, b) => compareDatesRaw(a.createdDate, b.createdDate),
+	startDate: (a, b) => compareDatesRaw(a.startDate, b.startDate),
+	dueDate: (a, b) => compareDatesRaw(a.dueDate, b.dueDate),
+	completionDate: (a, b) => compareDatesRaw(a.completionDate, b.completionDate),
 };
 
 /**
- * 对任务数组进行排序
+ * 对任务数组进行排序（支持主排序 + 次排序）
  * @param tasks 任务数组
- * @param state 排序状态
+ * @param state 排序状态（含可选的 secondary）
  * @returns 排序后的新数组（不修改原数组）
  */
 export function sortTasks(tasks: GCTask[], state: SortState): GCTask[] {
-	const comparator = comparators[state.field];
-	if (!comparator) return tasks;
+	const primaryComparator = comparators[state.field];
+	if (!primaryComparator) return tasks;
+
+	const secondaryComparator = state.secondary ? comparators[state.secondary.field] : null;
+	const secondaryOrder = state.secondary?.order ?? 'asc';
 
 	const sorted = [...tasks];
 	sorted.sort((a, b) => {
-		const result = comparator(a, b);
-		// 降序时反转结果
-		return state.order === 'desc' ? -result : result;
+		// 主排序
+		let result = primaryComparator(a, b);
+		if (state.order === 'desc') result = -result;
+
+		// 主排序相等时，使用次排序
+		if (result === 0 && secondaryComparator) {
+			let secondaryResult = secondaryComparator(a, b);
+			if (secondaryOrder === 'desc') secondaryResult = -secondaryResult;
+			result = secondaryResult;
+		}
+
+		// 两级都相等时，按类型排序（待办在前，提醒在后）
+		if (result === 0) {
+			const typeA = a.type === 'reminder' ? 1 : 0;
+			const typeB = b.type === 'reminder' ? 1 : 0;
+			result = typeA - typeB;
+		}
+
+		// 类型也相等时，按描述文本兜底
+		if (result === 0) {
+			result = a.description.localeCompare(b.description, 'zh-CN', { numeric: true });
+		}
+
+		return result;
 	});
 	return sorted;
 }
 
 /**
  * 获取排序状态的显示文本
- * @param state 排序状态
- * @returns 显示文本（如 "📅⬆️"）
  */
 export function getSortDisplayText(state: SortState): string {
 	const option = SORT_OPTIONS.find(o => o.field === state.field);
@@ -108,17 +105,10 @@ export function getSortDisplayText(state: SortState): string {
 
 /**
  * 更新排序状态
- * - 如果点击的是当前字段，则切换升序/降序
- * - 如果点击的是不同字段，则切换到该字段并设置为升序
- * @param current 当前排序状态
- * @param newField 新选择的字段
- * @returns 更新后的排序状态
  */
 export function updateSortState(current: SortState, newField: SortField): SortState {
 	if (current.field === newField) {
-		// 同字段：切换顺序
-		return { field: newField, order: current.order === 'asc' ? 'desc' : 'asc' };
+		return { ...current, field: newField, order: current.order === 'asc' ? 'desc' : 'asc' };
 	}
-	// 不同字段：切换到新字段，默认升序
-	return { field: newField, order: 'asc' };
+	return { ...current, field: newField, order: 'asc' };
 }
