@@ -104,6 +104,10 @@ export interface GCTask {
 	completionDate?: Date;         // 完成日期
 	repeat?: string;               // 周期规则，如 "every day", "every week on Monday"
 	archived: boolean;             // 归档标记（提醒到期后自动归档）
+	// 子任务关系
+	parentId?: string;             // 父任务 ID（顶层任务无此字段）
+	childIds?: string[];           // 子任务 ID 列表（有序，控制显示顺序）
+	depth?: number;                // 嵌套深度：0=顶层, 1=子任务, 2=子子任务
 	// 元数据
 	sourceId?: string;             // 数据源特定 ID
 	lastModified?: Date;           // 最后修改时间

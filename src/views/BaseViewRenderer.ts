@@ -312,6 +312,28 @@ export abstract class BaseViewRenderer {
 	}
 
 	/**
+	 * 月视图子任务去重：父子同截止日时只保留父任务
+	 * 如果子任务和父任务在同一天出现，则隐藏子任务（仅显示父任务）
+	 */
+	protected deduplicateParentChild(tasks: GCTask[]): GCTask[] {
+		const taskMap = new Map(tasks.map(t => [t.id, t]));
+		return tasks.filter(task => {
+			if (!task.parentId) return true; // 根任务保留
+			const parent = taskMap.get(task.parentId);
+			if (!parent) return true; // 父任务不在当天列表中，子任务保留
+			// 父子同截止日，隐藏子任务
+			if (task.dueDate && parent.dueDate) {
+				const childDue = new Date(task.dueDate);
+				childDue.setHours(0, 0, 0, 0);
+				const parentDue = new Date(parent.dueDate);
+				parentDue.setHours(0, 0, 0, 0);
+				if (childDue.getTime() === parentDue.getTime()) return false;
+			}
+			return true;
+		});
+	}
+
+	/**
 	 * 清理悬浮提示
 	 */
 	protected clearTaskTooltips(): void {

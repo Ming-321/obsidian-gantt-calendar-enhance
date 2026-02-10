@@ -19,6 +19,7 @@ export interface CreateTaskModalOptions {
 	plugin: GanttCalendarPlugin;
 	targetDate?: Date;
 	defaultType?: 'todo' | 'reminder';
+	parentTask?: GCTask;    // 创建子任务时的父任务
 	onSuccess: () => void;
 }
 
@@ -29,6 +30,7 @@ export class CreateTaskModal extends BaseTaskModal {
 	private plugin: GanttCalendarPlugin;
 	private targetDate: Date;
 	private onSuccess: () => void;
+	private parentTask?: GCTask;
 
 	// 独有状态
 	private descriptionInput: HTMLTextAreaElement;
@@ -39,26 +41,37 @@ export class CreateTaskModal extends BaseTaskModal {
 		this.plugin = options.plugin;
 		this.targetDate = options.targetDate || new Date();
 		this.onSuccess = options.onSuccess;
+		this.parentTask = options.parentTask;
 
-		// 默认任务类型
-		this.taskType = options.defaultType || 'todo';
+		// 如果有父任务，继承其属性
+		if (this.parentTask) {
+			this.taskType = options.defaultType || this.parentTask.type;
+			this.priority = (this.parentTask.priority as PriorityOption['value']) || 'normal';
+			this.selectedTags = this.parentTask.tags ? [...this.parentTask.tags] : [];
+			this.dueDate = this.parentTask.dueDate ? new Date(this.parentTask.dueDate) : new Date(this.targetDate);
+		} else {
+			this.taskType = options.defaultType || 'todo';
+			this.priority = 'normal';
+			this.dueDate = new Date(this.targetDate);
+		}
 
 		// 默认值
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		this.createdDate = new Date(today);
 		this.startDate = new Date(today);
-		this.dueDate = new Date(this.targetDate);
-		this.dueDate.setHours(0, 0, 0, 0);
+		if (this.dueDate) {
+			this.dueDate.setHours(0, 0, 0, 0);
+		}
 		this.cancelledDate = null;
 		this.completionDate = null;
-
-		// 默认优先级
-		this.priority = 'normal';
 	}
 
 	onOpen(): void {
-		this.renderModalContent('创建新任务');
+		const title = this.parentTask
+			? `添加子任务 — ${this.parentTask.description}`
+			: '创建新任务';
+		this.renderModalContent(title);
 
 		// 自动聚焦到描述输入框
 		setTimeout(() => this.descriptionInput.focus(), 100);
@@ -134,24 +147,38 @@ export class CreateTaskModal extends BaseTaskModal {
 		}
 
 		try {
-			const task: GCTask = {
-				id: '',  // JsonDataSource 会自动生成
-				type: this.taskType,
-				description,
-				detail: this.detailInput.value.trim() || undefined,
-				completed: false,
-				priority: this.priority,
-			tags: this.selectedTags.length > 0 ? this.selectedTags : undefined,
-			createdDate: new Date(),
-			startDate: this.startDate || new Date(),
-			dueDate: this.dueDate,
-			repeat: this.repeat || undefined,
-				archived: false,
-			};
-
-			await this.plugin.taskCache.createTask(task);
-
-			new Notice(`${this.taskType === 'todo' ? '待办' : '提醒'}创建成功`);
+			if (this.parentTask) {
+				// 创建子任务
+				await this.plugin.taskCache.createSubTask(this.parentTask.id, {
+					type: this.taskType,
+					description,
+					detail: this.detailInput.value.trim() || undefined,
+					priority: this.priority,
+					tags: this.selectedTags.length > 0 ? this.selectedTags : undefined,
+					startDate: this.startDate || new Date(),
+					dueDate: this.dueDate,
+					repeat: this.repeat || undefined,
+				});
+				new Notice('子任务创建成功');
+			} else {
+				// 创建普通任务
+				const task: GCTask = {
+					id: '',  // JsonDataSource 会自动生成
+					type: this.taskType,
+					description,
+					detail: this.detailInput.value.trim() || undefined,
+					completed: false,
+					priority: this.priority,
+					tags: this.selectedTags.length > 0 ? this.selectedTags : undefined,
+					createdDate: new Date(),
+					startDate: this.startDate || new Date(),
+					dueDate: this.dueDate,
+					repeat: this.repeat || undefined,
+					archived: false,
+				};
+				await this.plugin.taskCache.createTask(task);
+				new Notice(`${this.taskType === 'todo' ? '待办' : '提醒'}创建成功`);
+			}
 			this.onSuccess();
 			this.close();
 		} catch (error) {
@@ -164,7 +191,7 @@ export class CreateTaskModal extends BaseTaskModal {
 	 * 获取初始标签列表（创建任务时为空）
 	 */
 	protected getInitialTags(): string[] {
-		return [];
+		return this.parentTask?.tags ? [...this.parentTask.tags] : [];
 	}
 
 	/**

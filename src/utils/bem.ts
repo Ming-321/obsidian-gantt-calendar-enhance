@@ -105,6 +105,8 @@ export const TaskCardClasses = {
 		priorityHigh: bem(BLOCKS.TASK_CARD, undefined, 'priority-high'),
 		priorityNormal: bem(BLOCKS.TASK_CARD, undefined, 'priority-normal'),
 		priorityLow: bem(BLOCKS.TASK_CARD, undefined, 'priority-low'),
+		// 子任务修饰符
+		subtask: bem(BLOCKS.TASK_CARD, undefined, 'subtask'),
 	}
 };
 
@@ -517,6 +519,19 @@ export const EditTaskModalClasses = {
 
 		// 滚动容器
 		scrollContainer: bem(BLOCKS.EDIT_TASK_MODAL, 'scroll-container'),
+
+		// 子任务管理区域
+		subtaskSection: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-section'),
+		subtaskHeader: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-header'),
+		subtaskList: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-list'),
+		subtaskItem: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-item'),
+		subtaskItemCheckbox: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-item-checkbox'),
+		subtaskItemText: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-item-text'),
+		subtaskItemDue: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-item-due'),
+		subtaskItemActions: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-item-actions'),
+		subtaskAddRow: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-add-row'),
+		subtaskAddInput: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-add-input'),
+		subtaskProgress: bem(BLOCKS.EDIT_TASK_MODAL, 'subtask-progress'),
 	},
 };
 
@@ -580,6 +595,13 @@ export const WeekViewClasses = {
 		ganttBarIcon: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-icon'),
 		ganttGridLines: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-lines'),
 		ganttGridLine: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-line'),
+		// 子任务分组元素（单 bar 展开模式）
+		ganttBarHeader: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-header'),
+		ganttBarChildren: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-children'),
+		ganttBarChildItem: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item'),
+		ganttBarGrandchildItem: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item'),
+		ganttBarToggle: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-toggle'),
+		ganttBarProgress: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-progress'),
 	},
 
 	/** Modifiers */
@@ -595,6 +617,11 @@ export const WeekViewClasses = {
 		ganttBarPriorityNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-normal'),
 		ganttBarPriorityLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-low'),
 		ganttGridLineToday: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-line', 'today'),
+		// 分组 bar 修饰
+		ganttBarGroup: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'group'),
+		ganttRowGroup: bem(BLOCKS.WEEK_VIEW, 'gantt-row', 'group'),
+		ganttBarChildCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'completed'),
+		ganttBarGrandchildCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'completed'),
 	},
 };
 

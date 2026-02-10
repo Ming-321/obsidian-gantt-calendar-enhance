@@ -278,6 +278,9 @@ export class MonthViewRenderer extends BaseViewRenderer {
 			// 使用类型感知的日期过滤：待办从 startDate 到完成，提醒仅 dueDate 当天
 			let currentDayTasks = this.filterTasksForDate(tasks, targetDate);
 
+			// 子任务去重：父子同截止日时只显示父任务
+			currentDayTasks = this.deduplicateParentChild(currentDayTasks);
+
 			// 应用排序
 			currentDayTasks = sortTasks(currentDayTasks, this.sortState);
 
@@ -298,7 +301,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
 	private renderTaskItem(task: GCTask, container: HTMLElement): void {
 		const config = MonthViewConfig;
 
-		new TaskCardComponent({
+		const result = new TaskCardComponent({
 			task,
 			config,
 			container,
@@ -312,5 +315,20 @@ export class MonthViewRenderer extends BaseViewRenderer {
 				this.refreshTasks();
 			},
 		}).render();
+
+		// 子任务视觉区分（左边框 + 渐变背景）
+		if (task.parentId && result.element) {
+			result.element.addClass(TaskCardClasses.modifiers.subtask);
+		}
+
+		// 父任务进度标记
+		if (task.childIds?.length && result.element) {
+			const children = this.plugin.taskCache.getChildTasks(task.id);
+			const completedCount = children.filter((c: GCTask) => c.completed).length;
+			const progressEl = result.element.createSpan({
+				text: ` [${completedCount}/${children.length}]`,
+				cls: 'gc-task-card__progress'
+			});
+		}
 	}
 }

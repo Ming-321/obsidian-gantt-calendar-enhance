@@ -8,6 +8,7 @@ import { GitHubSetupWizard } from '../../modals/GitHubSetupWizard';
 import { GitHubSyncService } from '../../services/GitHubSyncService';
 import {
 	generateWorkflowTemplate,
+	EMAIL_SCRIPT_TEMPLATE,
 	DEFAULT_REMINDER_SCHEDULE,
 	DEFAULT_TIMEZONE,
 	type ReminderScheduleConfig,
@@ -146,10 +147,51 @@ export class GitHubSyncSettingsBuilder {
 								btn.setDisabled(false);
 							}, 2000);
 						} catch (error) {
+						new Notice('更新失败: ' + (error as Error).message);
+						btn.setButtonText('❌ 更新失败');
+						setTimeout(() => {
+							btn.setButtonText('📤 更新提醒时间');
+							btn.setDisabled(false);
+						}, 2000);
+					}
+				});
+		});
+
+		// 更新邮件脚本按钮
+		new Setting(containerEl)
+			.setName('更新邮件脚本')
+			.setDesc('将最新的邮件生成脚本推送到 GitHub（修复 bug 后需执行）')
+			.addButton(btn => {
+				btn.setButtonText('📤 更新邮件脚本')
+					.onClick(async () => {
+						try {
+							btn.setDisabled(true);
+							btn.setButtonText('推送中...');
+
+							const syncService = new GitHubSyncService();
+							syncService.configure({
+								token: cfg.token,
+								owner: cfg.owner,
+								repo: cfg.repo,
+							});
+
+							await syncService.pushMultipleFiles([{
+								path: 'scripts/generate-email.js',
+								content: EMAIL_SCRIPT_TEMPLATE,
+								message: 'fix: update email script timezone handling',
+							}]);
+
+							new Notice('邮件脚本已更新！');
+							btn.setButtonText('✅ 更新成功');
+							setTimeout(() => {
+								btn.setButtonText('📤 更新邮件脚本');
+								btn.setDisabled(false);
+							}, 2000);
+						} catch (error) {
 							new Notice('更新失败: ' + (error as Error).message);
 							btn.setButtonText('❌ 更新失败');
 							setTimeout(() => {
-								btn.setButtonText('📤 更新提醒时间');
+								btn.setButtonText('📤 更新邮件脚本');
 								btn.setDisabled(false);
 							}, 2000);
 						}

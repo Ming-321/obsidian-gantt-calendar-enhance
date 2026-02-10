@@ -18,9 +18,21 @@ import { updateTaskCompletion } from '../tasks/taskUpdater';
  * - Header row: 7 列日期头（周一~周日）
  * - Body: 每个任务一行，用横向 bar 表示持续时间
  */
+/** 甘特图 bar 渲染选项 */
+interface GanttBarOptions {
+	showToggle?: boolean;
+	isExpanded?: boolean;
+	progress?: string;
+	onToggle?: () => void;
+}
+
 export class WeekViewRenderer extends BaseViewRenderer {
 	private sortState: SortState = { field: 'priority', order: 'desc' };
 	private readonly SETTINGS_PREFIX = 'weekView';
+
+	// 子任务展开状态
+	private expandedTasks: Set<string> = new Set();
+	private defaultExpandInitialized = false;
 
 	// 缓存当前周数据，用于 refreshTasks
 	private currentWeekStart: Date | null = null;
@@ -158,13 +170,21 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		// 排序
 		const sorted = sortTasks(tasks, this.sortState);
 
-		// 分离提醒和待办
-		const reminders = sorted.filter(t => t.type === 'reminder');
-		const todos = sorted.filter(t => t.type !== 'reminder');
+		// 分离提醒和待办，仅取根任务（子任务通过展开显示）
+		const reminders = sorted.filter(t => t.type === 'reminder' && !t.parentId);
+		const rootTodos = sorted.filter(t => t.type !== 'reminder' && !t.parentId);
 
-		// 渲染待办：每个一行
-		todos.forEach(task => {
-			this.renderGanttRow(ganttBody, [task]);
+		// 初始化默认展开（一级子任务）
+		this.initDefaultExpanded(rootTodos);
+
+		// 渲染待办：有子任务的用 group row，无子任务的用普通 row
+		rootTodos.forEach(task => {
+			const children = this.plugin.taskCache.getChildTasks(task.id);
+			if (children.length > 0) {
+				this.renderGanttGroupRow(ganttBody, task);
+			} else {
+				this.renderGanttRow(ganttBody, [task]);
+			}
 		});
 
 		// 渲染提醒：贪心装箱，将不重叠的提醒放在同一行
@@ -172,6 +192,292 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		reminderRows.forEach(rowTasks => {
 			this.renderGanttRow(ganttBody, rowTasks);
 		});
+	}
+
+	/**
+	 * 初始化默认展开状态：首次加载时展开有子任务的根 todo
+	 */
+	private initDefaultExpanded(rootTodos: GCTask[]): void {
+		if (this.defaultExpandInitialized) return;
+		this.defaultExpandInitialized = true;
+		rootTodos.forEach(task => {
+			if (task.childIds?.length) {
+				this.expandedTasks.add(task.id);
+			}
+		});
+	}
+
+	/**
+	 * 切换任务展开/折叠
+	 */
+	private toggleExpand(taskId: string): void {
+		if (this.expandedTasks.has(taskId)) {
+			this.expandedTasks.delete(taskId);
+		} else {
+			this.expandedTasks.add(taskId);
+		}
+		this.refreshTasks();
+	}
+
+	/**
+	 * 渲染父任务+子任务的分组行（单 bar 展开/收起）
+	 *
+	 * 核心设计：父任务和子任务在同一个 bar 内显示。
+	 * - 折叠：bar 正常高度，仅显示父任务信息
+	 * - 展开：bar 增高，内部列出子任务/孙任务
+	 */
+	private renderGanttGroupRow(ganttBody: HTMLElement, parentTask: GCTask): void {
+		const isExpanded = this.expandedTasks.has(parentTask.id);
+		const children = this.plugin.taskCache.getChildTasks(parentTask.id);
+		const completedCount = children.filter((c: GCTask) => c.completed).length;
+		const tooltipManager = TooltipManager.getInstance(this.plugin);
+
+		// 创建行容器（高度自适应）
+		const row = ganttBody.createDiv(WeekViewClasses.elements.ganttRow);
+		row.addClass(WeekViewClasses.modifiers.ganttRowGroup);
+
+		// 计算 bar 位置（按父任务日期定位）
+		const { leftPercent, widthPercent } = this.calculateBarPosition(parentTask);
+
+		// 创建单个分组 bar（使用 marginLeft 定位，保持文档流以撑开行高）
+		const bar = row.createDiv(WeekViewClasses.elements.ganttBar);
+		bar.style.marginLeft = `${leftPercent}%`;
+		bar.style.width = `${widthPercent}%`;
+		bar.addClass(WeekViewClasses.modifiers.ganttBarGroup);
+
+		// 应用颜色修饰（基于父任务）
+		if (parentTask.completed) {
+			bar.addClass(WeekViewClasses.modifiers.ganttBarCompleted);
+		} else {
+			if (parentTask.type === 'reminder') {
+				bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
+			} else {
+				bar.addClass(WeekViewClasses.modifiers.ganttBarTodo);
+			}
+			switch (parentTask.priority) {
+				case 'high': bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityHigh); break;
+				case 'low': bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityLow); break;
+				default: bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityNormal); break;
+			}
+		}
+
+		// ---- Header（父任务信息行） ----
+		const header = bar.createDiv(WeekViewClasses.elements.ganttBarHeader);
+
+		// 折叠/展开三角
+		if (children.length > 0) {
+			const toggle = header.createSpan({
+				text: isExpanded ? '▼' : '▶',
+				cls: WeekViewClasses.elements.ganttBarToggle,
+			});
+			toggle.addEventListener('click', (e: MouseEvent) => {
+				e.stopPropagation();
+				this.toggleExpand(parentTask.id);
+			});
+		}
+
+		// 父任务复选框
+		if (parentTask.type !== 'reminder') {
+			const checkbox = header.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+			checkbox.checked = parentTask.completed;
+			checkbox.addClass(TaskCardClasses.elements.checkbox);
+			checkbox.addEventListener('change', async (e: Event) => {
+				e.stopPropagation();
+				try {
+					tooltipManager.hide();
+					await updateTaskCompletion(this.app, parentTask, checkbox.checked);
+					this.refreshTasks();
+				} catch (error) {
+					Logger.error('WeekView', 'Error updating parent completion:', error);
+					checkbox.checked = parentTask.completed;
+				}
+			});
+			checkbox.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
+		} else {
+			header.createSpan({ text: '🔔', cls: WeekViewClasses.elements.ganttBarIcon });
+		}
+
+		// 父任务标题
+		header.createSpan({ text: parentTask.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+
+		// 进度
+		if (children.length > 0) {
+			header.createSpan({
+				text: `[${completedCount}/${children.length}]`,
+				cls: WeekViewClasses.elements.ganttBarProgress,
+			});
+		}
+
+		// Header 交互：tooltip + 点击编辑
+		header.addEventListener('mouseenter', () => tooltipManager.show(parentTask, header));
+		header.addEventListener('mouseleave', () => tooltipManager.hide());
+		header.addEventListener('click', () => {
+			tooltipManager.hide();
+			openEditTaskModal(this.app, this.plugin, parentTask, () => this.refreshTasks());
+		});
+
+		// ---- Children（展开时显示所有子任务） ----
+		if (isExpanded && children.length > 0) {
+			const childrenContainer = bar.createDiv(WeekViewClasses.elements.ganttBarChildren);
+
+			children.forEach((child: GCTask) => {
+				this.renderGroupChildItem(childrenContainer, child, tooltipManager);
+			});
+		}
+	}
+
+	/**
+	 * 渲染分组 bar 内的子任务项
+	 */
+	private renderGroupChildItem(
+		container: HTMLElement,
+		child: GCTask,
+		tooltipManager: TooltipManager,
+	): void {
+		const grandChildren = this.plugin.taskCache.getChildTasks(child.id);
+		const gcCompleted = grandChildren.filter((gc: GCTask) => gc.completed).length;
+		const isChildExpanded = this.expandedTasks.has(child.id);
+
+		const childItem = container.createDiv(WeekViewClasses.elements.ganttBarChildItem);
+		if (child.completed) {
+			childItem.addClass(WeekViewClasses.modifiers.ganttBarChildCompleted);
+		}
+
+		// 孙任务折叠三角
+		if (grandChildren.length > 0) {
+			const toggle = childItem.createSpan({
+				text: isChildExpanded ? '▼' : '▶',
+				cls: WeekViewClasses.elements.ganttBarToggle,
+			});
+			toggle.addEventListener('click', (e: MouseEvent) => {
+				e.stopPropagation();
+				this.toggleExpand(child.id);
+			});
+		}
+
+		// 子任务复选框
+		const childCheckbox = childItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+		childCheckbox.checked = child.completed;
+		childCheckbox.addClass(TaskCardClasses.elements.checkbox);
+		childCheckbox.addEventListener('change', async (e: Event) => {
+			e.stopPropagation();
+			try {
+				tooltipManager.hide();
+				await updateTaskCompletion(this.app, child, childCheckbox.checked);
+				this.refreshTasks();
+			} catch (error) {
+				Logger.error('WeekView', 'Error updating child completion:', error);
+				childCheckbox.checked = child.completed;
+			}
+		});
+		childCheckbox.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
+
+		// 子任务标题
+		childItem.createSpan({ text: child.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+
+		// 子任务进度（有孙任务时）
+		if (grandChildren.length > 0) {
+			childItem.createSpan({
+				text: `[${gcCompleted}/${grandChildren.length}]`,
+				cls: WeekViewClasses.elements.ganttBarProgress,
+			});
+		}
+
+		// 子任务交互
+		childItem.addEventListener('mouseenter', () => tooltipManager.show(child, childItem));
+		childItem.addEventListener('mouseleave', () => tooltipManager.hide());
+		childItem.addEventListener('click', (e: MouseEvent) => {
+			e.stopPropagation();
+			tooltipManager.hide();
+			openEditTaskModal(this.app, this.plugin, child, () => this.refreshTasks());
+		});
+
+		// ---- 孙任务（子任务展开时） ----
+		if (isChildExpanded && grandChildren.length > 0) {
+			grandChildren.forEach((gc: GCTask) => {
+				this.renderGroupGrandchildItem(container, gc, tooltipManager);
+			});
+		}
+	}
+
+	/**
+	 * 渲染分组 bar 内的孙任务项
+	 */
+	private renderGroupGrandchildItem(
+		container: HTMLElement,
+		gc: GCTask,
+		tooltipManager: TooltipManager,
+	): void {
+		const gcItem = container.createDiv(WeekViewClasses.elements.ganttBarGrandchildItem);
+		if (gc.completed) {
+			gcItem.addClass(WeekViewClasses.modifiers.ganttBarGrandchildCompleted);
+		}
+
+		// 孙任务复选框
+		const gcCheckbox = gcItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
+		gcCheckbox.checked = gc.completed;
+		gcCheckbox.addClass(TaskCardClasses.elements.checkbox);
+		gcCheckbox.addEventListener('change', async (e: Event) => {
+			e.stopPropagation();
+			try {
+				tooltipManager.hide();
+				await updateTaskCompletion(this.app, gc, gcCheckbox.checked);
+				this.refreshTasks();
+			} catch (error) {
+				Logger.error('WeekView', 'Error updating grandchild completion:', error);
+				gcCheckbox.checked = gc.completed;
+			}
+		});
+		gcCheckbox.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
+
+		// 孙任务标题
+		gcItem.createSpan({ text: gc.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+
+		// 孙任务交互
+		gcItem.addEventListener('mouseenter', () => tooltipManager.show(gc, gcItem));
+		gcItem.addEventListener('mouseleave', () => tooltipManager.hide());
+		gcItem.addEventListener('click', (e: MouseEvent) => {
+			e.stopPropagation();
+			tooltipManager.hide();
+			openEditTaskModal(this.app, this.plugin, gc, () => this.refreshTasks());
+		});
+	}
+
+	/**
+	 * 判断任务是否在当前周范围内
+	 */
+	private isTaskInCurrentWeek(task: GCTask): boolean {
+		if (!this.currentWeekStart || !this.currentWeekEnd) return true;
+		const weekStartTime = this.currentWeekStart.getTime();
+		const weekEndTime = this.currentWeekEnd.getTime();
+
+		if (task.type === 'reminder') {
+			if (!task.dueDate) return false;
+			const due = new Date(task.dueDate);
+			due.setHours(0, 0, 0, 0);
+			return due.getTime() >= weekStartTime && due.getTime() <= weekEndTime;
+		}
+
+		// 待办
+		if (task.completed && task.completionDate) {
+			const comp = new Date(task.completionDate);
+			comp.setHours(0, 0, 0, 0);
+			return comp.getTime() >= weekStartTime && comp.getTime() <= weekEndTime;
+		}
+
+		const start = task.startDate ? new Date(task.startDate) : (task.createdDate ? new Date(task.createdDate) : null);
+		const due = task.dueDate ? new Date(task.dueDate) : null;
+		if (!start && !due) return false;
+
+		if (start) start.setHours(0, 0, 0, 0);
+		if (due) due.setHours(0, 0, 0, 0);
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const taskStart = start ? start.getTime() : -Infinity;
+		const taskEnd = due ? Math.max(due.getTime(), today.getTime()) : Infinity;
+
+		return taskStart <= weekEndTime && taskEnd >= weekStartTime;
 	}
 
 	/**
@@ -297,7 +603,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 	/**
 	 * 渲染单个任务 bar
 	 */
-	private renderGanttBar(row: HTMLElement, task: GCTask): void {
+	private renderGanttBar(row: HTMLElement, task: GCTask, options?: GanttBarOptions): void {
 		// 计算 bar 的位置和宽度（基于 7 列百分比）
 		const { leftPercent, widthPercent } = this.calculateBarPosition(task);
 
@@ -329,6 +635,18 @@ export class WeekViewRenderer extends BaseViewRenderer {
 			}
 		}
 
+		// 展开/折叠三角（如果有子任务）
+		if (options?.showToggle) {
+			const toggle = bar.createSpan({
+				text: options.isExpanded ? '▼' : '▶',
+				cls: WeekViewClasses.elements.ganttBarToggle,
+			});
+			toggle.addEventListener('click', (e) => {
+				e.stopPropagation();
+				options.onToggle?.();
+			});
+		}
+
 		// Bar 内容：复选框/图标 + 标题
 		if (task.type === 'reminder') {
 			bar.createSpan({ text: '🔔', cls: WeekViewClasses.elements.ganttBarIcon });
@@ -358,6 +676,11 @@ export class WeekViewRenderer extends BaseViewRenderer {
 			});
 		}
 		bar.createSpan({ text: task.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+
+		// 进度文本
+		if (options?.progress) {
+			bar.createSpan({ text: options.progress, cls: WeekViewClasses.elements.ganttBarProgress });
+		}
 
 		// Tooltip
 		const tooltipManager = TooltipManager.getInstance(this.plugin);
@@ -462,12 +785,19 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
 		const sorted = sortTasks(tasks, this.sortState);
 
-		// 分离提醒和待办
-		const reminders = sorted.filter(t => t.type === 'reminder');
-		const todos = sorted.filter(t => t.type !== 'reminder');
+		// 分离提醒和待办，仅取根任务
+		const reminders = sorted.filter(t => t.type === 'reminder' && !t.parentId);
+		const rootTodos = sorted.filter(t => t.type !== 'reminder' && !t.parentId);
 
-		// 渲染待办
-		todos.forEach(task => this.renderGanttRow(ganttBody, [task]));
+		// 渲染待办（与 renderGanttBody 逻辑一致）
+		rootTodos.forEach(task => {
+			const children = this.plugin.taskCache.getChildTasks(task.id);
+			if (children.length > 0) {
+				this.renderGanttGroupRow(ganttBody, task);
+			} else {
+				this.renderGanttRow(ganttBody, [task]);
+			}
+		});
 
 		// 渲染提醒（合并行）
 		const reminderRows = this.packRemindersIntoRows(reminders);

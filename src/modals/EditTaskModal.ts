@@ -10,7 +10,9 @@ import type GanttCalendarPlugin from '../../main';
 import type { GCTask } from '../types';
 import type { TaskChanges } from '../data-layer/types';
 import { Logger } from '../utils/logger';
+import { EditTaskModalClasses } from '../utils/bem';
 import { BaseTaskModal, type PriorityOption, type RepeatConfig } from './BaseTaskModal';
+import { updateTaskCompletion } from '../tasks/taskUpdater';
 
 /**
  * 快捷打开编辑弹窗
@@ -73,6 +75,172 @@ class EditTaskModal extends BaseTaskModal {
 
 	onOpen(): void {
 		this.renderModalContent('编辑任务');
+	}
+
+	// ==================== 重写渲染以插入子任务区域 ====================
+
+	protected renderModalContent(title: string): void {
+		super.renderModalContent(title);
+
+		// 在标签区域之后、按钮之前插入子任务区域
+		if ((this.task.depth ?? 0) < 2) {
+			const scrollContainer = this.contentEl.querySelector(`.${EditTaskModalClasses.elements.scrollContainer}`) as HTMLElement;
+			if (scrollContainer) {
+				this.renderSubTasksSection(scrollContainer);
+			}
+		}
+	}
+
+	// ==================== 子任务管理区域 ====================
+
+	/**
+	 * 渲染子任务管理区域
+	 */
+	private renderSubTasksSection(container: HTMLElement): void {
+		const section = container.createDiv(EditTaskModalClasses.elements.subtaskSection);
+
+		// 标题行：标签 + 进度
+		const header = section.createDiv(EditTaskModalClasses.elements.subtaskHeader);
+		header.createEl('label', {
+			text: '子任务',
+			cls: EditTaskModalClasses.elements.sectionLabel
+		});
+
+		const progressEl = header.createEl('span', {
+			cls: EditTaskModalClasses.elements.subtaskProgress
+		});
+
+		// 子任务列表容器
+		const listContainer = section.createDiv(EditTaskModalClasses.elements.subtaskList);
+
+		// 快速添加行
+		const addRow = section.createDiv(EditTaskModalClasses.elements.subtaskAddRow);
+		const addInput = addRow.createEl('input', {
+			type: 'text',
+			placeholder: '快速添加子任务...',
+			cls: EditTaskModalClasses.elements.subtaskAddInput
+		});
+
+		const addBtn = addRow.createEl('button', { text: '+ 添加' });
+		addBtn.style.padding = '4px 12px';
+		addBtn.style.fontSize = 'var(--font-ui-small)';
+		addBtn.style.border = '1px solid var(--background-modifier-border)';
+		addBtn.style.borderRadius = '4px';
+		addBtn.style.background = 'var(--background-secondary)';
+		addBtn.style.cursor = 'pointer';
+		addBtn.style.whiteSpace = 'nowrap';
+
+		// 渲染子任务列表
+		const refreshList = () => {
+			this.renderSubTaskList(listContainer, progressEl);
+		};
+		refreshList();
+
+		// 快速添加逻辑
+		const handleAdd = async () => {
+			const desc = addInput.value.trim();
+			if (!desc) return;
+			try {
+				await this.plugin.taskCache.createSubTask(this.task.id, { description: desc });
+				addInput.value = '';
+				// 刷新任务数据
+				this.task = this.plugin.taskCache.getTaskById(this.task.id) || this.task;
+				refreshList();
+			} catch (err) {
+				new Notice('添加子任务失败: ' + (err as Error).message);
+			}
+		};
+
+		addInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				handleAdd();
+			}
+		});
+		addBtn.addEventListener('click', handleAdd);
+	}
+
+	/**
+	 * 渲染子任务列表内容
+	 */
+	private renderSubTaskList(container: HTMLElement, progressEl: HTMLElement): void {
+		container.empty();
+
+		const children = this.plugin.taskCache.getChildTasks(this.task.id);
+		const completedCount = children.filter(c => c.completed).length;
+
+		// 更新进度
+		if (children.length > 0) {
+			progressEl.textContent = `[${completedCount}/${children.length}]`;
+		} else {
+			progressEl.textContent = '';
+		}
+
+		if (children.length === 0) {
+			container.createEl('div', {
+				text: '暂无子任务',
+				cls: EditTaskModalClasses.elements.sectionHint
+			});
+			return;
+		}
+
+		children.forEach(child => {
+			const item = container.createDiv(EditTaskModalClasses.elements.subtaskItem);
+
+			// 复选框
+			const checkbox = item.createEl('input', {
+				type: 'checkbox',
+				cls: EditTaskModalClasses.elements.subtaskItemCheckbox
+			}) as HTMLInputElement;
+			checkbox.checked = child.completed;
+			checkbox.addEventListener('change', async () => {
+				await updateTaskCompletion(this.app, child, checkbox.checked);
+				this.task = this.plugin.taskCache.getTaskById(this.task.id) || this.task;
+				this.renderSubTaskList(container, progressEl);
+			});
+
+			// 描述文本
+			const text = item.createSpan({
+				text: child.description || '无标题',
+				cls: EditTaskModalClasses.elements.subtaskItemText
+			});
+			if (child.completed) {
+				text.style.textDecoration = 'line-through';
+				text.style.opacity = '0.6';
+			}
+
+			// 截止日期
+			if (child.dueDate) {
+				const d = new Date(child.dueDate);
+				const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+				item.createSpan({
+					text: `📅 ${dateStr}`,
+					cls: EditTaskModalClasses.elements.subtaskItemDue
+				});
+			}
+
+			// 操作按钮
+			const actions = item.createDiv(EditTaskModalClasses.elements.subtaskItemActions);
+
+			// 编辑按钮
+			const editBtn = actions.createEl('button', { text: '✏️' });
+			editBtn.title = '编辑子任务';
+			editBtn.addEventListener('click', () => {
+				openEditTaskModal(this.app, this.plugin, child, () => {
+					this.task = this.plugin.taskCache.getTaskById(this.task.id) || this.task;
+					this.renderSubTaskList(container, progressEl);
+				});
+			});
+
+			// 删除按钮
+			const deleteBtn = actions.createEl('button', { text: '🗑️' });
+			deleteBtn.title = '删除子任务';
+			deleteBtn.addEventListener('click', async () => {
+				await this.plugin.taskCache.deleteTask(child.id);
+				this.task = this.plugin.taskCache.getTaskById(this.task.id) || this.task;
+				this.renderSubTaskList(container, progressEl);
+			});
+		});
 	}
 
 	// ==================== 实现抽象方法 ====================

@@ -14,6 +14,9 @@ import { Logger } from '../utils/logger';
  * 任务视图渲染器
  */
 export class TaskViewRenderer extends BaseViewRenderer {
+	// 子任务展开状态
+	private expandedTasks: Set<string> = new Set();
+
 	// 时间字段筛选
 	private timeFieldFilter: 'createdDate' | 'startDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'dueDate';
 
@@ -275,21 +278,86 @@ export class TaskViewRenderer extends BaseViewRenderer {
 			// 应用标签筛选
 			tasks = this.applyTagFilter(tasks);
 
+			// 仅保留根任务用于顶层渲染（子任务通过树形递归展示）
+			const rootTasks = tasks.filter(t => !t.parentId);
+
 			// 应用排序
-			tasks = sortTasks(tasks, this.sortState);
+			const sortedRootTasks = sortTasks(rootTasks, this.sortState);
 
 			listContainer.empty();
 
-			if (tasks.length === 0) {
+			if (sortedRootTasks.length === 0) {
 				listContainer.createEl('div', { text: '未找到符合条件的任务', cls: 'gantt-task-empty' });
 				return;
 			}
 
-			tasks.forEach(task => this.renderTaskItem(task, listContainer));
+			// 默认展开所有有子任务的根任务（首次）
+			this.initDefaultExpanded(sortedRootTasks);
+
+			sortedRootTasks.forEach(task => this.renderTaskTree(task, listContainer, 0));
 		} catch (error) {
 			Logger.error('TaskView', 'Error rendering task view', error);
 			listContainer.empty();
 			listContainer.createEl('div', { text: '加载任务时出错', cls: 'gantt-task-empty' });
+		}
+	}
+
+	/**
+	 * 初始化默认展开状态：首次加载时展开根任务的一级子任务
+	 */
+	private initDefaultExpanded(rootTasks: GCTask[]): void {
+		// 只在第一次（expandedTasks 为空时）初始化
+		if (this.expandedTasks.size > 0) return;
+		rootTasks.forEach(task => {
+			if (task.childIds?.length) {
+				this.expandedTasks.add(task.id);
+			}
+		});
+	}
+
+	/**
+	 * 切换任务展开/折叠状态
+	 */
+	private toggleExpand(taskId: string): void {
+		if (this.expandedTasks.has(taskId)) {
+			this.expandedTasks.delete(taskId);
+		} else {
+			this.expandedTasks.add(taskId);
+		}
+		this.refreshTaskList();
+	}
+
+	/**
+	 * 递归渲染任务树
+	 */
+	private renderTaskTree(task: GCTask, container: HTMLElement, depth: number): void {
+		const hasChildren = (task.childIds?.length ?? 0) > 0;
+
+		// 创建带缩进的包装容器
+		const wrapper = container.createDiv({ cls: 'gc-task-tree-item' });
+		wrapper.style.paddingLeft = `${depth * 20}px`;
+
+		// 如果有子任务，显示展开/折叠按钮；否则显示占位
+		if (hasChildren) {
+			const toggle = wrapper.createSpan({ cls: 'gc-task-tree-toggle' });
+			toggle.textContent = this.expandedTasks.has(task.id) ? '▼' : '▶';
+			toggle.addEventListener('click', (e) => {
+				e.stopPropagation();
+				this.toggleExpand(task.id);
+			});
+		} else if (depth > 0) {
+			// 子任务无子任务时添加占位以对齐
+			wrapper.createSpan({ cls: 'gc-task-tree-spacer' });
+		}
+
+		// 渲染任务卡片
+		this.renderTaskItem(task, wrapper);
+
+		// 如果展开，递归渲染子任务
+		if (hasChildren && this.expandedTasks.has(task.id)) {
+			const children = this.plugin.taskCache.getChildTasks(task.id);
+			const sortedChildren = sortTasks(children, this.sortState);
+			sortedChildren.forEach(child => this.renderTaskTree(child, container, depth + 1));
 		}
 	}
 
@@ -306,7 +374,7 @@ export class TaskViewRenderer extends BaseViewRenderer {
 			plugin: this.plugin,
 			onClick: (task) => {
 				// 刷新任务列表
-				this.loadTaskList(listContainer);
+				this.refreshTaskList();
 			},
 		}).render();
 	}

@@ -46,6 +46,10 @@ interface JsonTaskData {
 	archived: boolean;
 	sourceId?: string;
 	lastModified?: string;
+	// 子任务关系
+	parentId?: string;
+	childIds?: string[];
+	depth?: number;
 }
 
 /**
@@ -92,6 +96,9 @@ function taskToJson(task: GCTask): JsonTaskData {
 		archived: task.archived,
 		sourceId: task.sourceId,
 		lastModified: task.lastModified?.toISOString(),
+		parentId: task.parentId,
+		childIds: task.childIds,
+		depth: task.depth,
 	};
 }
 
@@ -118,6 +125,9 @@ function jsonToTask(json: JsonTaskData): GCTask {
 		archived: json.archived,
 		sourceId: json.sourceId,
 		lastModified: json.lastModified ? new Date(json.lastModified) : undefined,
+		parentId: json.parentId,
+		childIds: json.childIds,
+		depth: json.depth,
 	};
 }
 
@@ -443,6 +453,32 @@ export class JsonDataSource implements IDataSource {
 			task.archived = false;
 		}
 
+		// 子任务关联
+		if (task.parentId) {
+			const parent = this.tasks.get(task.parentId) || this.archivedTasks.get(task.parentId);
+			if (!parent) {
+				Logger.warn('JsonDataSource', `Parent task not found: ${task.parentId}`);
+				return '';
+			}
+			if ((parent.depth ?? 0) >= 2) {
+				Logger.warn('JsonDataSource', `Max nesting depth reached for parent: ${task.parentId}`);
+				return '';
+			}
+			// 设置子任务深度
+			task.depth = (parent.depth ?? 0) + 1;
+			// 将子任务 ID 追加到父任务的 childIds
+			const updatedParent = { ...parent, childIds: [...(parent.childIds || []), task.id], lastModified: new Date() };
+			if (this.tasks.has(task.parentId)) {
+				this.tasks.set(task.parentId, updatedParent);
+			} else {
+				this.archivedTasks.set(task.parentId, updatedParent);
+			}
+		} else {
+			if (task.depth === undefined) {
+				task.depth = 0;
+			}
+		}
+
 		this.tasks.set(task.id, task);
 		this.scheduleSave();
 
@@ -461,7 +497,7 @@ export class JsonDataSource implements IDataSource {
 	/**
 	 * 更新任务
 	 */
-	async updateTask(taskId: string, changes: TaskChanges): Promise<void> {
+	async updateTask(taskId: string, changes: TaskChanges, options?: { skipCascade?: boolean }): Promise<void> {
 		const task = this.tasks.get(taskId) || this.archivedTasks.get(taskId);
 		if (!task) {
 			Logger.warn('JsonDataSource', `Task not found for update: ${taskId}`);
@@ -482,6 +518,55 @@ export class JsonDataSource implements IDataSource {
 			this.tasks.set(taskId, updatedTask);
 		} else {
 			this.archivedTasks.set(taskId, updatedTask);
+		}
+
+		// 完成状态联动（防止递归）
+		if (!options?.skipCascade && changes.completed !== undefined) {
+			if (changes.completed) {
+				// 父完成 → 子全完成
+				if (updatedTask.childIds?.length) {
+					for (const childId of updatedTask.childIds) {
+						const child = this.tasks.get(childId) || this.archivedTasks.get(childId);
+						if (child && !child.completed) {
+							await this.updateTask(childId, {
+								completed: true,
+								status: 'done' as any,
+								completionDate: new Date(),
+							}, { skipCascade: true });
+						}
+					}
+				}
+				// 子完成 → 检查兄弟 → 父完成
+				if (updatedTask.parentId) {
+					const parent = this.tasks.get(updatedTask.parentId) || this.archivedTasks.get(updatedTask.parentId);
+					if (parent && !parent.completed && parent.childIds?.length) {
+						const allSiblingsDone = parent.childIds.every(id => {
+							if (id === taskId) return true; // 当前任务已完成
+							const sibling = this.tasks.get(id) || this.archivedTasks.get(id);
+							return sibling?.completed;
+						});
+						if (allSiblingsDone) {
+							await this.updateTask(parent.id, {
+								completed: true,
+								status: 'done' as any,
+								completionDate: new Date(),
+							}, { skipCascade: true });
+						}
+					}
+				}
+			} else {
+				// 取消完成 → 如果父任务已完成，也取消父完成
+				if (updatedTask.parentId) {
+					const parent = this.tasks.get(updatedTask.parentId) || this.archivedTasks.get(updatedTask.parentId);
+					if (parent?.completed) {
+						await this.updateTask(parent.id, {
+							completed: false,
+							status: 'todo' as any,
+							completionDate: undefined,
+						}, { skipCascade: true });
+					}
+				}
+			}
 		}
 
 		this.scheduleSave();
@@ -505,6 +590,26 @@ export class JsonDataSource implements IDataSource {
 		if (!task) {
 			Logger.warn('JsonDataSource', `Task not found for delete: ${taskId}`);
 			return;
+		}
+
+		// 递归删除子任务
+		if (task.childIds?.length) {
+			for (const childId of [...task.childIds]) {
+				await this.deleteTask(childId);
+			}
+		}
+
+		// 从父任务的 childIds 中移除自己
+		if (task.parentId) {
+			const parent = this.tasks.get(task.parentId) || this.archivedTasks.get(task.parentId);
+			if (parent && parent.childIds) {
+				const updatedParent = { ...parent, childIds: parent.childIds.filter(id => id !== taskId), lastModified: new Date() };
+				if (this.tasks.has(task.parentId)) {
+					this.tasks.set(task.parentId, updatedParent);
+				} else {
+					this.archivedTasks.set(task.parentId, updatedParent);
+				}
+			}
 		}
 
 		this.tasks.delete(taskId);

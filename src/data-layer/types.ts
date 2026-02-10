@@ -88,6 +88,10 @@ export interface TaskChanges {
 	completionDate?: Date;
 	repeat?: string;
 	archived?: boolean;
+	// 子任务关系
+	parentId?: string;
+	childIds?: string[];
+	depth?: number;
 }
 
 /**
@@ -105,6 +109,8 @@ export interface QueryOptions {
 		field: keyof TaskDates
 	};
 	sources?: string[];  // 数据源筛选
+	parentId?: string;       // 按父任务 ID 筛选
+	rootOnly?: boolean;      // 仅返回顶层任务（parentId 为空）
 }
 
 /**

@@ -51,6 +51,23 @@ export function registerTaskContextMenu(
 				});
 		});
 
+		// 添加子任务（仅当深度 < 2 时）
+		if ((task.depth ?? 0) < 2) {
+			menu.addItem((item) => {
+				item
+					.setTitle('添加子任务')
+					.setIcon('list-plus')
+					.onClick(() => {
+						new CreateTaskModal({
+							app,
+							plugin,
+							parentTask: task,
+							onSuccess: () => onRefresh(),
+						}).open();
+					});
+			});
+		}
+
 		// 分隔线
 		menu.addSeparator();
 

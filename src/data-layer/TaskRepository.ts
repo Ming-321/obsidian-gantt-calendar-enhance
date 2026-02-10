@@ -88,6 +88,47 @@ export class TaskRepository {
 	}
 
 	/**
+	 * 获取直接子任务
+	 * @param parentId - 父任务ID
+	 * @returns 按 childIds 顺序排列的子任务列表
+	 */
+	getChildTasks(parentId: string): GCTask[] {
+		const parent = this.taskCache.get(parentId);
+		if (!parent?.childIds?.length) return [];
+		return parent.childIds
+			.map(id => this.taskCache.get(id))
+			.filter((t): t is GCTask => t !== undefined);
+	}
+
+	/**
+	 * 获取所有顶层任务（无 parentId）
+	 * @param options - 查询选项
+	 * @returns 顶层任务列表
+	 */
+	getRootTasks(options?: QueryOptions): GCTask[] {
+		const tasks = Array.from(this.taskCache.values()).filter(t => !t.parentId);
+		return this.filterTasks(tasks, options);
+	}
+
+	/**
+	 * 获取任务及其所有后代（扁平列表）
+	 * @param taskId - 任务ID
+	 * @returns 包含自身和所有后代的扁平列表
+	 */
+	getTaskTree(taskId: string): GCTask[] {
+		const result: GCTask[] = [];
+		const task = this.taskCache.get(taskId);
+		if (!task) return result;
+		result.push(task);
+		if (task.childIds?.length) {
+			for (const childId of task.childIds) {
+				result.push(...this.getTaskTree(childId));
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * 获取任务统计信息
 	 * @returns 统计信息
 	 */
@@ -158,6 +199,14 @@ export class TaskRepository {
 				const date = t[gcField] as Date | undefined;
 				return date && date >= options.dateRange!.start && date <= options.dateRange!.end;
 			});
+		}
+
+		// 子任务相关筛选
+		if (options.rootOnly) {
+			filtered = filtered.filter(t => !t.parentId);
+		}
+		if (options.parentId) {
+			filtered = filtered.filter(t => t.parentId === options.parentId);
 		}
 
 		return filtered;

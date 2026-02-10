@@ -28,6 +28,10 @@ export interface TaskUpdates {
 	completionDate?: Date | null;
 	repeat?: string | null;
 	archived?: boolean;
+	// 子任务关系
+	parentId?: string | null;
+	childIds?: string[];
+	depth?: number;
 }
 
 /**
@@ -62,6 +66,13 @@ function updatesToChanges(updates: TaskUpdates): TaskChanges {
 	if (updates.completionDate !== undefined) {
 		changes.completionDate = updates.completionDate ?? undefined;
 	}
+
+	// 子任务关系字段
+	if (updates.parentId !== undefined) {
+		changes.parentId = updates.parentId ?? undefined;
+	}
+	if (updates.childIds !== undefined) changes.childIds = updates.childIds;
+	if (updates.depth !== undefined) changes.depth = updates.depth;
 
 	return changes;
 }

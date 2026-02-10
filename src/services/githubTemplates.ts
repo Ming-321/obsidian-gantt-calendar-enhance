@@ -177,10 +177,15 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465');
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 
+// 时区偏移（UTC+8，单位：毫秒）
+const TIMEZONE_OFFSET_MS = 8 * 60 * 60 * 1000;
+
 // ==================== 工具函数 ====================
 
 function toDateStr(d) {
-  return d.toISOString().split('T')[0];
+  // 将 UTC 时间转换为 UTC+8 后提取日期字符串（YYYY-MM-DD）
+  const adjusted = new Date(d.getTime() + TIMEZONE_OFFSET_MS);
+  return adjusted.toISOString().split('T')[0];
 }
 
 function parseDate(str) {
@@ -199,10 +204,12 @@ function isInRange(date, start, end) {
 }
 
 function formatDateCN(d) {
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
+  // 将 UTC 时间转换为 UTC+8 后格式化显示
+  const adjusted = new Date(d.getTime() + TIMEZONE_OFFSET_MS);
+  const month = adjusted.getUTCMonth() + 1;
+  const day = adjusted.getUTCDate();
   const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-  return \`\${month}月\${day}日（周\${weekdays[d.getDay()]}）\`;
+  return \`\${month}月\${day}日（周\${weekdays[adjusted.getUTCDay()]}）\`;
 }
 
 function priorityIcon(p) {
@@ -238,7 +245,7 @@ function loadTasks() {
 
 function generateMorningEmail(tasks, today) {
   const threeDaysLater = new Date(today);
-  threeDaysLater.setDate(today.getDate() + 3);
+  threeDaysLater.setUTCDate(today.getUTCDate() + 3);
 
   // 未完成待办
   const pendingTodos = tasks.filter(t =>
@@ -438,9 +445,8 @@ async function main() {
 
   // 今天日期（UTC+8）
   const now = new Date();
-  const utc8Offset = 8 * 60 * 60 * 1000;
-  const today = new Date(now.getTime() + utc8Offset);
-  today.setUTCHours(0, 0, 0, 0);
+  const todayStr = toDateStr(now);
+  const today = new Date(todayStr + 'T00:00:00Z');
 
   // 生成邮件内容
   let email;

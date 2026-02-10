@@ -176,8 +176,8 @@ export class TaskStore {
 	/**
 	 * 更新任务
 	 */
-	async updateTask(taskId: string, changes: TaskChanges): Promise<void> {
-		await this.jsonSource.updateTask(taskId, changes);
+	async updateTask(taskId: string, changes: TaskChanges, options?: { skipCascade?: boolean }): Promise<void> {
+		await this.jsonSource.updateTask(taskId, changes, options);
 	}
 
 	/**
@@ -185,6 +185,48 @@ export class TaskStore {
 	 */
 	async deleteTask(taskId: string): Promise<void> {
 		await this.jsonSource.deleteTask(taskId);
+	}
+
+	/**
+	 * 创建子任务（自动设置 parentId/depth，应用继承规则）
+	 */
+	async createSubTask(parentId: string, taskData: Partial<GCTask>): Promise<string> {
+		const parent = this.getTaskById(parentId);
+		if (!parent) throw new Error(`Parent task not found: ${parentId}`);
+		if ((parent.depth ?? 0) >= 2) throw new Error('Max nesting depth reached');
+
+		const task: GCTask = {
+			id: '',
+			type: taskData.type ?? parent.type,
+			description: taskData.description ?? '',
+			detail: taskData.detail,
+			completed: false,
+			priority: taskData.priority ?? parent.priority,
+			tags: taskData.tags ?? (parent.tags ? [...parent.tags] : undefined),
+			createdDate: new Date(),
+			startDate: taskData.startDate ?? new Date(),
+			dueDate: taskData.dueDate ?? parent.dueDate,
+			repeat: taskData.repeat,
+			archived: false,
+			parentId: parentId,
+			depth: (parent.depth ?? 0) + 1,
+		};
+
+		return await this.jsonSource.createTask(task);
+	}
+
+	/**
+	 * 获取直接子任务
+	 */
+	getChildTasks(parentId: string): GCTask[] {
+		return this.repository.getChildTasks(parentId);
+	}
+
+	/**
+	 * 获取所有顶层任务
+	 */
+	getRootTasks(): GCTask[] {
+		return this.repository.getRootTasks();
 	}
 
 	/**
