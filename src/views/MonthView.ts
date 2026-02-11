@@ -2,14 +2,16 @@ import { Notice, App } from 'obsidian';
 import { BaseViewRenderer } from './BaseViewRenderer';
 import { generateMonthCalendar } from '../calendar/calendarGenerator';
 import type { GCTask, StatusFilterState, TagFilterState, SortState } from '../types';
-import { TaskCardComponent, MonthViewConfig } from '../components/TaskCard';
-import { MonthViewClasses, TaskCardClasses } from '../utils/bem';
+import { MonthViewClasses, MonthTaskClasses, TaskCardClasses } from '../utils/bem';
 import { Logger } from '../utils/logger';
 import { TooltipManager } from '../utils/tooltipManager';
-import { updateTaskDateField } from '../tasks/taskUpdater';
+import { updateTaskDateField, cycleTaskStatus } from '../tasks/taskUpdater';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
-import { showCreateTaskMenu } from '../contextMenu/contextMenuIndex';
+import { showCreateTaskMenu, registerTaskContextMenu } from '../contextMenu/contextMenuIndex';
+import { StatusIcon } from '../components/StatusIcon';
+import { getPriorityBandClass } from '../utils/priorityUtils';
+import { openEditTaskModal } from '../modals/EditTaskModal';
 
 /**
  * 月视图渲染器
@@ -215,8 +217,9 @@ export class MonthViewRenderer extends BaseViewRenderer {
 
 				// 右键创建任务菜单
 				dayEl.addEventListener('contextmenu', (e: MouseEvent) => {
-					// 点击已有任务卡片时不触发（任务卡片有自己的右键菜单）
-					if ((e.target as HTMLElement).closest(`.${TaskCardClasses.block}`)) return;
+					// 点击已有任务时不触发（任务有自己的右键菜单）
+					if ((e.target as HTMLElement).closest(`.${MonthTaskClasses.block}`) ||
+						(e.target as HTMLElement).closest(`.${TaskCardClasses.block}`)) return;
 
 					showCreateTaskMenu(e, this.app, this.plugin, day.date, () => {
 						this.refreshTasks();
@@ -231,8 +234,9 @@ export class MonthViewRenderer extends BaseViewRenderer {
 				}
 
 				dayEl.onclick = (e: MouseEvent) => {
-					// 点击任务时不触发日期选择（使用正确的任务卡片类名）
-					if ((e.target as HTMLElement).closest(`.${TaskCardClasses.block}`)) {
+					// 点击任务时不触发日期选择
+					if ((e.target as HTMLElement).closest(`.${MonthTaskClasses.block}`) ||
+						(e.target as HTMLElement).closest(`.${TaskCardClasses.block}`)) {
 						return;
 					}
 					if (this.plugin.calendarView) {
@@ -296,39 +300,137 @@ export class MonthViewRenderer extends BaseViewRenderer {
 	}
 
 	/**
-	 * 渲染月视图任务项（使用统一组件）
+	 * 渲染月视图任务项（轻量 DOM + StatusIcon）
 	 */
 	private renderTaskItem(task: GCTask, container: HTMLElement): void {
-		const config = MonthViewConfig;
+		const item = container.createDiv(MonthTaskClasses.block);
 
-		const result = new TaskCardComponent({
-			task,
-			config,
-			container,
-			app: this.app,
-			plugin: this.plugin,
-			onClick: (task) => {
-				// 隐藏 tooltip
-				const tooltipManager = TooltipManager.getInstance(this.plugin);
-				tooltipManager.hide();
-				// 增量刷新：只更新任务，不重建DOM
-				this.refreshTasks();
-			},
-		}).render();
+		// 色带修饰符
+		const bandClass = this.getBandModifier(task);
+		item.addClass(bandClass);
 
-		// 子任务视觉区分（左边框 + 渐变背景）
-		if (task.parentId && result.element) {
-			result.element.addClass(TaskCardClasses.modifiers.subtask);
+		// 提醒类型修饰符
+		if (task.type === 'reminder') {
+			item.addClass(MonthTaskClasses.modifiers.reminder);
 		}
 
-		// 父任务进度标记
-		if (task.childIds?.length && result.element) {
+		// 过期检测
+		if (this.isOverdue(task)) {
+			item.addClass(MonthTaskClasses.modifiers.overdue);
+		}
+
+		// 完成/取消状态
+		if (task.status === 'done' || task.completed) {
+			item.addClass(MonthTaskClasses.modifiers.completed);
+		} else if (task.status === 'canceled' || task.cancelled) {
+			item.addClass(MonthTaskClasses.modifiers.canceled);
+		}
+
+		// StatusIcon（14px compact）
+		const isParentCanceled = this.checkParentCanceled(task);
+		const statusIcon = new StatusIcon({
+			status: (task.status || 'todo') as any,
+			priority: task.priority || 'normal',
+			isReminder: task.type === 'reminder',
+			size: 'compact',
+			disabled: isParentCanceled,
+		});
+		statusIcon.render(item);
+		statusIcon.onClick(async () => {
+			await cycleTaskStatus(this.app, task);
+			this.refreshTasks();
+		});
+
+		// 标题
+		item.createSpan({
+			text: task.description,
+			cls: MonthTaskClasses.elements.title,
+		});
+
+		// 父任务进度 [n/m]
+		if (task.childIds?.length) {
 			const children = this.plugin.taskCache.getChildTasks(task.id);
-			const completedCount = children.filter((c: GCTask) => c.completed).length;
-			const progressEl = result.element.createSpan({
-				text: ` [${completedCount}/${children.length}]`,
-				cls: 'gc-task-card__progress'
+			const done = children.filter((c: GCTask) => c.completed || c.status === 'done').length;
+			item.createSpan({
+				text: `[${done}/${children.length}]`,
+				cls: MonthTaskClasses.elements.progress,
 			});
 		}
+
+		// 拖拽支持
+		item.draggable = true;
+		item.addEventListener('dragstart', (e: DragEvent) => {
+			if (e.dataTransfer) {
+				e.dataTransfer.setData('taskId', task.id);
+				e.dataTransfer.effectAllowed = 'move';
+			}
+		});
+
+		// Tooltip
+		const tooltipManager = TooltipManager.getInstance(this.plugin);
+		item.addEventListener('mouseenter', () => {
+			tooltipManager.show(task, item);
+		});
+		item.addEventListener('mouseleave', () => {
+			tooltipManager.hide();
+		});
+
+		// 点击打开编辑弹窗
+		item.addEventListener('click', (e: MouseEvent) => {
+			// 如果点击的是 StatusIcon，不触发编辑
+			if ((e.target as HTMLElement).closest('.gc-status-icon')) return;
+			e.stopPropagation();
+			tooltipManager.hide();
+			openEditTaskModal(this.app, this.plugin, task, () => {
+				this.refreshTasks();
+			});
+		});
+
+		// 右键菜单
+		registerTaskContextMenu(item, task, this.app, this.plugin, '', () => {
+			this.refreshTasks();
+		});
+	}
+
+	/**
+	 * 获取色带修饰符
+	 */
+	private getBandModifier(task: GCTask): string {
+		if (task.status === 'done' || task.completed) {
+			return MonthTaskClasses.modifiers.bandCompleted;
+		}
+		if (task.status === 'canceled' || task.cancelled) {
+			return MonthTaskClasses.modifiers.bandCanceled;
+		}
+		const bandSuffix = getPriorityBandClass(task.priority);
+		switch (bandSuffix) {
+			case 'band-high': return MonthTaskClasses.modifiers.bandHigh;
+			case 'band-low': return MonthTaskClasses.modifiers.bandLow;
+			default: return MonthTaskClasses.modifiers.bandNormal;
+		}
+	}
+
+	/**
+	 * 检查任务是否过期
+	 */
+	private isOverdue(task: GCTask): boolean {
+		if (task.completed || task.cancelled || task.status === 'done' || task.status === 'canceled') {
+			return false;
+		}
+		if (!task.dueDate) return false;
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const due = new Date(task.dueDate);
+		due.setHours(0, 0, 0, 0);
+		return due < today;
+	}
+
+	/**
+	 * 检查父任务是否已取消
+	 */
+	private checkParentCanceled(task: GCTask): boolean {
+		if (!task.parentId) return false;
+		const parent = this.plugin.taskCache.getAllTasks().find((t: GCTask) => t.id === task.parentId);
+		return parent?.status === 'canceled' || parent?.cancelled === true;
 	}
 }

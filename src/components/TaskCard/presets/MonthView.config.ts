@@ -2,21 +2,21 @@ import type { TaskCardConfig } from '../TaskCardConfig';
 
 /**
  * 月视图预设配置
- * 最简化版本，空间有限
+ * 最简化版本：无标签、无 checkbox（使用 StatusIcon 组件替代）
  */
 export const MonthViewConfig: TaskCardConfig = {
 	// 基础配置
 	viewModifier: 'month',
 
 	// 元素显示控制
-	showCheckbox: true,
+	showCheckbox: false,        // StatusIcon 组件替代
 	showDescription: true,
-	showTags: true,
-	showPriority: false,        // 优先级通过背景色展示
+	showTags: false,            // 月视图不显示标签（标签可在 tooltip 中查看）
+	showPriority: false,
 	showFileLocation: false,
-	showWarning: false,         // 月视图不显示警告
+	showWarning: false,
 	showGlobalFilter: false,
-	priorityAsBackground: true, // 使用类型色+优先级透明度
+	priorityAsBackground: false, // 色带替代
 
 	// 时间属性配置
 	showTimes: false,
@@ -27,6 +27,6 @@ export const MonthViewConfig: TaskCardConfig = {
 	clickable: true,
 
 	// 样式配置
-	compact: true,              // 紧凑模式
-	maxLines: 1,                // 限制为单行显示
+	compact: true,
+	maxLines: 1,
 };

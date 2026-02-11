@@ -37,6 +37,11 @@ export const BLOCKS = {
 	/** 链接 */
 	LINK: 'link',
 
+	/** 状态图标 */
+	STATUS_ICON: 'status-icon',
+	/** 月视图任务条目 */
+	MONTH_TASK: 'month-task',
+
 	/** 创建任务弹窗 */
 	CREATE_TASK_MODAL: 'create-task-modal',
 	/** 创建任务按钮 */
@@ -75,43 +80,70 @@ export const TaskCardClasses = {
 
 	/** Elements */
 	elements: {
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		checkbox: bem(BLOCKS.TASK_CARD, 'checkbox'),
 		text: bem(BLOCKS.TASK_CARD, 'text'),
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		detail: bem(BLOCKS.TASK_CARD, 'detail'),
 		tags: bem(BLOCKS.TASK_CARD, 'tags'),
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		priority: bem(BLOCKS.TASK_CARD, 'priority'),
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		priorityBadge: bem(BLOCKS.TASK_CARD, 'priority-badge'),
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		times: bem(BLOCKS.TASK_CARD, 'times'),
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		timeBadge: bem(BLOCKS.TASK_CARD, 'time-badge'),
+		/** @deprecated Used only by legacy TaskCardRenderer */
 		file: bem(BLOCKS.TASK_CARD, 'file'),
-		warning: bem(BLOCKS.TASK_CARD, 'warning'),
 	},
 
 	/** Modifiers */
 	modifiers: {
 		// 视图相关修饰符（添加 view 后缀区分）
+		/** @deprecated Used only by legacy TaskCard */
 		monthView: bem(BLOCKS.TASK_CARD, undefined, 'month'),
+		/** @deprecated Used only by legacy TaskCard */
 		weekView: bem(BLOCKS.TASK_CARD, undefined, 'week'),
+		/** @deprecated Used only by legacy TaskCard */
 		taskView: bem(BLOCKS.TASK_CARD, undefined, 'task'),
 		// 状态修饰符
 		completed: bem(BLOCKS.TASK_CARD, undefined, 'completed'),
+		canceled: bem(BLOCKS.TASK_CARD, undefined, 'canceled'),
+		/** @deprecated Replaced by todo/in_progress status */
 		pending: bem(BLOCKS.TASK_CARD, undefined, 'pending'),
 		// 任务类型修饰符
+		/** @deprecated Type-based coloring removed in v2 */
 		typeTodo: bem(BLOCKS.TASK_CARD, undefined, 'type-todo'),
+		/** @deprecated Type-based coloring removed in v2 */
 		typeReminder: bem(BLOCKS.TASK_CARD, undefined, 'type-reminder'),
-		// 过期修饰符
+		/** @deprecated Overdue now handled per-view */
 		overdue: bem(BLOCKS.TASK_CARD, undefined, 'overdue'),
-		// 优先级背景色修饰符（三级：重要/正常/不重要）
+		// 色带优先级修饰符（通过 ::before 伪元素渲染）
+		bandHigh: bem(BLOCKS.TASK_CARD, undefined, 'band-high'),
+		bandNormal: bem(BLOCKS.TASK_CARD, undefined, 'band-normal'),
+		bandLow: bem(BLOCKS.TASK_CARD, undefined, 'band-low'),
+		/** @deprecated Replaced by band-* modifiers */
 		priorityHigh: bem(BLOCKS.TASK_CARD, undefined, 'priority-high'),
+		/** @deprecated Replaced by band-* modifiers */
 		priorityNormal: bem(BLOCKS.TASK_CARD, undefined, 'priority-normal'),
+		/** @deprecated Replaced by band-* modifiers */
 		priorityLow: bem(BLOCKS.TASK_CARD, undefined, 'priority-low'),
-		// 子任务修饰符
-		subtask: bem(BLOCKS.TASK_CARD, undefined, 'subtask'),
+		// 提醒类型斜体修饰符
+		reminderItalic: bem(BLOCKS.TASK_CARD, undefined, 'reminder-italic'),
+	},
+
+	/** Task view specific elements */
+	taskViewElements: {
+		main: bem(BLOCKS.TASK_CARD, 'main'),
+		due: bem(BLOCKS.TASK_CARD, 'due'),
+		dueOverdue: bem(BLOCKS.TASK_CARD, 'due', 'overdue'),
+		progress: bem(BLOCKS.TASK_CARD, 'progress'),
 	}
 };
 
 /**
- * 时间徽章类型常量
+ * @deprecated Time badge classes used only by legacy TaskCardRenderer.
  */
 export const TimeBadgeClasses = {
 	created: bem(BLOCKS.TASK_CARD, 'time-badge', 'created'),
@@ -124,7 +156,7 @@ export const TimeBadgeClasses = {
 };
 
 /**
- * 优先级类名常量
+ * @deprecated Priority badge classes removed in v2; use band-* modifiers instead.
  */
 export const PriorityClasses = {
 	high: bem(BLOCKS.TASK_CARD, 'priority-badge', 'high'),
@@ -133,6 +165,16 @@ export const PriorityClasses = {
 };
 
 
+
+/**
+ * 任务树层级类名常量（Task View 专用）
+ */
+export const TaskTreeClasses = {
+	item: 'gc-task-tree-item',
+	toggle: 'gc-task-tree-toggle',
+	spacer: 'gc-task-tree-spacer',
+	children: 'gc-task-tree-children',
+};
 
 /**
  * Tooltip类名常量
@@ -617,11 +659,72 @@ export const WeekViewClasses = {
 		ganttBarPriorityNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-normal'),
 		ganttBarPriorityLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'priority-low'),
 		ganttGridLineToday: bem(BLOCKS.WEEK_VIEW, 'gantt-grid-line', 'today'),
+		// bar 溢出修饰（超出当前周范围时移除对应边的圆角/边框）
+		ganttBarOverflowLeft: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'overflow-left'),
+		ganttBarOverflowRight: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'overflow-right'),
 		// 分组 bar 修饰
 		ganttBarGroup: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'group'),
+		ganttBarExpanded: bem(BLOCKS.WEEK_VIEW, 'gantt-bar', 'expanded'),
 		ganttRowGroup: bem(BLOCKS.WEEK_VIEW, 'gantt-row', 'group'),
-		ganttBarChildCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'completed'),
-		ganttBarGrandchildCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'completed'),
+		// 子任务 mini-bar 颜色修饰（复用与 gantt-bar 相同的配色方案）
+		ganttChildGroup: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'group'),
+		ganttChildExpanded: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'expanded'),
+		ganttChildTodo: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'todo'),
+		ganttChildCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'completed'),
+		ganttChildPriorityHigh: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'priority-high'),
+		ganttChildPriorityNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'priority-normal'),
+		ganttChildPriorityLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'priority-low'),
+		// 子/孙 bar 溢出修饰
+		ganttChildOverflowLeft: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'overflow-left'),
+		ganttChildOverflowRight: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-child-item', 'overflow-right'),
+		ganttGrandchildOverflowLeft: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'overflow-left'),
+		ganttGrandchildOverflowRight: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'overflow-right'),
+		ganttGrandchildTodo: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'todo'),
+		ganttGrandchildCompleted: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'completed'),
+		ganttGrandchildPriorityHigh: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'priority-high'),
+		ganttGrandchildPriorityNormal: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'priority-normal'),
+		ganttGrandchildPriorityLow: bem(BLOCKS.WEEK_VIEW, 'gantt-bar-grandchild-item', 'priority-low'),
+	},
+};
+
+/**
+ * 状态图标类名常量
+ */
+export const StatusIconClasses = {
+	block: bem(BLOCKS.STATUS_ICON),
+
+	modifiers: {
+		todo: bem(BLOCKS.STATUS_ICON, undefined, 'todo'),
+		inProgress: bem(BLOCKS.STATUS_ICON, undefined, 'in-progress'),
+		done: bem(BLOCKS.STATUS_ICON, undefined, 'done'),
+		canceled: bem(BLOCKS.STATUS_ICON, undefined, 'canceled'),
+		reminder: bem(BLOCKS.STATUS_ICON, undefined, 'reminder'),
+		disabled: bem(BLOCKS.STATUS_ICON, undefined, 'disabled'),
+		compact: bem(BLOCKS.STATUS_ICON, undefined, 'compact'),
+	},
+};
+
+/**
+ * 月视图任务条目类名常量
+ */
+export const MonthTaskClasses = {
+	block: bem(BLOCKS.MONTH_TASK),
+
+	elements: {
+		title: bem(BLOCKS.MONTH_TASK, 'title'),
+		progress: bem(BLOCKS.MONTH_TASK, 'progress'),
+	},
+
+	modifiers: {
+		bandHigh: bem(BLOCKS.MONTH_TASK, undefined, 'band-high'),
+		bandNormal: bem(BLOCKS.MONTH_TASK, undefined, 'band-normal'),
+		bandLow: bem(BLOCKS.MONTH_TASK, undefined, 'band-low'),
+		bandCompleted: bem(BLOCKS.MONTH_TASK, undefined, 'band-completed'),
+		bandCanceled: bem(BLOCKS.MONTH_TASK, undefined, 'band-canceled'),
+		reminder: bem(BLOCKS.MONTH_TASK, undefined, 'reminder'),
+		overdue: bem(BLOCKS.MONTH_TASK, undefined, 'overdue'),
+		completed: bem(BLOCKS.MONTH_TASK, undefined, 'completed'),
+		canceled: bem(BLOCKS.MONTH_TASK, undefined, 'canceled'),
 	},
 };
 

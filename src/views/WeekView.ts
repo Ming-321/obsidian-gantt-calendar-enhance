@@ -8,8 +8,9 @@ import { Logger } from '../utils/logger';
 import { TooltipManager } from '../utils/tooltipManager';
 import { WeekViewClasses, TaskCardClasses } from '../utils/bem';
 import { openEditTaskModal } from '../modals/EditTaskModal';
-import { showCreateTaskMenu } from '../contextMenu/contextMenuIndex';
-import { updateTaskCompletion } from '../tasks/taskUpdater';
+import { showCreateTaskMenu, registerTaskContextMenu } from '../contextMenu/contextMenuIndex';
+import { cycleTaskStatus } from '../tasks/taskUpdater';
+import { StatusIcon } from '../components/StatusIcon';
 
 /**
  * 周视图渲染器 — 甘特图风格
@@ -237,68 +238,63 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		row.addClass(WeekViewClasses.modifiers.ganttRowGroup);
 
 		// 计算 bar 位置（按父任务日期定位）
-		const { leftPercent, widthPercent } = this.calculateBarPosition(parentTask);
+		const { leftPercent, widthPercent, overflowLeft, overflowRight } = this.calculateBarPosition(parentTask);
 
 		// 创建单个分组 bar（使用 marginLeft 定位，保持文档流以撑开行高）
 		const bar = row.createDiv(WeekViewClasses.elements.ganttBar);
 		bar.style.marginLeft = `${leftPercent}%`;
 		bar.style.width = `${widthPercent}%`;
 		bar.addClass(WeekViewClasses.modifiers.ganttBarGroup);
+		if (overflowLeft) bar.addClass(WeekViewClasses.modifiers.ganttBarOverflowLeft);
+		if (overflowRight) bar.addClass(WeekViewClasses.modifiers.ganttBarOverflowRight);
 
-		// 应用颜色修饰（基于父任务）
-		if (parentTask.completed) {
+		// 应用颜色修饰（基于优先级，不再按类型区分）
+		if (parentTask.completed || parentTask.status === 'done') {
 			bar.addClass(WeekViewClasses.modifiers.ganttBarCompleted);
+		} else if (parentTask.cancelled || parentTask.status === 'canceled') {
+			bar.addClass(WeekViewClasses.modifiers.ganttBarCompleted); // 复用灰色
 		} else {
-			if (parentTask.type === 'reminder') {
-				bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
-			} else {
-				bar.addClass(WeekViewClasses.modifiers.ganttBarTodo);
-			}
 			switch (parentTask.priority) {
 				case 'high': bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityHigh); break;
 				case 'low': bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityLow); break;
 				default: bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityNormal); break;
 			}
 		}
+		// 提醒类型标记（斜体标题，不再用虚线边框）
+		if (parentTask.type === 'reminder') {
+			bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
+		}
+
+		// 展开时：父 bar 变淡，子任务彩色 mini-bar 突出显示
+		if (isExpanded) {
+			bar.addClass(WeekViewClasses.modifiers.ganttBarExpanded);
+		}
 
 		// ---- Header（父任务信息行） ----
 		const header = bar.createDiv(WeekViewClasses.elements.ganttBarHeader);
 
-		// 折叠/展开三角
+		// v4: 去掉折叠三角，通过下划线标题表示有子条目
+
+		// StatusIcon（替代 checkbox）
+		const parentIcon = new StatusIcon({
+			status: (parentTask.status || 'todo') as any,
+			priority: parentTask.priority || 'normal',
+			isReminder: parentTask.type === 'reminder',
+			size: 'compact',
+			disabled: false,
+		});
+		parentIcon.render(header);
+		parentIcon.onClick(async () => {
+			tooltipManager.hide();
+			await cycleTaskStatus(this.app, parentTask);
+			this.refreshTasks();
+		});
+
+		// 父任务标题（v4: 有子条目时直接给label加下划线修饰类）
+		const parentLabel = header.createSpan({ text: parentTask.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
 		if (children.length > 0) {
-			const toggle = header.createSpan({
-				text: isExpanded ? '▼' : '▶',
-				cls: WeekViewClasses.elements.ganttBarToggle,
-			});
-			toggle.addEventListener('click', (e: MouseEvent) => {
-				e.stopPropagation();
-				this.toggleExpand(parentTask.id);
-			});
+			parentLabel.addClass('gc-week-view__gantt-bar-label--has-children');
 		}
-
-		// 父任务复选框
-		if (parentTask.type !== 'reminder') {
-			const checkbox = header.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
-			checkbox.checked = parentTask.completed;
-			checkbox.addClass(TaskCardClasses.elements.checkbox);
-			checkbox.addEventListener('change', async (e: Event) => {
-				e.stopPropagation();
-				try {
-					tooltipManager.hide();
-					await updateTaskCompletion(this.app, parentTask, checkbox.checked);
-					this.refreshTasks();
-				} catch (error) {
-					Logger.error('WeekView', 'Error updating parent completion:', error);
-					checkbox.checked = parentTask.completed;
-				}
-			});
-			checkbox.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
-		} else {
-			header.createSpan({ text: '🔔', cls: WeekViewClasses.elements.ganttBarIcon });
-		}
-
-		// 父任务标题
-		header.createSpan({ text: parentTask.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
 
 		// 进度
 		if (children.length > 0) {
@@ -308,139 +304,299 @@ export class WeekViewRenderer extends BaseViewRenderer {
 			});
 		}
 
-		// Header 交互：tooltip + 点击编辑
+		// Header 交互：tooltip + 左键展开/折叠 + 右键编辑
 		header.addEventListener('mouseenter', () => tooltipManager.show(parentTask, header));
 		header.addEventListener('mouseleave', () => tooltipManager.hide());
-		header.addEventListener('click', () => {
+		// v4: 左键单击 → 展开/折叠（有子条目时）
+		header.addEventListener('click', (e: MouseEvent) => {
+			if ((e.target as HTMLElement).closest('.gc-status-icon')) return;
+			e.stopPropagation();
 			tooltipManager.hide();
-			openEditTaskModal(this.app, this.plugin, parentTask, () => this.refreshTasks());
+			if (children.length > 0) {
+				this.toggleExpand(parentTask.id);
+			}
 		});
+		// v4: 右键 → 编辑菜单
+		registerTaskContextMenu(bar, parentTask, this.app, this.plugin, '', () => this.refreshTasks());
 
-		// ---- Children（展开时显示所有子任务） ----
+		// ---- Children（展开时显示所有子任务，按日期定位为彩色 mini-bar） ----
 		if (isExpanded && children.length > 0) {
 			const childrenContainer = bar.createDiv(WeekViewClasses.elements.ganttBarChildren);
 
 			children.forEach((child: GCTask) => {
-				this.renderGroupChildItem(childrenContainer, child, tooltipManager);
+				this.renderGroupChildItem(childrenContainer, child, parentTask, tooltipManager);
 			});
 		}
 	}
 
 	/**
-	 * 渲染分组 bar 内的子任务项
+	 * 渲染分组 bar 内的子任务项（彩色 mini-bar，按日期水平定位）
+	 *
+	 * 核心设计：一级子任务的展开/折叠逻辑与父任务完全一致。
+	 * - 有孙任务 + 折叠：普通彩色 mini-bar（带三角 + 进度）
+	 * - 有孙任务 + 展开：变为淡色容器，孙任务以 mini-bar 在其内部显示
+	 * - 无孙任务：普通彩色 mini-bar
 	 */
 	private renderGroupChildItem(
 		container: HTMLElement,
 		child: GCTask,
+		rootParent: GCTask,
 		tooltipManager: TooltipManager,
 	): void {
 		const grandChildren = this.plugin.taskCache.getChildTasks(child.id);
 		const gcCompleted = grandChildren.filter((gc: GCTask) => gc.completed).length;
 		const isChildExpanded = this.expandedTasks.has(child.id);
+		const hasGrandChildren = grandChildren.length > 0;
 
 		const childItem = container.createDiv(WeekViewClasses.elements.ganttBarChildItem);
-		if (child.completed) {
-			childItem.addClass(WeekViewClasses.modifiers.ganttBarChildCompleted);
-		}
 
-		// 孙任务折叠三角
-		if (grandChildren.length > 0) {
-			const toggle = childItem.createSpan({
-				text: isChildExpanded ? '▼' : '▶',
-				cls: WeekViewClasses.elements.ganttBarToggle,
-			});
-			toggle.addEventListener('click', (e: MouseEvent) => {
-				e.stopPropagation();
-				this.toggleExpand(child.id);
-			});
-		}
+		// 按日期定位（相对于父 bar）
+		const { leftPercent, widthPercent, overflowLeft, overflowRight } = this.calculateChildBarPosition(rootParent, child);
+		childItem.style.marginLeft = `${leftPercent}%`;
+		childItem.style.width = `${widthPercent}%`;
+		if (overflowLeft) childItem.addClass(WeekViewClasses.modifiers.ganttChildOverflowLeft);
+		if (overflowRight) childItem.addClass(WeekViewClasses.modifiers.ganttChildOverflowRight);
 
-		// 子任务复选框
-		const childCheckbox = childItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
-		childCheckbox.checked = child.completed;
-		childCheckbox.addClass(TaskCardClasses.elements.checkbox);
-		childCheckbox.addEventListener('change', async (e: Event) => {
-			e.stopPropagation();
-			try {
-				tooltipManager.hide();
-				await updateTaskCompletion(this.app, child, childCheckbox.checked);
-				this.refreshTasks();
-			} catch (error) {
-				Logger.error('WeekView', 'Error updating child completion:', error);
-				childCheckbox.checked = child.completed;
-			}
-		});
-		childCheckbox.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
+		// 应用颜色修饰
+		this.applyItemColorModifiers(childItem, child, 'child');
 
-		// 子任务标题
-		childItem.createSpan({ text: child.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+		// ---- 展开态 + 有孙任务：分为 header + children 容器 ----
+		if (hasGrandChildren && isChildExpanded) {
+			childItem.addClass(WeekViewClasses.modifiers.ganttChildGroup);
+			childItem.addClass(WeekViewClasses.modifiers.ganttChildExpanded);
 
-		// 子任务进度（有孙任务时）
-		if (grandChildren.length > 0) {
-			childItem.createSpan({
+			// Header 行（子任务信息）
+			const childHeader = childItem.createDiv(WeekViewClasses.elements.ganttBarHeader);
+
+			// StatusIcon
+			this.renderBarStatusIcon(childHeader, child, tooltipManager);
+
+			// 标题（v4: 有孙任务时直接给label加下划线修饰类）
+			const childLabel = childHeader.createSpan({ text: child.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+			childLabel.addClass('gc-week-view__gantt-bar-label--has-children');
+
+			// 进度
+			childHeader.createSpan({
 				text: `[${gcCompleted}/${grandChildren.length}]`,
 				cls: WeekViewClasses.elements.ganttBarProgress,
 			});
-		}
 
-		// 子任务交互
-		childItem.addEventListener('mouseenter', () => tooltipManager.show(child, childItem));
-		childItem.addEventListener('mouseleave', () => tooltipManager.hide());
-		childItem.addEventListener('click', (e: MouseEvent) => {
-			e.stopPropagation();
-			tooltipManager.hide();
-			openEditTaskModal(this.app, this.plugin, child, () => this.refreshTasks());
-		});
+			// Header 交互：tooltip + 左键展开/折叠 + 右键编辑
+			childHeader.addEventListener('mouseenter', () => tooltipManager.show(child, childHeader));
+			childHeader.addEventListener('mouseleave', () => tooltipManager.hide());
+			childHeader.addEventListener('click', (e: MouseEvent) => {
+				if ((e.target as HTMLElement).closest('.gc-status-icon')) return;
+				e.stopPropagation();
+				tooltipManager.hide();
+				this.toggleExpand(child.id);
+			});
 
-		// ---- 孙任务（子任务展开时） ----
-		if (isChildExpanded && grandChildren.length > 0) {
+			// 孙任务容器（内部定位相对于 child 的日期范围）
+			const gcContainer = childItem.createDiv(WeekViewClasses.elements.ganttBarChildren);
 			grandChildren.forEach((gc: GCTask) => {
-				this.renderGroupGrandchildItem(container, gc, tooltipManager);
+				this.renderGroupGrandchildItem(gcContainer, gc, child, tooltipManager);
+			});
+
+		} else {
+			// ---- 折叠态 / 无孙任务：普通 mini-bar ----
+			// v4: 去掉折叠三角
+
+			// StatusIcon
+			this.renderBarStatusIcon(childItem, child, tooltipManager);
+
+			// 标题（v4: 有孙任务时直接给label加下划线修饰类）
+			const childLabel = childItem.createSpan({ text: child.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
+			if (hasGrandChildren) {
+				childLabel.addClass('gc-week-view__gantt-bar-label--has-children');
+			}
+
+			// 进度
+			if (hasGrandChildren) {
+				childItem.createSpan({
+					text: `[${gcCompleted}/${grandChildren.length}]`,
+					cls: WeekViewClasses.elements.ganttBarProgress,
+				});
+			}
+
+			// 交互：tooltip + 左键展开/折叠（有孙任务时）
+			childItem.addEventListener('mouseenter', () => tooltipManager.show(child, childItem));
+			childItem.addEventListener('mouseleave', () => tooltipManager.hide());
+			childItem.addEventListener('click', (e: MouseEvent) => {
+				if ((e.target as HTMLElement).closest('.gc-status-icon')) return;
+				e.stopPropagation();
+				tooltipManager.hide();
+				if (hasGrandChildren) {
+					this.toggleExpand(child.id);
+				}
 			});
 		}
+
+		// v4: 右键 → 编辑菜单（所有子任务统一）
+		registerTaskContextMenu(childItem, child, this.app, this.plugin, '', () => this.refreshTasks());
 	}
 
 	/**
-	 * 渲染分组 bar 内的孙任务项
+	 * 渲染 bar 内的 StatusIcon（替代复选框）
+	 */
+	private renderBarStatusIcon(
+		container: HTMLElement,
+		task: GCTask,
+		tooltipManager: TooltipManager,
+	): void {
+		const icon = new StatusIcon({
+			status: (task.status || 'todo') as any,
+			priority: task.priority || 'normal',
+			isReminder: task.type === 'reminder',
+			size: 'compact',
+			disabled: false,
+		});
+		icon.render(container);
+		icon.onClick(async () => {
+			tooltipManager.hide();
+			await cycleTaskStatus(this.app, task);
+			this.refreshTasks();
+		});
+	}
+
+	/**
+	 * 渲染分组 bar 内的孙任务项（彩色 mini-bar，按日期水平定位）
 	 */
 	private renderGroupGrandchildItem(
 		container: HTMLElement,
 		gc: GCTask,
+		rootParent: GCTask,
 		tooltipManager: TooltipManager,
 	): void {
 		const gcItem = container.createDiv(WeekViewClasses.elements.ganttBarGrandchildItem);
-		if (gc.completed) {
-			gcItem.addClass(WeekViewClasses.modifiers.ganttBarGrandchildCompleted);
-		}
 
-		// 孙任务复选框
-		const gcCheckbox = gcItem.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
-		gcCheckbox.checked = gc.completed;
-		gcCheckbox.addClass(TaskCardClasses.elements.checkbox);
-		gcCheckbox.addEventListener('change', async (e: Event) => {
-			e.stopPropagation();
-			try {
-				tooltipManager.hide();
-				await updateTaskCompletion(this.app, gc, gcCheckbox.checked);
-				this.refreshTasks();
-			} catch (error) {
-				Logger.error('WeekView', 'Error updating grandchild completion:', error);
-				gcCheckbox.checked = gc.completed;
-			}
-		});
-		gcCheckbox.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
+		// 按日期定位
+		const { leftPercent, widthPercent, overflowLeft, overflowRight } = this.calculateChildBarPosition(rootParent, gc);
+		gcItem.style.marginLeft = `${leftPercent}%`;
+		gcItem.style.width = `${widthPercent}%`;
+		if (overflowLeft) gcItem.addClass(WeekViewClasses.modifiers.ganttGrandchildOverflowLeft);
+		if (overflowRight) gcItem.addClass(WeekViewClasses.modifiers.ganttGrandchildOverflowRight);
+
+		// 应用颜色修饰
+		this.applyItemColorModifiers(gcItem, gc, 'grandchild');
+
+		// 孙任务 StatusIcon
+		this.renderBarStatusIcon(gcItem, gc, tooltipManager);
 
 		// 孙任务标题
 		gcItem.createSpan({ text: gc.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
 
-		// 孙任务交互
+		// 孙任务交互：tooltip + 右键编辑（v4: 左键不再打开编辑）
 		gcItem.addEventListener('mouseenter', () => tooltipManager.show(gc, gcItem));
 		gcItem.addEventListener('mouseleave', () => tooltipManager.hide());
-		gcItem.addEventListener('click', (e: MouseEvent) => {
-			e.stopPropagation();
-			tooltipManager.hide();
-			openEditTaskModal(this.app, this.plugin, gc, () => this.refreshTasks());
-		});
+		// v4: 右键 → 编辑菜单
+		registerTaskContextMenu(gcItem, gc, this.app, this.plugin, '', () => this.refreshTasks());
+	}
+
+	/**
+	 * 为子/孙任务项应用颜色修饰类
+	 */
+	private applyItemColorModifiers(el: HTMLElement, task: GCTask, level: 'child' | 'grandchild'): void {
+		const m = WeekViewClasses.modifiers;
+		if (task.completed) {
+			el.addClass(level === 'child' ? m.ganttChildCompleted : m.ganttGrandchildCompleted);
+			return;
+		}
+		// v4: 仅添加优先级类（不再添加 --todo 类型类，颜色统一由优先级决定）
+		switch (task.priority) {
+			case 'high':
+				el.addClass(level === 'child' ? m.ganttChildPriorityHigh : m.ganttGrandchildPriorityHigh);
+				break;
+			case 'low':
+				el.addClass(level === 'child' ? m.ganttChildPriorityLow : m.ganttGrandchildPriorityLow);
+				break;
+			default:
+				el.addClass(level === 'child' ? m.ganttChildPriorityNormal : m.ganttGrandchildPriorityNormal);
+				break;
+		}
+	}
+
+	/**
+	 * 获取任务在当前周内的有效日期范围（用于子 bar 相对定位）
+	 */
+	private getBarDateRange(task: GCTask): { startTime: number; endTime: number } {
+		if (!this.currentWeekStart || !this.currentWeekEnd) {
+			return { startTime: 0, endTime: 0 };
+		}
+		const weekStartTime = this.currentWeekStart.getTime();
+		const weekEndTime = this.currentWeekEnd.getTime();
+		const dayMs = 24 * 60 * 60 * 1000;
+
+		// 已完成任务：单天标记
+		if (task.completed && task.completionDate) {
+			const comp = new Date(task.completionDate);
+			comp.setHours(0, 0, 0, 0);
+			return { startTime: comp.getTime(), endTime: comp.getTime() + dayMs };
+		}
+
+		const start = task.startDate ? new Date(task.startDate) : (task.createdDate ? new Date(task.createdDate) : null);
+		const due = task.dueDate ? new Date(task.dueDate) : null;
+		if (start) start.setHours(0, 0, 0, 0);
+		if (due) due.setHours(0, 0, 0, 0);
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const taskStart = start ? start.getTime() : weekStartTime;
+		const taskEnd = due ? Math.max(due.getTime(), today.getTime()) : today.getTime();
+
+		// Clamp to week boundaries
+		const barStart = Math.max(taskStart, weekStartTime);
+		const barEnd = Math.min(taskEnd + dayMs, weekEndTime);
+
+		return { startTime: barStart, endTime: Math.max(barEnd, barStart + dayMs) };
+	}
+
+	/**
+	 * 计算子任务在父 bar 内的相对位置（百分比）
+	 */
+	private calculateChildBarPosition(parentTask: GCTask, childTask: GCTask): { leftPercent: number; widthPercent: number; overflowLeft: boolean; overflowRight: boolean } {
+		const parentRange = this.getBarDateRange(parentTask);
+		const parentSpan = parentRange.endTime - parentRange.startTime;
+		if (parentSpan <= 0) return { leftPercent: 0, widthPercent: 100, overflowLeft: false, overflowRight: false };
+
+		const dayMs = 24 * 60 * 60 * 1000;
+
+		// 获取子任务日期范围
+		const childStart = childTask.startDate
+			? new Date(childTask.startDate)
+			: (childTask.createdDate ? new Date(childTask.createdDate) : new Date());
+		childStart.setHours(0, 0, 0, 0);
+
+		const childDue = childTask.dueDate ? new Date(childTask.dueDate) : null;
+		if (childDue) childDue.setHours(0, 0, 0, 0);
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const rawChildStart = childStart.getTime();
+		const rawChildEnd = childDue
+			? Math.max(childDue.getTime(), today.getTime()) + dayMs
+			: today.getTime() + dayMs;
+
+		// 注意：已完成子任务不缩短 bar，保持原始时间线（startDate → dueDate）
+		// 完成状态已通过颜色和删除线区分
+
+		// 检测子 bar 是否溢出父 bar 可见范围
+		const overflowLeft = rawChildStart < parentRange.startTime;
+		const overflowRight = rawChildEnd > parentRange.endTime;
+
+		// Clamp 子任务日期到父 bar 可见范围，避免超出父 bar 的部分撑大宽度
+		const childStartTime = Math.max(rawChildStart, parentRange.startTime);
+		const childEndTime = Math.min(rawChildEnd, parentRange.endTime);
+
+		// 计算相对父 bar 的百分比位置
+		let left = ((childStartTime - parentRange.startTime) / parentSpan) * 100;
+		let width = ((childEndTime - childStartTime) / parentSpan) * 100;
+
+		// Clamp 百分比到合法范围
+		left = Math.max(0, Math.min(95, left));
+		width = Math.max(8, Math.min(100 - left, width)); // 最小 8% 保证可见
+
+		return { leftPercent: left, widthPercent: width, overflowLeft, overflowRight };
 	}
 
 	/**
@@ -605,34 +761,29 @@ export class WeekViewRenderer extends BaseViewRenderer {
 	 */
 	private renderGanttBar(row: HTMLElement, task: GCTask, options?: GanttBarOptions): void {
 		// 计算 bar 的位置和宽度（基于 7 列百分比）
-		const { leftPercent, widthPercent } = this.calculateBarPosition(task);
+		const { leftPercent, widthPercent, overflowLeft, overflowRight } = this.calculateBarPosition(task);
 
 		const bar = row.createDiv(WeekViewClasses.elements.ganttBar);
 		bar.style.left = `${leftPercent}%`;
+		if (overflowLeft) bar.addClass(WeekViewClasses.modifiers.ganttBarOverflowLeft);
+		if (overflowRight) bar.addClass(WeekViewClasses.modifiers.ganttBarOverflowRight);
 		bar.style.width = `${widthPercent}%`;
 
-		// 类型+优先级颜色修饰（与卡片一致）
-		if (task.completed) {
+		// 颜色修饰（基于优先级）
+		if (task.completed || task.status === 'done') {
+			bar.addClass(WeekViewClasses.modifiers.ganttBarCompleted);
+		} else if (task.cancelled || task.status === 'canceled') {
 			bar.addClass(WeekViewClasses.modifiers.ganttBarCompleted);
 		} else {
-			// 任务类型修饰
-			if (task.type === 'reminder') {
-				bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
-			} else {
-				bar.addClass(WeekViewClasses.modifiers.ganttBarTodo);
-			}
-			// 三级优先级透明度
 			switch (task.priority) {
-				case 'high':
-					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityHigh);
-					break;
-				case 'low':
-					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityLow);
-					break;
-				default:
-					bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityNormal);
-					break;
+				case 'high': bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityHigh); break;
+				case 'low': bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityLow); break;
+				default: bar.addClass(WeekViewClasses.modifiers.ganttBarPriorityNormal); break;
 			}
+		}
+		// 提醒类型标记
+		if (task.type === 'reminder') {
+			bar.addClass(WeekViewClasses.modifiers.ganttBarReminder);
 		}
 
 		// 展开/折叠三角（如果有子任务）
@@ -647,32 +798,21 @@ export class WeekViewRenderer extends BaseViewRenderer {
 			});
 		}
 
-		// Bar 内容：复选框/图标 + 标题
-		if (task.type === 'reminder') {
-			bar.createSpan({ text: '🔔', cls: WeekViewClasses.elements.ganttBarIcon });
-		} else {
-			// 待办任务显示复选框
-			const checkbox = bar.createEl('input', { type: 'checkbox' }) as HTMLInputElement;
-			checkbox.checked = task.completed;
-			checkbox.disabled = false;
-			checkbox.addClass(TaskCardClasses.elements.checkbox);
-
-			checkbox.addEventListener('change', async (e) => {
-				e.stopPropagation();
-				const isNowCompleted = checkbox.checked;
-				try {
-					const tooltipManager = TooltipManager.getInstance(this.plugin);
-					tooltipManager.hide();
-					await updateTaskCompletion(this.app, task, isNowCompleted);
-					this.refreshTasks();
-				} catch (error) {
-					Logger.error('WeekView', 'Error updating task completion:', error);
-					checkbox.checked = task.completed;
-				}
+		// Bar 内容：StatusIcon + 标题
+		{
+			const barIcon = new StatusIcon({
+				status: (task.status || 'todo') as any,
+				priority: task.priority || 'normal',
+				isReminder: task.type === 'reminder',
+				size: 'compact',
+				disabled: false,
 			});
-
-			checkbox.addEventListener('click', (e) => {
-				e.stopPropagation();
+			barIcon.render(bar);
+			barIcon.onClick(async () => {
+				const tooltipManager = TooltipManager.getInstance(this.plugin);
+				tooltipManager.hide();
+				await cycleTaskStatus(this.app, task);
+				this.refreshTasks();
 			});
 		}
 		bar.createSpan({ text: task.description || '无标题', cls: WeekViewClasses.elements.ganttBarLabel });
@@ -702,10 +842,10 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
 	/**
 	 * 计算任务 bar 在 7 列中的位置
-	 * @returns leftPercent (0~100), widthPercent (>0)
+	 * @returns leftPercent, widthPercent, overflowLeft (开始在本周之前), overflowRight (结束在本周之后)
 	 */
-	private calculateBarPosition(task: GCTask): { leftPercent: number; widthPercent: number } {
-		if (!this.currentWeekStart) return { leftPercent: 0, widthPercent: 14.2857 };
+	private calculateBarPosition(task: GCTask): { leftPercent: number; widthPercent: number; overflowLeft: boolean; overflowRight: boolean } {
+		if (!this.currentWeekStart) return { leftPercent: 0, widthPercent: 14.2857, overflowLeft: false, overflowRight: false };
 
 		const weekStartTime = this.currentWeekStart.getTime();
 		const dayMs = 24 * 60 * 60 * 1000;
@@ -713,12 +853,12 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
 		if (task.type === 'reminder') {
 			// 提醒：单天标记
-			if (!task.dueDate) return { leftPercent: 0, widthPercent: colWidth };
+			if (!task.dueDate) return { leftPercent: 0, widthPercent: colWidth, overflowLeft: false, overflowRight: false };
 			const due = new Date(task.dueDate);
 			due.setHours(0, 0, 0, 0);
 			const dayIndex = Math.round((due.getTime() - weekStartTime) / dayMs);
 			const clampedIndex = Math.max(0, Math.min(6, dayIndex));
-			return { leftPercent: clampedIndex * colWidth, widthPercent: colWidth };
+			return { leftPercent: clampedIndex * colWidth, widthPercent: colWidth, overflowLeft: false, overflowRight: false };
 		}
 
 		// 待办
@@ -727,7 +867,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 			comp.setHours(0, 0, 0, 0);
 			const dayIndex = Math.round((comp.getTime() - weekStartTime) / dayMs);
 			const clampedIndex = Math.max(0, Math.min(6, dayIndex));
-			return { leftPercent: clampedIndex * colWidth, widthPercent: colWidth };
+			return { leftPercent: clampedIndex * colWidth, widthPercent: colWidth, overflowLeft: false, overflowRight: false };
 		}
 
 		const start = task.startDate ? new Date(task.startDate) : (task.createdDate ? new Date(task.createdDate) : null);
@@ -747,10 +887,14 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		const weekEndTime = this.currentWeekEnd ? this.currentWeekEnd.getTime() : weekStartTime + 6 * dayMs;
 		const barEndTime = Math.min(taskEndTime, weekEndTime);
 
+		// 检测溢出：任务实际范围超出当前周
+		const overflowLeft = taskStartTime < weekStartTime;
+		const overflowRight = taskEndTime > weekEndTime;
+
 		// 安全检查：如果 barEnd < barStart（如任务 start 在未来且无 due），显示单天标记
 		if (barEndTime < barStartTime) {
 			const fallbackIndex = Math.max(0, Math.min(6, Math.round((barStartTime - weekStartTime) / dayMs)));
-			return { leftPercent: fallbackIndex * colWidth, widthPercent: colWidth };
+			return { leftPercent: fallbackIndex * colWidth, widthPercent: colWidth, overflowLeft: false, overflowRight: false };
 		}
 
 		const startIndex = (barStartTime - weekStartTime) / dayMs;
@@ -760,7 +904,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 		const span = Math.max(1, endIndex - startIndex + 1); // at least 1 day
 		const widthPercent = Math.max(colWidth, Math.min(span * colWidth, 100 - leftPercent));
 
-		return { leftPercent, widthPercent };
+		return { leftPercent, widthPercent, overflowLeft, overflowRight };
 	}
 
 	// ==================== 增量刷新 ====================

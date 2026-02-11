@@ -105,9 +105,6 @@ export class TaskCardComponent {
 			};
 			card.addClass(priorityModifierMap[task.priority] ?? TaskCardClasses.modifiers.priorityNormal);
 		}
-
-		// 应用自定义状态颜色
-		this.renderer.applyStatusColors(task, card);
 	}
 
 	/**

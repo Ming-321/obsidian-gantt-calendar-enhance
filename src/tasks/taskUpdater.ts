@@ -79,6 +79,7 @@ function updatesToChanges(updates: TaskUpdates): TaskChanges {
 
 /**
  * 更新任务的完成状态
+ * @deprecated 使用 cycleTaskStatus 代替
  */
 export async function updateTaskCompletion(
 	app: App,
@@ -102,6 +103,48 @@ export async function updateTaskCompletion(
 		if (task.status === 'done') {
 			updates.status = 'todo';
 		}
+	}
+
+	await updateTaskProperties(app, task, updates);
+}
+
+/**
+ * 循环切换任务状态
+ * todo → in_progress → done → todo
+ * canceled → todo（恢复）
+ *
+ * 同时同步更新 completed/completionDate/cancelled/cancelledDate 字段
+ */
+export async function cycleTaskStatus(
+	app: App,
+	task: GCTask,
+): Promise<void> {
+	const { getNextStatus } = await import('../tasks/taskStatus');
+
+	const newStatus = getNextStatus(task.status || 'todo');
+
+	const updates: TaskUpdates = { status: newStatus };
+
+	switch (newStatus) {
+		case 'done':
+			updates.completed = true;
+			updates.completionDate = new Date();
+			updates.cancelled = false;
+			updates.cancelledDate = null;
+			break;
+		case 'todo':
+		case 'in_progress':
+			updates.completed = false;
+			updates.completionDate = null;
+			updates.cancelled = false;
+			updates.cancelledDate = null;
+			break;
+		case 'canceled':
+			updates.cancelled = true;
+			updates.cancelledDate = new Date();
+			updates.completed = false;
+			updates.completionDate = null;
+			break;
 	}
 
 	await updateTaskProperties(app, task, updates);

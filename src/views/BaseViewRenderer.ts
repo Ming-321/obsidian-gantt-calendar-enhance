@@ -3,7 +3,6 @@ import type { GCTask } from '../types';
 import { DEFAULT_TAG_FILTER_STATE, DEFAULT_STATUS_FILTER_STATE, type TagFilterState, type StatusFilterState } from '../types';
 import { formatDate } from '../dateUtils/dateUtilsIndex';
 import { openFileInExistingLeaf } from '../utils/fileOpener';
-import { getStatusColor, DEFAULT_TASK_STATUSES } from '../tasks/taskStatus';
 import { RegularExpressions } from '../utils/RegularExpressions';
 import { Logger } from '../utils/logger';
 import { TooltipClasses } from '../utils/bem';
@@ -59,24 +58,18 @@ export abstract class BaseViewRenderer {
 
 	/**
 	 * 获取任务状态颜色配置
-	 * 从插件设置中读取状态颜色，如果未配置则使用默认值
+	 * @deprecated 颜色不再由状态决定，而是由优先级决定（通过色带渲染）
 	 */
-	protected getStatusColors(task: GCTask): { bg: string; text: string } | null {
-		if (!task.status) return null;
-
-		return getStatusColor(task.status, DEFAULT_TASK_STATUSES) || null;
+	protected getStatusColors(_task: GCTask): { bg: string; text: string } | null {
+		return null;
 	}
 
 	/**
 	 * 应用状态颜色到任务元素
+	 * @deprecated 使用色带系统替代
 	 */
-	protected applyStatusColors(task: GCTask, element: HTMLElement): void {
-		const colors = this.getStatusColors(task);
-		if (colors) {
-			element.style.setProperty('--task-bg-color', colors.bg);
-			element.style.setProperty('--task-text-color', colors.text);
-			element.addClass('task-with-status');
-		}
+	protected applyStatusColors(_task: GCTask, _element: HTMLElement): void {
+		// No-op: 颜色由色带系统处理
 	}
 
 	/**

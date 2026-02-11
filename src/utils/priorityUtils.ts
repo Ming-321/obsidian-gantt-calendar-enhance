@@ -27,6 +27,7 @@ export function getPriorityWeight(priority?: string): number {
 
 /**
  * 获取优先级图标
+ * @deprecated 图标由 StatusIcon 组件渲染，此函数保留用于右键菜单等场景
  */
 export function getPriorityIcon(priority?: string): string {
 	switch (priority) {
@@ -34,6 +35,32 @@ export function getPriorityIcon(priority?: string): string {
 		case 'normal': return '⚪';
 		case 'low': return '🔵';
 		default: return '';
+	}
+}
+
+/**
+ * 获取优先级颜色 CSS 变量名
+ * @param priority 优先级
+ * @returns CSS 变量名字符串（可直接用于 style 属性）
+ */
+export function getPriorityColor(priority?: string): string {
+	switch (priority) {
+		case 'high': return 'var(--gc-priority-high)';
+		case 'low': return 'var(--gc-priority-low)';
+		default: return 'var(--gc-priority-normal)';
+	}
+}
+
+/**
+ * 获取优先级对应的色带修饰符 CSS 类名后缀
+ * @param priority 优先级
+ * @returns 'band-high' | 'band-normal' | 'band-low'
+ */
+export function getPriorityBandClass(priority?: string): string {
+	switch (priority) {
+		case 'high': return 'band-high';
+		case 'low': return 'band-low';
+		default: return 'band-normal';
 	}
 }
 

@@ -190,7 +190,7 @@ export interface StatusFilterState {
 	selectedStatuses: string[];
 }
 
-/** 默认状态筛选状态（默认只显示待办任务） */
+/** 默认状态筛选状态（默认显示待办和进行中任务） */
 export const DEFAULT_STATUS_FILTER_STATE: StatusFilterState = {
-	selectedStatuses: ['todo']
+	selectedStatuses: ['todo', 'in_progress']
 };

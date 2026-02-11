@@ -7,12 +7,12 @@ import type { SortField, SortOrder, TagFilterOperator } from '../types';
 export type DateFieldType = 'createdDate' | 'startDate' | 'scheduledDate' | 'dueDate' | 'completionDate' | 'cancelledDate';
 
 /**
- * 任务视图显示模式
+ * @deprecated 任务视图已统一为单一模式，此类型仅用于向后兼容
  */
 export type TaskViewDisplayMode = 'compact' | 'full';
 
 /**
- * 任务视图字段显示配置
+ * @deprecated 任务视图已统一为单一模式，此类型仅用于向后兼容
  */
 export interface TaskViewFieldConfig {
 	showTags: boolean;
@@ -56,8 +56,11 @@ export interface GanttCalendarSettings {
 	enableDebugMode: boolean;
 
 	// ========== 任务视图显示模式 ==========
+	/** @deprecated 双模式已合并为单一布局，保留字段以兼容旧数据 */
 	taskViewDisplayMode: TaskViewDisplayMode;
+	/** @deprecated 双模式已合并为单一布局，保留字段以兼容旧数据 */
 	taskViewCompactFields: TaskViewFieldConfig;
+	/** @deprecated 双模式已合并为单一布局，保留字段以兼容旧数据 */
 	taskViewFullFields: TaskViewFieldConfig;
 
 	// ========== 持久化筛选和排序状态 ==========

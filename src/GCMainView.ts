@@ -259,15 +259,10 @@ export class GCMainView extends ItemView {
 
 	/**
 	 * 标题单击处理：
-	 * - 任务视图 → 切换简洁/完整显示模式
 	 * - rolling7 模式 → 切回标准周模式
-	 * - 标准模式 → 回到今天
+	 * - 其他 → 回到今天
 	 */
 	private handleTitleClick(): void {
-		if (this.viewType === 'task') {
-			this.toggleTaskViewDisplayMode();
-			return;
-		}
 		if (this.weekMode === 'rolling7') {
 			this.weekMode = 'standard';
 			this.currentDate = getTodayDate();
@@ -275,17 +270,6 @@ export class GCMainView extends ItemView {
 		} else {
 			this.goToToday();
 		}
-	}
-
-	/**
-	 * 切换任务视图显示模式（简洁 ↔ 完整）
-	 */
-	private async toggleTaskViewDisplayMode(): Promise<void> {
-		if (!this.plugin?.settings) return;
-		const current = this.plugin.settings.taskViewDisplayMode || 'compact';
-		this.plugin.settings.taskViewDisplayMode = current === 'compact' ? 'full' : 'compact';
-		await this.plugin.saveSettings();
-		this.render();
 	}
 
 	/**
@@ -324,9 +308,7 @@ export class GCMainView extends ItemView {
 				return `第${weekNum}周 (${startStr}-${endStr})`;
 			}
 			case 'task': {
-				const mode = this.plugin?.settings?.taskViewDisplayMode || 'compact';
-				const modeLabel = mode === 'compact' ? '简洁' : '完整';
-				return `任务 · ${modeLabel}`;
+				return '任务';
 			}
 		}
 	}

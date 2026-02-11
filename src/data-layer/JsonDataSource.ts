@@ -195,7 +195,12 @@ export class JsonDataSource implements IDataSource {
 		const data = await this.readDataFile();
 
 		// 迁移旧的六级优先级到三级（直接修改存储数据）
-		const needsMigration = this.migratePriorityData(data);
+		const needsPriorityMigration = this.migratePriorityData(data);
+
+		// 迁移旧的 7 状态到 4 状态 + 填充缺失的 dueDate
+		const needsStatusMigration = this.migrateStatusData(data);
+
+		const needsMigration = needsPriorityMigration || needsStatusMigration;
 
 		// 加载活跃任务
 		this.tasks.clear();
@@ -320,6 +325,52 @@ export class JsonDataSource implements IDataSource {
 
 		migrateList(data.tasks);
 		migrateList(data.archive);
+		return migrated;
+	}
+
+	/**
+	 * 迁移旧的 7 状态到 4 状态 + 填充缺失的 dueDate
+	 * - important → todo + priority: high
+	 * - start → in_progress
+	 * - question → todo
+	 * - dueDate 为空 → 设为一个月后
+	 * @returns 是否有数据被修改
+	 */
+	private migrateStatusData(data: TasksJsonFile): boolean {
+		let migrated = false;
+
+		const migrateList = (tasks: JsonTaskData[]) => {
+			for (const task of tasks) {
+				// 状态迁移
+				if (task.status === 'important') {
+					task.status = 'todo';
+					task.priority = 'high';
+					migrated = true;
+				} else if (task.status === 'start') {
+					task.status = 'in_progress';
+					migrated = true;
+				} else if (task.status === 'question') {
+					task.status = 'todo';
+					migrated = true;
+				}
+
+				// 填充缺失的 dueDate（设为一个月后）
+				if (!task.dueDate) {
+					const oneMonthLater = new Date();
+					oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+					task.dueDate = oneMonthLater.toISOString();
+					migrated = true;
+				}
+			}
+		};
+
+		migrateList(data.tasks);
+		migrateList(data.archive);
+
+		if (migrated) {
+			Logger.info('JsonDataSource', 'Migrated legacy 7-status data to 4-status system');
+		}
+
 		return migrated;
 	}
 
@@ -496,12 +547,27 @@ export class JsonDataSource implements IDataSource {
 
 	/**
 	 * 更新任务
+	 *
+	 * @param options.skipCascade 跳过联动传播（防止递归）
+	 * @param options.propagationDirection 联动方向：'down'=仅向下传播，'up'=仅向上聚合，'none'=不传播
 	 */
-	async updateTask(taskId: string, changes: TaskChanges, options?: { skipCascade?: boolean }): Promise<void> {
+	async updateTask(taskId: string, changes: TaskChanges, options?: {
+		skipCascade?: boolean;
+		propagationDirection?: 'down' | 'up' | 'none';
+	}): Promise<void> {
 		const task = this.tasks.get(taskId) || this.archivedTasks.get(taskId);
 		if (!task) {
 			Logger.warn('JsonDataSource', `Task not found for update: ${taskId}`);
 			return;
+		}
+
+		// 取消保护：如果父任务已取消，拒绝子任务的状态变更
+		if (changes.status && task.parentId) {
+			const parent = this.tasks.get(task.parentId) || this.archivedTasks.get(task.parentId);
+			if (parent?.status === 'canceled' && !options?.skipCascade) {
+				Logger.warn('JsonDataSource', `Cannot change status of child task ${taskId}: parent is canceled`);
+				return;
+			}
 		}
 
 		// 应用变更
@@ -520,53 +586,11 @@ export class JsonDataSource implements IDataSource {
 			this.archivedTasks.set(taskId, updatedTask);
 		}
 
-		// 完成状态联动（防止递归）
-		if (!options?.skipCascade && changes.completed !== undefined) {
-			if (changes.completed) {
-				// 父完成 → 子全完成
-				if (updatedTask.childIds?.length) {
-					for (const childId of updatedTask.childIds) {
-						const child = this.tasks.get(childId) || this.archivedTasks.get(childId);
-						if (child && !child.completed) {
-							await this.updateTask(childId, {
-								completed: true,
-								status: 'done' as any,
-								completionDate: new Date(),
-							}, { skipCascade: true });
-						}
-					}
-				}
-				// 子完成 → 检查兄弟 → 父完成
-				if (updatedTask.parentId) {
-					const parent = this.tasks.get(updatedTask.parentId) || this.archivedTasks.get(updatedTask.parentId);
-					if (parent && !parent.completed && parent.childIds?.length) {
-						const allSiblingsDone = parent.childIds.every(id => {
-							if (id === taskId) return true; // 当前任务已完成
-							const sibling = this.tasks.get(id) || this.archivedTasks.get(id);
-							return sibling?.completed;
-						});
-						if (allSiblingsDone) {
-							await this.updateTask(parent.id, {
-								completed: true,
-								status: 'done' as any,
-								completionDate: new Date(),
-							}, { skipCascade: true });
-						}
-					}
-				}
-			} else {
-				// 取消完成 → 如果父任务已完成，也取消父完成
-				if (updatedTask.parentId) {
-					const parent = this.tasks.get(updatedTask.parentId) || this.archivedTasks.get(updatedTask.parentId);
-					if (parent?.completed) {
-						await this.updateTask(parent.id, {
-							completed: false,
-							status: 'todo' as any,
-							completionDate: undefined,
-						}, { skipCascade: true });
-					}
-				}
-			}
+		// 4 状态联动传播
+		const propagation = options?.propagationDirection;
+		if (!options?.skipCascade && changes.status !== undefined && propagation !== 'none') {
+			const newStatus = changes.status;
+			await this.cascadeStatusChange(taskId, updatedTask, newStatus as string, propagation);
 		}
 
 		this.scheduleSave();
@@ -580,6 +604,109 @@ export class JsonDataSource implements IDataSource {
 		});
 
 		Logger.debug('JsonDataSource', `Task updated: ${taskId}`);
+	}
+
+	/**
+	 * 4 状态联动传播
+	 *
+	 * 向下传播（down）：
+	 * - done → 所有后代设为 done
+	 * - canceled → 所有后代设为 canceled
+	 * - 从 done/canceled 退回 todo → 所有后代退回 todo
+	 *
+	 * 向上聚合（up）：
+	 * - 子变非 todo → 父变 in_progress（如果还是 todo）
+	 * - 所有子 done → 父自动 done
+	 * - 某子从 done 退回 → 父退回 in_progress
+	 */
+	private async cascadeStatusChange(
+		taskId: string,
+		updatedTask: GCTask,
+		newStatus: string,
+		direction?: 'down' | 'up',
+	): Promise<void> {
+		// 向下传播（默认执行，除非明确限制为 up）
+		if (direction !== 'up' && updatedTask.childIds?.length) {
+			if (newStatus === 'done') {
+				// 父完成 → 子全完成
+				for (const childId of updatedTask.childIds) {
+					const child = this.tasks.get(childId) || this.archivedTasks.get(childId);
+					if (child && child.status !== 'done') {
+						await this.updateTask(childId, {
+							status: 'done' as any,
+							completed: true,
+							completionDate: new Date(),
+							cancelled: false,
+							cancelledDate: undefined,
+						}, { skipCascade: false, propagationDirection: 'down' });
+					}
+				}
+			} else if (newStatus === 'canceled') {
+				// 父取消 → 子全取消
+				for (const childId of updatedTask.childIds) {
+					const child = this.tasks.get(childId) || this.archivedTasks.get(childId);
+					if (child && child.status !== 'canceled') {
+						await this.updateTask(childId, {
+							status: 'canceled' as any,
+							cancelled: true,
+							cancelledDate: new Date(),
+							completed: false,
+							completionDate: undefined,
+						}, { skipCascade: false, propagationDirection: 'down' });
+					}
+				}
+			} else if (newStatus === 'todo') {
+				// 从终态退回 → 子全退回 todo
+				for (const childId of updatedTask.childIds) {
+					const child = this.tasks.get(childId) || this.archivedTasks.get(childId);
+					if (child && (child.status === 'done' || child.status === 'canceled')) {
+						await this.updateTask(childId, {
+							status: 'todo' as any,
+							completed: false,
+							completionDate: undefined,
+							cancelled: false,
+							cancelledDate: undefined,
+						}, { skipCascade: false, propagationDirection: 'down' });
+					}
+				}
+			}
+		}
+
+		// 向上聚合（默认执行，除非明确限制为 down）
+		if (direction !== 'down' && updatedTask.parentId) {
+			const parent = this.tasks.get(updatedTask.parentId) || this.archivedTasks.get(updatedTask.parentId);
+			if (!parent) return;
+
+			if (newStatus === 'done' && parent.childIds?.length) {
+				// 检查是否所有兄弟都完成
+				const allSiblingsDone = parent.childIds.every(id => {
+					if (id === taskId) return true;
+					const sibling = this.tasks.get(id) || this.archivedTasks.get(id);
+					return sibling?.status === 'done';
+				});
+				if (allSiblingsDone) {
+					await this.updateTask(parent.id, {
+						status: 'done' as any,
+						completed: true,
+						completionDate: new Date(),
+					}, { skipCascade: false, propagationDirection: 'up' });
+				}
+			} else if (newStatus === 'in_progress' || newStatus === 'done') {
+				// 子变非 todo → 父从 todo 升为 in_progress
+				if (parent.status === 'todo') {
+					await this.updateTask(parent.id, {
+						status: 'in_progress' as any,
+					}, { skipCascade: false, propagationDirection: 'up' });
+				}
+			} else if (newStatus === 'todo' && (parent.status === 'done')) {
+				// 某子退回 → 父退回 in_progress
+				await this.updateTask(parent.id, {
+					status: 'in_progress' as any,
+					completed: false,
+					completionDate: undefined,
+				}, { skipCascade: false, propagationDirection: 'up' });
+			}
+		}
 	}
 
 	/**

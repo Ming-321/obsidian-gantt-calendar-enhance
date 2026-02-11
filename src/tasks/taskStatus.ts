@@ -1,8 +1,8 @@
 /**
  * 任务状态定义
  *
- * 统一管理所有任务状态及其配置。
- * 所有颜色配置都从插件设置中读取。
+ * 统一管理 4 种核心任务状态。
+ * 颜色不再由状态决定，而是由优先级决定（通过 priorityUtils.ts）。
  *
  * @fileoverview 任务状态定义和管理
  * @module tasks/taskStatus
@@ -11,21 +11,18 @@
 // ==================== 类型定义 ====================
 
 /**
- * 默认任务状态类型
+ * 任务状态类型（4 种核心状态）
  */
 export type DefaultTaskStatusType =
     | 'todo'
-    | 'done'
-    | 'important'
-    | 'canceled'
     | 'in_progress'
-    | 'question'
-    | 'start';
+    | 'done'
+    | 'canceled';
 
 /**
- * 任务状态类型（包括用户自定义）
+ * 任务状态类型
  */
-export type TaskStatusType = DefaultTaskStatusType | string;
+export type TaskStatusType = DefaultTaskStatusType;
 
 /**
  * 主题模式类型
@@ -33,17 +30,7 @@ export type TaskStatusType = DefaultTaskStatusType | string;
 export type ThemeMode = 'light' | 'dark';
 
 /**
- * 主题颜色配置
- */
-export interface ThemeColors {
-    /** 卡片背景色 (hex) */
-    backgroundColor: string;
-    /** 文字颜色 (hex) */
-    textColor: string;
-}
-
-/**
- * 任务状态配置接口
+ * 任务状态配置接口（简化版：不含颜色）
  */
 export interface TaskStatus {
     /** 状态唯一标识 */
@@ -58,24 +45,6 @@ export interface TaskStatus {
     /** 描述 */
     description: string;
 
-    /** 亮色主题颜色配置 */
-    lightColors: ThemeColors;
-
-    /** 暗色主题颜色配置 */
-    darkColors: ThemeColors;
-
-    /** 
-     * 卡片背景色 (hex)
-     * @deprecated 向后兼容保留。请使用 lightColors.backgroundColor 代替
-     */
-    backgroundColor?: string;
-
-    /** 
-     * 文字颜色 (hex)
-     * @deprecated 向后兼容保留。请使用 lightColors.textColor 代替
-     */
-    textColor?: string;
-
     /** 是否为默认状态 */
     isDefault: boolean;
 }
@@ -83,10 +52,9 @@ export interface TaskStatus {
 // ==================== 默认状态配置 ====================
 
 /**
- * 默认任务状态配置
+ * 默认任务状态配置（4 种）
  *
- * 用于插件初始化时的默认值。
- * 包含 7 种预定义状态。
+ * 颜色由优先级决定，不再由状态决定。
  */
 export const DEFAULT_TASK_STATUSES: TaskStatus[] = [
     {
@@ -94,59 +62,6 @@ export const DEFAULT_TASK_STATUSES: TaskStatus[] = [
         symbol: ' ',
         name: '待办',
         description: '待办任务',
-        lightColors: {
-            backgroundColor: '#FFFFFF',
-            textColor: '#333333',
-        },
-        darkColors: {
-            backgroundColor: '#2d333b',
-            textColor: '#adbac7',
-        },
-        isDefault: true,
-    },
-    {
-        key: 'done',
-        symbol: 'x',
-        name: '已完成',
-        description: '已完成任务',
-        lightColors: {
-            backgroundColor: '#52c41a',
-            textColor: '#FFFFFF',
-        },
-        darkColors: {
-            backgroundColor: '#3c8524',
-            textColor: '#e6e6e6',
-        },
-        isDefault: true,
-    },
-    {
-        key: 'important',
-        symbol: '!',
-        name: '重要',
-        description: '重要任务',
-        lightColors: {
-            backgroundColor: '#ff4d4f',
-            textColor: '#FFFFFF',
-        },
-        darkColors: {
-            backgroundColor: '#cc3a3c',
-            textColor: '#ffe6e6',
-        },
-        isDefault: true,
-    },
-    {
-        key: 'canceled',
-        symbol: '-',
-        name: '已取消',
-        description: '已取消任务',
-        lightColors: {
-            backgroundColor: '#d9d9d9',
-            textColor: '#666666',
-        },
-        darkColors: {
-            backgroundColor: '#4a525c',
-            textColor: '#8b949e',
-        },
         isDefault: true,
     },
     {
@@ -154,101 +69,28 @@ export const DEFAULT_TASK_STATUSES: TaskStatus[] = [
         symbol: '/',
         name: '进行中',
         description: '进行中任务',
-        lightColors: {
-            backgroundColor: '#faad14',
-            textColor: '#FFFFFF',
-        },
-        darkColors: {
-            backgroundColor: '#c78a0f',
-            textColor: '#fff5e6',
-        },
         isDefault: true,
     },
     {
-        key: 'question',
-        symbol: '?',
-        name: '有疑问',
-        description: '有疑问任务',
-        lightColors: {
-            backgroundColor: '#ffc069',
-            textColor: '#333333',
-        },
-        darkColors: {
-            backgroundColor: '#cc9a54',
-            textColor: '#ffe6cc',
-        },
+        key: 'done',
+        symbol: 'x',
+        name: '已完成',
+        description: '已完成任务',
         isDefault: true,
     },
     {
-        key: 'start',
-        symbol: 'n',
-        name: '已开始',
-        description: '已开始任务',
-        lightColors: {
-            backgroundColor: '#40a9ff',
-            textColor: '#FFFFFF',
-        },
-        darkColors: {
-            backgroundColor: '#3387cc',
-            textColor: '#e6f3ff',
-        },
+        key: 'canceled',
+        symbol: '-',
+        name: '已取消',
+        description: '已取消任务',
         isDefault: true,
     },
 ];
-
-// ==================== 马卡龙配色 ====================
-
-/**
- * 马卡龙配色方案
- *
- * 仅供设置界面的色卡选择器使用。
- * 用户可以从这些预设颜色中快速选择状态颜色。
- */
-export const MACARON_COLORS = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
-    '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B195', '#A3E4D7',
-    '#FFB6B9', '#C7CEEA', '#FFD700', '#98D8C8', '#FAD7A0',
-    '#FFCC5C', '#F4E1D2', '#FFA07A', '#C8F7C5', '#B8E0D2',
-];
-
-// ==================== 状态符号验证 ====================
-
-/**
- * 状态符号验证正则
- *
- * 只接受字母和数字作为状态符号
- */
-export const STATUS_SYMBOL_REGEX = /^[a-zA-Z0-9]$/;
-
-/**
- * 禁止使用的符号列表
- *
- * 这些符号有特殊含义或可能与 Markdown 语法冲突
- */
-export const STATUS_SYMBOL_EXCLUDED = ['/', '|', '_', '$', '#', '^', '*'];
-
-/**
- * 保留的符号列表（用于默认状态）
- *
- * 这些符号被默认状态使用，不允许用户自定义时使用
- */
-export const RESERVED_SYMBOLS = [' ', 'x', '!', '-', '/', '?', 'n'];
 
 // ==================== 工具函数 ====================
 
 /**
  * 根据符号获取状态配置
- *
- * @param symbol - 复选框符号
- * @param statuses - 状态配置列表（默认使用 DEFAULT_TASK_STATUSES）
- * @returns 状态配置对象，未找到则返回 undefined
- *
- * @example
- * ```ts
- * getStatusBySymbol('x')  // { key: 'done', symbol: 'x', ... }
- * getStatusBySymbol(' ')  // { key: 'todo', symbol: ' ', ... }
- * getStatusBySymbol('z')  // undefined
- * ```
  */
 export function getStatusBySymbol(
     symbol: string,
@@ -259,16 +101,6 @@ export function getStatusBySymbol(
 
 /**
  * 根据状态 key 获取状态配置
- *
- * @param key - 状态 key
- * @param statuses - 状态配置列表（默认使用 DEFAULT_TASK_STATUSES）
- * @returns 状态配置对象，未找到则返回 undefined
- *
- * @example
- * ```ts
- * getStatusByKey('done')  // { key: 'done', symbol: 'x', ... }
- * getStatusByKey('todo')  // { key: 'todo', symbol: ' ', ... }
- * ```
  */
 export function getStatusByKey(
     key: string,
@@ -278,101 +110,7 @@ export function getStatusByKey(
 }
 
 /**
- * 验证状态符号是否有效
- *
- * @param symbol - 待验证的符号
- * @param isCustom - 是否为用户自定义状态（默认为 true）
- * @returns 验证结果，包含是否有效和错误信息
- *
- * @example
- * ```ts
- * validateStatusSymbol('a')     // { valid: true }
- * validateStatusSymbol('/')     // { valid: false, error: '符号不能使用特殊字符' }
- * validateStatusSymbol('x', false)  // { valid: true } （非自定义，允许使用保留符号）
- * ```
- */
-export function validateStatusSymbol(
-    symbol: string,
-    isCustom: boolean = true
-): { valid: boolean; error?: string } {
-    // 必须是单个字符
-    if (symbol.length !== 1) {
-        return { valid: false, error: '符号必须是单个字符' };
-    }
-
-    // 自定义状态不能使用保留符号
-    if (isCustom && RESERVED_SYMBOLS.includes(symbol)) {
-        return { valid: false, error: `符号 "${symbol}" 已被默认状态使用` };
-    }
-
-    // 不能使用禁止的符号
-    if (STATUS_SYMBOL_EXCLUDED.includes(symbol)) {
-        return { valid: false, error: '符号不能使用特殊字符' };
-    }
-
-    // 必须符合正则（字母或数字）
-    if (!STATUS_SYMBOL_REGEX.test(symbol)) {
-        return { valid: false, error: '符号只能是字母或数字' };
-    }
-
-    return { valid: true };
-}
-
-/**
- * 获取状态颜色配置
- *
- * @param statusKey - 状态 key
- * @param statuses - 状态配置列表
- * @param themeMode - 主题模式 ('light' | 'dark')，默认自动检测
- * @returns 颜色配置对象，未找到则返回 undefined
- *
- * @example
- * ```ts
- * getStatusColor('done', DEFAULT_TASK_STATUSES)
- * // { bg: '#52c41a', text: '#FFFFFF' }
- * getStatusColor('done', DEFAULT_TASK_STATUSES, 'dark')
- * // { bg: '#3c8524', text: '#e6e6e6' }
- * ```
- */
-export function getStatusColor(
-    statusKey: string,
-    statuses: TaskStatus[],
-    themeMode?: ThemeMode
-): { bg: string; text: string } | undefined {
-    const status = statuses.find(s => s.key === statusKey);
-    if (!status) return undefined;
-
-    // 确定主题模式
-    const mode = themeMode ?? getCurrentThemeMode();
-
-    // 处理新旧数据格式兼容，并使用合理的默认值
-    if (status.lightColors && status.darkColors) {
-        // 新格式：使用主题分离颜色
-        const colors = mode === 'dark' ? status.darkColors : status.lightColors;
-        return {
-            bg: colors.backgroundColor || (mode === 'dark' ? '#2d333b' : '#FFFFFF'),
-            text: colors.textColor || (mode === 'dark' ? '#adbac7' : '#333333'),
-        };
-    } else if (status.backgroundColor && status.textColor) {
-        // 旧格式：使用单一颜色（向后兼容）
-        return {
-            bg: status.backgroundColor,
-            text: status.textColor,
-        };
-    }
-
-    // 如果没有任何颜色配置，返回基于当前主题的默认值
-    // 这确保了即使状态数据不完整，也能正常显示
-    return {
-        bg: mode === 'dark' ? '#2d333b' : '#FFFFFF',
-        text: mode === 'dark' ? '#adbac7' : '#333333',
-    };
-}
-
-/**
  * 获取当前主题模式
- *
- * @returns 当前主题模式 ('light' | 'dark')
  */
 export function getCurrentThemeMode(): ThemeMode {
     return document.body.hasClass('theme-dark') ? 'dark' : 'light';
@@ -380,18 +118,6 @@ export function getCurrentThemeMode(): ThemeMode {
 
 /**
  * 根据复选框状态字符解析状态类型
- *
- * @param checkboxStatus - 复选框状态字符
- * @param statuses - 状态配置列表（默认使用 DEFAULT_TASK_STATUSES）
- * @returns 状态 key，未找到则返回 'todo'
- *
- * @example
- * ```ts
- * parseStatusFromCheckbox('x')  // 'done'
- * parseStatusFromCheckbox(' ')  // 'todo'
- * parseStatusFromCheckbox('/')  // 'in_progress'
- * parseStatusFromCheckbox('-')  // 'canceled'
- * ```
  */
 export function parseStatusFromCheckbox(
     checkboxStatus: string,
@@ -403,9 +129,6 @@ export function parseStatusFromCheckbox(
 
 /**
  * 检查是否为默认状态
- *
- * @param key - 状态 key
- * @returns 是否为默认状态
  */
 export function isDefaultStatus(key: string): key is DefaultTaskStatusType {
     return DEFAULT_TASK_STATUSES.some(s => s.key === key);
@@ -413,9 +136,31 @@ export function isDefaultStatus(key: string): key is DefaultTaskStatusType {
 
 /**
  * 获取所有默认状态的 key 列表
- *
- * @returns 默认状态 key 数组
  */
 export function getDefaultStatusKeys(): DefaultTaskStatusType[] {
     return DEFAULT_TASK_STATUSES.map(s => s.key as DefaultTaskStatusType);
+}
+
+/**
+ * 获取下一个状态（循环切换）
+ * todo → in_progress → done → todo
+ *
+ * canceled 退回 todo（不参与正常循环）
+ */
+export function getNextStatus(current: TaskStatusType): TaskStatusType {
+    switch (current) {
+        case 'todo': return 'in_progress';
+        case 'in_progress': return 'done';
+        case 'done': return 'todo';
+        case 'canceled': return 'todo';
+        default: return 'todo';
+    }
+}
+
+/**
+ * 判断是否为终态（不可通过正常循环离开，需要特殊操作）
+ * done 和 canceled 为终态
+ */
+export function isTerminalStatus(status: TaskStatusType): boolean {
+    return status === 'done' || status === 'canceled';
 }

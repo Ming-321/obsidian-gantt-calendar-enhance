@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**v2.0.0** | Fork 自 [sustcsugar/obsidian-gantt-calendar](https://github.com/sustcsugar/obsidian-gantt-calendar)
+**v2.1.0** | Fork 自 [sustcsugar/obsidian-gantt-calendar](https://github.com/sustcsugar/obsidian-gantt-calendar)
 
 一个面向个人任务管理的 Obsidian 插件，提供甘特图风格的周视图、月视图和任务列表三种视角。
 

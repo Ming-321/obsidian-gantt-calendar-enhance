@@ -18,9 +18,43 @@ Author: sugar
 	--festival-lunar-color: #e8a041;    /* 农历节日 - 橙色 */
 	--festival-solar-term-color: #52c41a; /* 节气 - 绿色 */
 
-	/* Task Status Colors */
-	--task-completed-color: #52c41a;
-	--task-pending-color: #ff7a45;
+	/* ===== Priority Colors (v4 配色：橙→蓝→灰 递减梯度) ===== */
+	--gc-priority-high: #d97757;        /* 赤陶橙 - 暖色=紧迫 */
+	--gc-priority-normal: #6BB3E0;      /* 清澈蓝 - 清晰=平稳 */
+	--gc-priority-low: #8b949e;         /* 灰色 - 灰暗=不重要 */
+
+	/* ===== NEW: Status Colors ===== */
+	--gc-status-completed: #3fb950;     /* 翠绿 - 已完成 */
+	--gc-status-canceled: #8b949e;      /* 中性灰 - 已取消 */
+	--gc-status-overdue: #e5534b;       /* 警示红 - 过期 */
+
+	/* ===== NEW: Today Highlight ===== */
+	--gc-today-bg: rgba(255, 107, 107, 0.08);
+
+	/* ===== NEW: Opacity ===== */
+	--gc-completed-opacity: 0.5;
+	--gc-canceled-opacity: 0.4;
+	--gc-parent-fill-opacity: 0.12;
+
+	/* ===== NEW: Spacing ===== */
+	--gc-card-gap: 4px;
+	--gc-card-padding: 6px 8px;
+	--gc-month-cell-padding: 2px 3px;
+	--gc-month-task-gap: 1px;
+	--gc-gantt-row-height: 27px;
+
+	/* ===== NEW: Color Band Width ===== */
+	--gc-band-width-default: 3px;
+	--gc-band-width-child: 2px;
+
+	/* ===== NEW: Status Icon Size ===== */
+	--gc-icon-size-compact: 14px;       /* 月视图、周视图 */
+	--gc-icon-size-normal: 16px;        /* 任务视图 */
+}
+
+/* Dark theme override */
+.theme-dark {
+	--gc-priority-low: #9aafbf;         /* 暗色主题下灰色调亮以保证对比度 */
 }
 
 
@@ -133,14 +167,102 @@ Author: sugar
 /* ==================== Task View Layout ==================== */
 /* BEM命名: gc-view--task (Modifier) */
 .gc-view--task {
+	--gc-line-color: var(--background-modifier-border);
+
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
-	padding: 12px;
+	gap: 2px;
+	padding: 6px 8px;
 	flex: 1;
 	min-height: 100%;
 	overflow: visible;
 	width: 100%;
+}
+
+/* ========================================
+   LAYER 5.5: Color Band & StatusIcon (新色带/状态图标基础样式)
+   ======================================== */
+
+/* --- 色带基础（::before 伪元素） --- */
+.gc-task-card {
+	position: relative;
+	padding-left: calc(var(--gc-band-width-default) + 6px);
+}
+.gc-task-card::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--gc-band-width-default);
+	border-radius: 2px 0 0 2px;
+	background-color: var(--gc-priority-normal);
+}
+
+/* 优先级色带颜色 */
+.gc-task-card--band-high::before { background-color: var(--gc-priority-high); }
+.gc-task-card--band-normal::before { background-color: var(--gc-priority-normal); }
+.gc-task-card--band-low::before { background-color: var(--gc-priority-low); }
+
+/* 状态覆盖色带 */
+.gc-task-card--completed::before { background-color: var(--gc-status-completed); }
+.gc-task-card--canceled::before { background-color: var(--gc-status-canceled); }
+
+/* 已完成/取消整体透明度 + 图标保持清晰 */
+.gc-task-card--completed {
+	opacity: var(--gc-completed-opacity);
+}
+.gc-task-card--completed .gc-status-icon {
+	opacity: calc(1 / var(--gc-completed-opacity));
+}
+.gc-task-card--canceled {
+	opacity: var(--gc-canceled-opacity);
+}
+.gc-task-card--canceled .gc-status-icon {
+	opacity: calc(1 / var(--gc-canceled-opacity));
+}
+
+/* 已完成：删除线 */
+.gc-task-card--completed .gc-task-card__text,
+.gc-task-card--completed .gc-month-task__title {
+	text-decoration: line-through;
+}
+
+/* 已取消：删除线 */
+.gc-task-card--canceled .gc-task-card__text,
+.gc-task-card--canceled .gc-month-task__title {
+	text-decoration: line-through;
+}
+
+/* 提醒类型斜体 */
+.gc-task-card--reminder-italic .gc-task-card__text,
+.gc-task-card--reminder-italic .gc-month-task__title {
+	font-style: italic;
+}
+
+/* v4: 有子条目的任务标题显示下划线，表示可展开 */
+/* 注意：不可使用 text-underline-offset，会被 overflow: hidden 裁剪 */
+.gc-task-card__text--has-children {
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+/* --- StatusIcon 基础样式 --- */
+.gc-status-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
+}
+.gc-status-icon--disabled {
+	cursor: default;
+	opacity: 0.5;
+}
+.gc-status-icon svg {
+	display: block;
 }
 
 /* ========================================
@@ -1448,15 +1570,14 @@ button.gc-toolbar__center-nav-next svg {
 
 /* 6.2 Task Card Component (统一任务卡片) */
 /* BEM命名: gc-task-card */
+/* 注意：padding 由 Layer 5.5 的 padding-left（色带）和各视图修饰符分别控制 */
 .gc-task-card {
 	display: flex;
 	align-items: center;
-	padding: 8px;
-	border-left: 3px solid transparent;
 	background-color: var(--background-secondary);
 	border-radius: 4px;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	transition: background-color 0.15s ease;
 }
 
 .gc-task-card:hover {
@@ -1472,12 +1593,66 @@ button.gc-toolbar__center-nav-next svg {
 	text-overflow: ellipsis;
 }
 
-/* Task Card Modifiers */
+/* 非 Task View 的 fallback */
+/* ===== 任务视图：两行结构重写 ===== */
 .gc-task-card--task {
-	padding: 10px;
-	gap: 8px;
-	flex-wrap: wrap;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;  /* v4: 覆盖基类的 align-items: center，修复水平居中问题 */
+	padding: 4px 6px 4px calc(var(--gc-band-width-default) + 6px);  /* v4: 缩减间距 */
+	gap: 2px;              /* v4: 从3px缩减 */
 	font-size: 13px;
+	border-radius: 4px;
+	cursor: pointer;
+	background-color: transparent;  /* v4: 从白色改为透明，融入Obsidian背景 */
+	transition: background-color 0.15s ease;
+}
+.gc-task-card--task:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* 第一行：StatusIcon + 标题 + 进度 + 倒计时 */
+.gc-task-card__main {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 22px;
+}
+.gc-task-card--task .gc-task-card__text {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-normal);
+}
+.gc-task-card__progress {
+	flex-shrink: 0;
+	font-size: 11px;
+	color: var(--text-muted);
+}
+.gc-task-card__due {
+	flex-shrink: 0;
+	font-size: 11px;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+.gc-task-card__due--overdue {
+	color: var(--gc-status-overdue);
+	font-weight: 500;
+}
+
+/* 第二行：标签 */
+.gc-task-card--task .gc-task-card__tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	padding-left: calc(var(--gc-icon-size-normal) + 6px); /* StatusIcon 16px + gap 6px = 22px, 对齐标题文字 */
+}
+
+/* 任务视图间距 */
+.gc-view--task .gc-task-card--task + .gc-task-card--task {
+	margin-top: var(--gc-card-gap);
 }
 
 .gc-task-card--day {
@@ -1522,7 +1697,6 @@ button.gc-toolbar__center-nav-next svg {
 	align-items: center;
 	gap: 4px;
 	flex-wrap: wrap;
-	margin-left: 4px;
 }
 
 /* ========================================
@@ -1724,8 +1898,8 @@ button.gc-toolbar__center-nav-next svg {
 	flex-direction: column;
 	align-items: stretch;
 	justify-content: flex-start;
-	padding: 8px;
-	gap: 4px;
+	padding: var(--gc-month-cell-padding);
+	gap: 2px;
 	background-color: var(--background-primary);
 	/* 网格线：上右有边框，左下由相邻单元格提供 */
 	border-top: 2px solid var(--background-modifier-border);
@@ -1775,9 +1949,9 @@ button.gc-toolbar__center-nav-next svg {
 .gc-month-view__tasks {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: var(--gc-month-task-gap);
 	width: 100%;
-	margin-top: 4px;
+	margin-top: 2px;
 	flex: 1;
 	min-height: 0;
 	overflow-y: auto;
@@ -1789,6 +1963,89 @@ button.gc-toolbar__center-nav-next svg {
 
 .gc-month-view__tasks::-webkit-scrollbar {
 	display: none; /* Chrome, Safari, Opera */
+}
+
+/* ===== 月视图任务条目（轻量 DOM） ===== */
+.gc-month-task {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	padding: 1px 3px;
+	border-radius: 3px;
+	cursor: pointer;
+	position: relative;
+	padding-left: calc(var(--gc-band-width-default) + 4px);
+	min-height: 20px;
+	line-height: 1.3;
+}
+.gc-month-task:hover {
+	background-color: var(--background-modifier-hover);
+}
+/* 色带 ::before */
+.gc-month-task::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--gc-band-width-default);
+	border-radius: 3px 0 0 3px;
+	background-color: var(--gc-priority-normal);
+}
+/* 色带优先级颜色 */
+.gc-month-task--band-high::before { background-color: var(--gc-priority-high); }
+.gc-month-task--band-normal::before { background-color: var(--gc-priority-normal); }
+.gc-month-task--band-low::before { background-color: var(--gc-priority-low); }
+.gc-month-task--band-completed::before { background-color: var(--gc-status-completed); }
+.gc-month-task--band-canceled::before { background-color: var(--gc-status-canceled); }
+
+/* 标题 */
+.gc-month-task__title {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 12px;
+	color: var(--text-normal);
+}
+/* 提醒斜体 */
+.gc-month-task--reminder .gc-month-task__title {
+	font-style: italic;
+}
+/* 过期红色标题 */
+.gc-month-task--overdue .gc-month-task__title {
+	color: var(--gc-status-overdue);
+}
+/* 完成：删除线 + 透明度 */
+.gc-month-task--completed {
+	opacity: var(--gc-completed-opacity);
+}
+.gc-month-task--completed .gc-month-task__title {
+	text-decoration: line-through;
+	color: var(--text-muted);
+}
+.gc-month-task--completed .gc-status-icon {
+	opacity: calc(1 / var(--gc-completed-opacity));
+}
+/* 取消：删除线 + 透明度 */
+.gc-month-task--canceled {
+	opacity: var(--gc-canceled-opacity);
+}
+.gc-month-task--canceled .gc-month-task__title {
+	text-decoration: line-through;
+	color: var(--text-muted);
+}
+.gc-month-task--canceled .gc-status-icon {
+	opacity: calc(1 / var(--gc-canceled-opacity));
+}
+
+/* 进度 [n/m] */
+.gc-month-task__progress {
+	flex-shrink: 0;
+	font-size: 10px;
+	color: var(--text-muted);
+	margin-left: 2px;
 }
 
 .gc-week-view__tasks-column {
@@ -1975,7 +2232,7 @@ button.gc-toolbar__center-nav-next svg {
 }
 
 .gc-week-view__gantt-grid-line--today {
-	background-color: rgba(255, 107, 107, 0.04);
+	background-color: var(--gc-today-bg);
 }
 
 /* 任务行 */
@@ -2005,51 +2262,75 @@ button.gc-toolbar__center-nav-next svg {
 	z-index: 1;
 }
 
+/* Bar 溢出周范围时移除对应边的圆角和边框 */
+.gc-week-view__gantt-bar.gc-week-view__gantt-bar--overflow-left {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+	border-left-width: 0 !important;
+}
+
+.gc-week-view__gantt-bar.gc-week-view__gantt-bar--overflow-right {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+	border-right-width: 0 !important;
+}
+
+/* 分组 bar（含展开态）溢出 — 使用高特异性覆盖展开态 border-width */
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded.gc-week-view__gantt-bar--overflow-left {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+	border-left-width: 0 !important;
+}
+
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded.gc-week-view__gantt-bar--overflow-right {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+	border-right-width: 0 !important;
+}
+
+/* 子任务 mini-bar 溢出 */
+.gc-week-view__gantt-bar-child-item.gc-week-view__gantt-bar-child-item--overflow-left {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+	border-left-width: 0 !important;
+}
+.gc-week-view__gantt-bar-child-item.gc-week-view__gantt-bar-child-item--overflow-right {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+	border-right-width: 0 !important;
+}
+
+/* 展开态子容器（有孙任务）溢出 — 高特异性覆盖 expanded 的 border-width */
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded.gc-week-view__gantt-bar-child-item--overflow-left {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+	border-left-width: 0 !important;
+}
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded.gc-week-view__gantt-bar-child-item--overflow-right {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+	border-right-width: 0 !important;
+}
+
+/* 孙任务 mini-bar 溢出 */
+.gc-week-view__gantt-bar-grandchild-item.gc-week-view__gantt-bar-grandchild-item--overflow-left {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+	border-left-width: 0 !important;
+}
+.gc-week-view__gantt-bar-grandchild-item.gc-week-view__gantt-bar-grandchild-item--overflow-right {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+	border-right-width: 0 !important;
+}
+
 .gc-week-view__gantt-bar:hover {
 	filter: brightness(1.08);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	z-index: 2;
 }
 
-/* Bar 类型+优先级配色（与卡片一致：代办蓝色系、提醒橙色系） */
-
-/* 代办甘特条（蓝色系） — 三级透明度 */
-.gc-week-view__gantt-bar--todo.gc-week-view__gantt-bar--priority-high {
-	background-color: rgba(59, 130, 246, 0.25);
-	border: 1px solid rgba(59, 130, 246, 0.55);
-	color: var(--text-normal);
-}
-
-.gc-week-view__gantt-bar--todo.gc-week-view__gantt-bar--priority-normal {
-	background-color: rgba(59, 130, 246, 0.14);
-	border: 1px solid rgba(59, 130, 246, 0.35);
-	color: var(--text-normal);
-}
-
-.gc-week-view__gantt-bar--todo.gc-week-view__gantt-bar--priority-low {
-	background-color: rgba(59, 130, 246, 0.07);
-	border: 1px solid rgba(59, 130, 246, 0.2);
-	color: var(--text-muted);
-}
-
-/* 提醒甘特条（橙色系） — 三级透明度 */
-.gc-week-view__gantt-bar--reminder.gc-week-view__gantt-bar--priority-high {
-	background-color: rgba(245, 158, 11, 0.25);
-	border: 2px dashed rgba(245, 158, 11, 0.65);
-	color: var(--text-normal);
-}
-
-.gc-week-view__gantt-bar--reminder.gc-week-view__gantt-bar--priority-normal {
-	background-color: rgba(245, 158, 11, 0.14);
-	border: 2px dashed rgba(245, 158, 11, 0.4);
-	color: var(--text-normal);
-}
-
-.gc-week-view__gantt-bar--reminder.gc-week-view__gantt-bar--priority-low {
-	background-color: rgba(245, 158, 11, 0.07);
-	border: 2px dashed rgba(245, 158, 11, 0.2);
-	color: var(--text-muted);
-}
+/* (v4: 移除了旧的 type+priority 组合规则，统一使用纯优先级色) */
 
 /* 已完成甘特条 */
 .gc-week-view__gantt-bar--completed {
@@ -2057,6 +2338,34 @@ button.gc-toolbar__center-nav-next svg {
 	border: 1px solid rgba(82, 196, 26, 0.35);
 	color: var(--text-muted);
 	opacity: 0.7;
+}
+
+/* ===== NEW: 纯优先级色的 bar 样式（覆盖旧的 type+priority 组合） ===== */
+/* 独立的优先级 bar（不带类型修饰时生效） */
+.gc-week-view__gantt-bar--priority-high:not(.gc-week-view__gantt-bar--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-high) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-high) 55%, transparent);
+	color: var(--text-normal);
+}
+.gc-week-view__gantt-bar--priority-normal:not(.gc-week-view__gantt-bar--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-normal) 14%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-normal) 35%, transparent);
+	color: var(--text-normal);
+}
+.gc-week-view__gantt-bar--priority-low:not(.gc-week-view__gantt-bar--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-low) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-low) 25%, transparent);
+	color: var(--text-muted);
+}
+
+/* 提醒类型：斜体标题（不再用虚线边框） */
+.gc-week-view__gantt-bar--reminder .gc-week-view__gantt-bar-label {
+	font-style: italic;
+}
+
+/* 已完成 bar 中的标题：删除线 */
+.gc-week-view__gantt-bar--completed .gc-week-view__gantt-bar-label {
+	text-decoration: line-through;
 }
 
 /* Bar 内容 */
@@ -2073,136 +2382,7 @@ button.gc-toolbar__center-nav-next svg {
 
 /* (Day View Sub-Components removed) */
 
-/* Priority badge inline */
-/* BEM命名: gc-task-card__priority, gc-task-card__priority-badge */
-.gc-task-card__priority {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-}
-
-.gc-task-card__priority-badge {
-	font-size: 16px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 20px;
-	height: 20px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-
-.gc-task-card__priority-badge--high {
-	background-color: rgba(239, 68, 68, 0.1);
-}
-
-.gc-task-card__priority-badge--normal {
-	background-color: rgba(107, 114, 128, 0.08);
-}
-
-.gc-task-card__priority-badge--low {
-	background-color: rgba(59, 130, 246, 0.1);
-}
-
-/* ========== 优先级背景色模式（类型色 + 优先级透明度） ========== */
-/* 代办（蓝色系） — 重要/正常/不重要 三级透明度 */
-.gc-task-card--type-todo.gc-task-card--priority-high {
-	background-color: rgba(59, 130, 246, 0.12);
-	border-left: 3px solid rgba(59, 130, 246, 0.65);
-}
-
-.gc-task-card--type-todo.gc-task-card--priority-normal {
-	background-color: rgba(59, 130, 246, 0.05);
-	border-left: 3px solid rgba(59, 130, 246, 0.3);
-}
-
-.gc-task-card--type-todo.gc-task-card--priority-low {
-	background-color: rgba(59, 130, 246, 0.02);
-	border-left: 3px solid rgba(59, 130, 246, 0.12);
-}
-
-/* 提醒（琥珀/橙色系） — 重要/正常/不重要 三级透明度 */
-.gc-task-card--type-reminder.gc-task-card--priority-high {
-	background-color: rgba(245, 158, 11, 0.12);
-	border-left: 3px solid rgba(245, 158, 11, 0.65);
-}
-
-.gc-task-card--type-reminder.gc-task-card--priority-normal {
-	background-color: rgba(245, 158, 11, 0.05);
-	border-left: 3px solid rgba(245, 158, 11, 0.3);
-}
-
-.gc-task-card--type-reminder.gc-task-card--priority-low {
-	background-color: rgba(245, 158, 11, 0.02);
-	border-left: 3px solid rgba(245, 158, 11, 0.12);
-}
-
-/* ========== 任务备注/详情区域 ========== */
-.gc-task-card__detail {
-	font-size: 12px;
-	color: var(--text-muted);
-	line-height: 1.4;
-	margin-top: 2px;
-	overflow: hidden;
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	text-overflow: ellipsis;
-	word-break: break-word;
-}
-
-/* Time properties inline */
-/* BEM命名: gc-task-card__times, gc-task-card__time-badge */
-.gc-task-card__times {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	gap: 6px;
-	flex-wrap: wrap;
-}
-
-.gc-task-card__time-badge {
-	display: flex;
-	align-items: center;
-	font-size: 11px;
-	padding: 2px 6px;
-	background-color: var(--background-primary);
-	border-radius: 3px;
-	color: var(--text-muted);
-	flex-shrink: 0;
-	white-space: nowrap;
-}
-
-.gc-task-card__time-badge--overdue {
-	color: #ef4444;
-	background-color: rgba(239, 68, 68, 0.1);
-	font-weight: 500;
-}
-
-.gc-task-card__file {
-	display: flex;
-	align-items: center;
-	font-size: 10px;
-	color: var(--text-muted);
-	margin-left: auto;
-	flex-shrink: 0;
-	white-space: nowrap;
-}
-
-/* Warning Icon - 任务警告图标 */
-/* BEM命名: gc-task-card__warning */
-.gc-task-card__warning {
-	display: inline-flex;
-	align-items: center;
-	margin-left: 8px;
-	font-size: 14px;
-	cursor: help;
-	transition: transform 0.2s ease;
-}
-
-.gc-task-card__warning:hover {
-	transform: scale(1.2);
-}
+/* (Legacy priority badge / type+priority / detail / time-badge / file / warning rules removed in v2 cleanup) */
 
 /* Heatmap palette setting (tiled single-select) */
 .heatmap-palette-setting {
@@ -2363,19 +2543,9 @@ button.gc-toolbar__center-nav-next svg {
 /* 7.1 Task Status States (高特指性) */
 
 
-/* Task View 容器 — 已完成任务降低不透明度 */
-.gc-view--task .gc-task-card--task.gc-task-card--completed {
-	opacity: 0.65;
-}
-
 /* Week View — 已完成任务降低不透明度 */
 .gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed {
 	opacity: 0.6;
-}
-
-/* Month View — 已完成任务降低不透明度 */
-.gc-month-view__tasks .gc-task-card--month.gc-task-card--completed {
-	opacity: 0.5;
 }
 
 /* 7.2 Interactive States (hover, active) */
@@ -2394,37 +2564,12 @@ button.gc-toolbar__center-nav-next svg {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.gc-task-card--task:hover {
-	transform: translateX(4px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+/* (Legacy task hover with translateX removed in v2 cleanup) */
 
 /* BEM类名: gc-month-view__day-cell */
 .gc-month-view__day-cell:hover {
 	background-color: var(--background-modifier-hover);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* 7.3 Custom Status Colors (from Settings) */
-/* 任务卡片背景色和文字颜色 */
-.gc-task-card.task-with-status {
-	background-color: var(--task-bg-color, var(--background-secondary));
-	color: var(--task-text-color, var(--text-normal));
-}
-
-/* 状态文字颜色应用到任务文本元素 */
-.gc-task-card.task-with-status .gc-task-card__text {
-	color: var(--task-text-color, var(--text-normal));
-}
-
-/* 状态颜色应用到边框 - 只在没有completed/pending状态时应用 */
-.gc-task-card.task-with-status:not(.gc-task-card--completed):not(.gc-task-card--pending) {
-	border-left-color: var(--task-bg-color, var(--interactive-accent));
-}
-
-/* 已完成任务保持透明度 */
-.gc-task-card.task-with-status.gc-task-card--completed {
-	opacity: 0.7;
 }
 
 /* 7.4 Festival Themes */
@@ -2464,7 +2609,7 @@ button.gc-toolbar__center-nav-next svg {
 /* 月视图今天样式 */
 /* BEM类名: gc-month-view__day-cell--today */
 .gc-month-view__day-cell--today {
-	background-color: rgba(255, 107, 107, 0.15);
+	background-color: var(--gc-today-bg);
 }
 
 .gc-month-view__day-cell--today .gc-month-view__day-number {
@@ -2477,7 +2622,7 @@ button.gc-toolbar__center-nav-next svg {
 }
 
 .gc-week-view__header-cell--today {
-	background-color: rgba(255, 107, 107, 0.1);
+	background-color: var(--gc-today-bg);
 }
 
 .gc-week-view__header-cell--today .gc-week-view__day-number {
@@ -2490,9 +2635,7 @@ button.gc-toolbar__center-nav-next svg {
 
 /* 7.6 Text Decoration (已完成任务) */
 /* 排除自定义状态的已完成任务，使用自定义文字颜色 */
-.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
-.gc-month-view__tasks .gc-task-card--month.gc-task-card--completed:not(.task-with-status) .gc-task-card__text,
-.gc-view--task .gc-task-card--task.gc-task-card--completed:not(.task-with-status) .gc-task-card__text {
+.gc-week-view__tasks-grid .gc-task-card--week.gc-task-card--completed:not(.task-with-status) .gc-task-card__text {
 	text-decoration: line-through;
 	color: var(--text-muted);
 }
@@ -2628,48 +2771,7 @@ button.gc-toolbar__center-nav-next svg {
 	min-width: 32px;
 }
 
-/* ============================================
-   任务类型视觉区分 — 待办 vs 提醒
-   ============================================ */
-
-/* === 提醒卡片 — 浅蓝色调，铃铛图标 === */
-.gc-task-card--type-reminder {
-	border-left: 3px solid var(--color-blue);
-	background-color: rgba(var(--color-blue-rgb, 68, 138, 255), 0.06);
-}
-
-.gc-task-card--type-reminder .gc-task-card__bell-icon {
-	flex-shrink: 0;
-	margin-right: 4px;
-	font-size: 0.85em;
-	line-height: 1;
-}
-
-/* 提醒卡片文字稍微偏蓝 */
-.gc-task-card--type-reminder .gc-task-card__text {
-	color: var(--text-normal);
-}
-
-/* === 待办卡片 — 默认样式，有复选框 === */
-.gc-task-card--type-todo {
-	border-left: 3px solid var(--interactive-accent);
-}
-
-/* === 待办过期标记 — 红色边框 + 红色闪烁 === */
-.gc-task-card--overdue {
-	border-left-color: var(--color-red) !important;
-	background-color: rgba(var(--color-red-rgb, 233, 30, 99), 0.06);
-}
-
-.gc-task-card--overdue .gc-task-card__text {
-	color: var(--text-error);
-}
-
-/* === 紧凑模式下提醒铃铛调小 === */
-.gc-task-card--compact .gc-task-card__bell-icon {
-	font-size: 0.75em;
-	margin-right: 2px;
-}
+/* (Legacy type-reminder / type-todo / overdue / compact bell-icon rules removed in v2 cleanup) */
 
 /* === Tooltip 类型徽章 === */
 .gc-task-tooltip__type-badge {
@@ -2835,23 +2937,36 @@ button.gc-toolbar__center-nav-next svg {
    任务视图 — 树形展示
    ============================================================ */
 
+/* ============================================================
+   Task View — 任务树结构 & 连接线
+   ============================================================ */
+
 .gc-task-tree-item {
 	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 0;
+}
+
+.gc-task-tree-item .gc-task-card {
+	flex: 1;
+	min-width: 0;
 }
 
 .gc-task-tree-toggle {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 18px;
-	height: 18px;
+	width: 20px;
+	height: 20px;
 	cursor: pointer;
-	font-size: 10px;
+	font-size: 9px;
 	color: var(--text-muted);
 	flex-shrink: 0;
 	border-radius: 3px;
 	transition: background 0.15s, color 0.15s;
 	user-select: none;
+	margin-right: 2px;
 }
 
 .gc-task-tree-toggle:hover {
@@ -2859,11 +2974,22 @@ button.gc-toolbar__center-nav-next svg {
 	color: var(--text-normal);
 }
 
-/* 无子任务时的占位 */
+/* 无子任务时的占位（与 toggle 等宽，确保对齐） */
 .gc-task-tree-spacer {
 	display: inline-block;
-	width: 18px;
+	width: 20px;
 	flex-shrink: 0;
+	margin-right: 2px;
+}
+
+/* 子任务容器 — 左侧连接线 (GitHub Issues 风格) */
+.gc-task-tree-children {
+	margin-left: 10px;
+	padding-left: 16px;
+	border-left: 1.5px solid var(--gc-line-color);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 }
 
 /* ============================================================
@@ -2876,7 +3002,7 @@ button.gc-toolbar__center-nav-next svg {
 	min-height: 34px;
 }
 
-/* 分组 bar：脱离 absolute 布局，改为 relative 使行高自适应 */
+/* 分组 bar 基础：脱离 absolute 布局，改为 relative 使行高自适应 */
 .gc-week-view__gantt-bar--group {
 	position: relative;
 	top: auto;
@@ -2888,6 +3014,33 @@ button.gc-toolbar__center-nav-next svg {
 	padding: 0;
 	min-height: 30px;
 	cursor: default;
+	transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+/* 展开态：父 bar 变为轻背景 + 实线边框容器 */
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded {
+	background-color: transparent !important;
+	border-width: 1.5px !important;
+	border-style: solid !important;
+	opacity: 1 !important;
+}
+/* 展开态 — 按优先级着色（v4: 替代旧的 type-based 规则） */
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded.gc-week-view__gantt-bar--priority-high {
+	background-color: color-mix(in srgb, var(--gc-priority-high) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-priority-high) 40%, transparent) !important;
+}
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded.gc-week-view__gantt-bar--priority-normal {
+	background-color: color-mix(in srgb, var(--gc-priority-normal) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-priority-normal) 40%, transparent) !important;
+}
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded.gc-week-view__gantt-bar--priority-low {
+	background-color: color-mix(in srgb, var(--gc-priority-low) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-priority-low) 40%, transparent) !important;
+}
+/* 展开态 completed：淡绿背景 + 绿色边框 */
+.gc-week-view__gantt-bar--group.gc-week-view__gantt-bar--expanded.gc-week-view__gantt-bar--completed {
+	background-color: color-mix(in srgb, var(--gc-status-completed) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-status-completed) 40%, transparent) !important;
 }
 
 /* bar 头部（父任务信息行） */
@@ -2901,52 +3054,155 @@ button.gc-toolbar__center-nav-next svg {
 }
 
 .gc-week-view__gantt-bar-header:hover {
-	filter: brightness(1.08);
+	background-color: rgba(128, 128, 128, 0.06);
+	border-radius: 4px;
+}
+
+/* v4: 有子条目的甘特条标题显示下划线，表示可展开 */
+/* 注意：不可使用 text-underline-offset，会被 overflow: hidden 裁剪 */
+.gc-week-view__gantt-bar-label--has-children {
+	text-decoration: underline;
+	cursor: pointer;
 }
 
 /* 子任务列表容器 */
 .gc-week-view__gantt-bar-children {
 	display: flex;
 	flex-direction: column;
-	border-top: 1px solid rgba(128, 128, 128, 0.2);
+	padding: 2px 0;
+	gap: 2px;
 }
 
-/* 子任务项 */
+/* ---- 子任务 mini-bar（按日期定位，带颜色） ---- */
 .gc-week-view__gantt-bar-child-item {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	padding: 1px 8px 1px 22px;
-	min-height: 26px;
-	font-size: 12px;
+	padding: 2px 6px 2px 20px;  /* v4: 左侧内边距20px，文字缩进体现层级（bar块不缩进） */
+	min-height: 24px;   /* v4: 从26px缩减，降低子任务视觉权重 */
+	font-size: 11px;    /* v4: 从12px缩减 */
 	cursor: pointer;
+	border-radius: 4px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .gc-week-view__gantt-bar-child-item:hover {
-	background-color: rgba(128, 128, 128, 0.08);
+	filter: brightness(1.1);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-/* 孙任务项 */
+/* 一级子任务作为容器（有孙任务时） */
+.gc-week-view__gantt-bar-child-item--group {
+	flex-direction: column;
+	align-items: stretch;
+	padding: 0;
+	cursor: default;
+	overflow: visible;
+}
+/* v4: 展开态子任务 header 保持文字缩进 */
+.gc-week-view__gantt-bar-child-item--group > .gc-week-view__gantt-bar-header {
+	padding-left: 20px;
+	white-space: normal;
+	transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* 一级子任务展开态：变为淡色容器 */
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded {
+	background-color: transparent !important;
+	border-width: 1.5px !important;
+	border-style: solid !important;
+	opacity: 1 !important;
+}
+/* 子任务展开态 — 按优先级着色（v4） */
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded.gc-week-view__gantt-bar-child-item--priority-high {
+	background-color: color-mix(in srgb, var(--gc-priority-high) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-priority-high) 40%, transparent) !important;
+}
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded.gc-week-view__gantt-bar-child-item--priority-normal {
+	background-color: color-mix(in srgb, var(--gc-priority-normal) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-priority-normal) 40%, transparent) !important;
+}
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded.gc-week-view__gantt-bar-child-item--priority-low {
+	background-color: color-mix(in srgb, var(--gc-priority-low) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-priority-low) 40%, transparent) !important;
+}
+.gc-week-view__gantt-bar-child-item--group.gc-week-view__gantt-bar-child-item--expanded.gc-week-view__gantt-bar-child-item--completed {
+	background-color: color-mix(in srgb, var(--gc-status-completed) 5%, transparent) !important;
+	border-color: color-mix(in srgb, var(--gc-status-completed) 40%, transparent) !important;
+}
+
+/* 子 bar 颜色（v4: 纯优先级色，通过 CSS 变量） */
+.gc-week-view__gantt-bar-child-item--priority-high:not(.gc-week-view__gantt-bar-child-item--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-high) 20%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-high) 50%, transparent);
+	color: var(--text-normal);
+}
+.gc-week-view__gantt-bar-child-item--priority-normal:not(.gc-week-view__gantt-bar-child-item--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-normal) 14%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-normal) 35%, transparent);
+	color: var(--text-normal);
+}
+.gc-week-view__gantt-bar-child-item--priority-low:not(.gc-week-view__gantt-bar-child-item--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-low) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-low) 25%, transparent);
+	color: var(--text-muted);
+}
+.gc-week-view__gantt-bar-child-item--completed {
+	background-color: color-mix(in srgb, var(--gc-status-completed) 15%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-status-completed) 35%, transparent);
+	color: var(--text-muted);
+	opacity: 0.7;
+}
+.gc-week-view__gantt-bar-child-item--completed .gc-week-view__gantt-bar-label {
+	text-decoration: line-through;
+}
+
+/* ---- 孙任务 mini-bar ---- */
 .gc-week-view__gantt-bar-grandchild-item {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	padding: 1px 8px 1px 36px;
-	min-height: 24px;
-	font-size: 11px;
-	opacity: 0.9;
+	padding: 1px 5px 1px 34px;  /* v4: 左侧内边距34px（比子任务更深），文字缩进体现层级 */
+	min-height: 20px;   /* v4: 从22px缩减，进一步降低孙任务视觉权重 */
+	font-size: 10px;    /* v4: 从11px缩减 */
 	cursor: pointer;
+	border-radius: 3px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .gc-week-view__gantt-bar-grandchild-item:hover {
-	background-color: rgba(128, 128, 128, 0.08);
+	filter: brightness(1.1);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-/* 已完成的子任务/孙任务 */
-.gc-week-view__gantt-bar-child-item--completed .gc-week-view__gantt-bar-label,
+/* 孙 bar 颜色（v4: 纯优先级色，通过 CSS 变量，比子 bar 更浅） */
+.gc-week-view__gantt-bar-grandchild-item--priority-high:not(.gc-week-view__gantt-bar-grandchild-item--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-high) 15%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-high) 40%, transparent);
+	color: var(--text-normal);
+}
+.gc-week-view__gantt-bar-grandchild-item--priority-normal:not(.gc-week-view__gantt-bar-grandchild-item--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-normal) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-normal) 28%, transparent);
+	color: var(--text-normal);
+}
+.gc-week-view__gantt-bar-grandchild-item--priority-low:not(.gc-week-view__gantt-bar-grandchild-item--completed) {
+	background-color: color-mix(in srgb, var(--gc-priority-low) 7%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-priority-low) 18%, transparent);
+	color: var(--text-muted);
+}
+.gc-week-view__gantt-bar-grandchild-item--completed {
+	background-color: color-mix(in srgb, var(--gc-status-completed) 12%, transparent);
+	border: 1px solid color-mix(in srgb, var(--gc-status-completed) 30%, transparent);
+	color: var(--text-muted);
+	opacity: 0.7;
+}
 .gc-week-view__gantt-bar-grandchild-item--completed .gc-week-view__gantt-bar-label {
 	text-decoration: line-through;
-	opacity: 0.6;
 }
 
 /* 折叠三角 */
@@ -2976,21 +3232,6 @@ button.gc-toolbar__center-nav-next svg {
 	padding-left: 4px;
 }
 
-/* ============================================================
-   月视图 — 子任务颜色区分
-   ============================================================ */
+/* (Legacy month subtask rules removed in v2 cleanup) */
 
-/* 月视图中子任务的视觉区分 */
-.gc-task-card--month.gc-task-card--subtask {
-	border-left: 3px solid currentColor;
-	background: linear-gradient(90deg, rgba(var(--color-accent-rgb, 124, 77, 255), 0.08), transparent);
-	padding-left: 6px;
-}
-
-/* 父任务进度标记 */
-.gc-task-card__progress {
-	font-size: 0.8em;
-	opacity: 0.7;
-	margin-left: 4px;
-	font-weight: 500;
-}
+/* (Legacy progress marker rule removed — see line ~1623 for active rule) */

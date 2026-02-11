@@ -4,7 +4,6 @@ import type { TaskCardConfig, TimeFieldConfig } from './TaskCardConfig';
 import { TaskCardClasses, TimeBadgeClasses } from '../../utils/bem';
 import { registerTaskContextMenu } from '../../contextMenu/contextMenuIndex';
 import { updateTaskCompletion } from '../../tasks/taskUpdater';
-import { getStatusColor, DEFAULT_TASK_STATUSES, getCurrentThemeMode } from '../../tasks/taskStatus';
 import { RegularExpressions } from '../../utils/RegularExpressions';
 import { formatDate } from '../../dateUtils/dateUtilsIndex';
 import { TooltipManager } from '../../utils/tooltipManager';
@@ -49,23 +48,18 @@ export class TaskCardRenderer {
 
 	/**
 	 * 获取任务状态颜色配置
+	 * @deprecated 颜色不再由状态决定，而是由优先级色带决定
 	 */
-	getStatusColors(task: GCTask): { bg: string; text: string } | null {
-		if (!task.status) return null;
-		const themeMode = getCurrentThemeMode();
-		return getStatusColor(task.status, DEFAULT_TASK_STATUSES, themeMode) || null;
+	getStatusColors(_task: GCTask): { bg: string; text: string } | null {
+		return null;
 	}
 
 	/**
 	 * 应用状态颜色到任务元素
+	 * @deprecated 使用色带系统替代
 	 */
-	applyStatusColors(task: GCTask, element: HTMLElement): void {
-		const colors = this.getStatusColors(task);
-		if (colors) {
-			element.style.setProperty('--task-bg-color', colors.bg);
-			element.style.setProperty('--task-text-color', colors.text);
-			element.addClass('task-with-status');
-		}
+	applyStatusColors(_task: GCTask, _element: HTMLElement): void {
+		// No-op: 颜色由色带系统处理
 	}
 
 	/**

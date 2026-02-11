@@ -5,10 +5,14 @@ import type { GCTask, SortState, StatusFilterState, TagFilterState } from '../ty
 import { registerTaskContextMenu, showCreateTaskMenu } from '../contextMenu/contextMenuIndex';
 import { sortTasks } from '../tasks/taskSorter';
 import { DEFAULT_SORT_STATE } from '../types';
-import { ViewClasses, TaskCardClasses, withModifiers } from '../utils/bem';
-import { TaskCardComponent } from '../components/TaskCard';
-import { getTaskViewConfig } from '../components/TaskCard/presets/TaskView.config';
+import { ViewClasses, TaskCardClasses, TaskTreeClasses, withModifiers } from '../utils/bem';
 import { Logger } from '../utils/logger';
+import { StatusIcon } from '../components/StatusIcon';
+import { cycleTaskStatus } from '../tasks/taskUpdater';
+import { getPriorityBandClass } from '../utils/priorityUtils';
+import { formatCountdown, formatDueDateShort } from '../dateUtils/countdown';
+import { openEditTaskModal } from '../modals/EditTaskModal';
+import { TagPill } from '../components/tagPill';
 
 /**
  * 任务视图渲染器
@@ -16,6 +20,8 @@ import { Logger } from '../utils/logger';
 export class TaskViewRenderer extends BaseViewRenderer {
 	// 子任务展开状态
 	private expandedTasks: Set<string> = new Set();
+	// 是否已初始化过默认展开（防止折叠全部后重新展开）
+	private expandedInitialized = false;
 
 	// 时间字段筛选
 	private timeFieldFilter: 'createdDate' | 'startDate' | 'dueDate' | 'completionDate' | 'cancelledDate' = 'dueDate';
@@ -306,8 +312,9 @@ export class TaskViewRenderer extends BaseViewRenderer {
 	 * 初始化默认展开状态：首次加载时展开根任务的一级子任务
 	 */
 	private initDefaultExpanded(rootTasks: GCTask[]): void {
-		// 只在第一次（expandedTasks 为空时）初始化
-		if (this.expandedTasks.size > 0) return;
+		// 只在首次（未初始化过）时自动展开，避免折叠全部后又自动展开
+		if (this.expandedInitialized) return;
+		this.expandedInitialized = true;
 		rootTasks.forEach(task => {
 			if (task.childIds?.length) {
 				this.expandedTasks.add(task.id);
@@ -328,54 +335,152 @@ export class TaskViewRenderer extends BaseViewRenderer {
 	}
 
 	/**
-	 * 递归渲染任务树
+	 * 递归渲染任务树（嵌套结构，支持左侧连接线）
 	 */
 	private renderTaskTree(task: GCTask, container: HTMLElement, depth: number): void {
 		const hasChildren = (task.childIds?.length ?? 0) > 0;
+		const isExpanded = this.expandedTasks.has(task.id);
 
-		// 创建带缩进的包装容器
-		const wrapper = container.createDiv({ cls: 'gc-task-tree-item' });
-		wrapper.style.paddingLeft = `${depth * 20}px`;
+		// 创建任务项包装
+		const wrapper = container.createDiv({ cls: TaskTreeClasses.item });
 
-		// 如果有子任务，显示展开/折叠按钮；否则显示占位
-		if (hasChildren) {
-			const toggle = wrapper.createSpan({ cls: 'gc-task-tree-toggle' });
-			toggle.textContent = this.expandedTasks.has(task.id) ? '▼' : '▶';
-			toggle.addEventListener('click', (e) => {
-				e.stopPropagation();
-				this.toggleExpand(task.id);
-			});
-		} else if (depth > 0) {
-			// 子任务无子任务时添加占位以对齐
-			wrapper.createSpan({ cls: 'gc-task-tree-spacer' });
-		}
+		// v4: 去掉折叠三角和占位符，通过下划线标题+左键点击来展开/折叠
 
 		// 渲染任务卡片
 		this.renderTaskItem(task, wrapper);
 
-		// 如果展开，递归渲染子任务
-		if (hasChildren && this.expandedTasks.has(task.id)) {
+		// 如果展开，子任务渲染到嵌套容器内（支持连接线）
+		if (hasChildren && isExpanded) {
+			const childrenContainer = container.createDiv({ cls: TaskTreeClasses.children });
 			const children = this.plugin.taskCache.getChildTasks(task.id);
 			const sortedChildren = sortTasks(children, this.sortState);
-			sortedChildren.forEach(child => this.renderTaskTree(child, container, depth + 1));
+			sortedChildren.forEach(child => this.renderTaskTree(child, childrenContainer, depth + 1));
 		}
 	}
 
 	/**
-	 * 渲染任务项（使用统一组件，根据当前显示模式动态生成配置）
+	 * 渲染任务项（两行结构 + StatusIcon + 倒计时）
+	 *
+	 * 第一行：StatusIcon + 标题 + [n/m] + 倒计时+截止日期
+	 * 第二行（有标签时才渲染）：标签 flex-wrap
 	 */
 	private renderTaskItem(task: GCTask, listContainer: HTMLElement): void {
-		const config = getTaskViewConfig(this.plugin?.settings);
-		new TaskCardComponent({
-			task,
-			config,
-			container: listContainer,
-			app: this.app,
-			plugin: this.plugin,
-			onClick: (task) => {
-				// 刷新任务列表
-				this.refreshTaskList();
-			},
-		}).render();
+		const card = listContainer.createDiv({ cls: 'gc-task-card gc-task-card--task' });
+
+		// 色带修饰符
+		const bandClass = this.getTaskBandModifier(task);
+		card.addClass(bandClass);
+
+		// 状态修饰符
+		if (task.status === 'done' || task.completed) {
+			card.addClass(TaskCardClasses.modifiers.completed);
+		} else if (task.status === 'canceled' || task.cancelled) {
+			card.addClass(TaskCardClasses.modifiers.canceled);
+		}
+
+		// 提醒斜体
+		if (task.type === 'reminder') {
+			card.addClass(TaskCardClasses.modifiers.reminderItalic);
+		}
+
+		// ===== 第一行 =====
+		const mainRow = card.createDiv({ cls: 'gc-task-card__main' });
+
+		// StatusIcon (16px normal)
+		const isParentCanceled = this.checkParentCanceled(task);
+		const statusIcon = new StatusIcon({
+			status: (task.status || 'todo') as any,
+			priority: task.priority || 'normal',
+			isReminder: task.type === 'reminder',
+			size: 'normal',
+			disabled: isParentCanceled,
+		});
+		statusIcon.render(mainRow);
+		statusIcon.onClick(async () => {
+			await cycleTaskStatus(this.app, task);
+			this.refreshTaskList();
+		});
+
+		// 标题（v4: 有子条目时添加下划线修饰符）
+		const titleEl = mainRow.createSpan({
+			text: task.description,
+			cls: 'gc-task-card__text',
+		});
+		if (task.childIds?.length) {
+			titleEl.addClass('gc-task-card__text--has-children');
+		}
+
+		// 父任务进度 [n/m]
+		if (task.childIds?.length) {
+			const children = this.plugin.taskCache.getChildTasks(task.id);
+			const done = children.filter((c: GCTask) => c.completed || c.status === 'done').length;
+			mainRow.createSpan({
+				text: `[${done}/${children.length}]`,
+				cls: 'gc-task-card__progress',
+			});
+		}
+
+		// 倒计时 + 截止日期
+		if (task.dueDate) {
+			const dueContainer = mainRow.createSpan({ cls: 'gc-task-card__due' });
+			const countdown = formatCountdown(new Date(task.dueDate));
+			const shortDate = formatDueDateShort(new Date(task.dueDate));
+
+			dueContainer.textContent = `${countdown.text} · ${shortDate}`;
+
+			if (countdown.isOverdue && !task.completed && !task.cancelled) {
+				dueContainer.addClass('gc-task-card__due--overdue');
+			}
+		}
+
+		// ===== 第二行：标签 =====
+		if (task.tags?.length) {
+			const tagsRow = card.createDiv({ cls: 'gc-task-card__tags' });
+			task.tags.forEach((tag, index) => {
+				const pillEl = TagPill.create({ label: tag, colorIndex: index % 6 });
+				tagsRow.appendChild(pillEl);
+			});
+		}
+
+		// v4: 左键 → 展开/折叠（有子条目时），右键 → 编辑菜单
+		card.addEventListener('click', (e: MouseEvent) => {
+			if ((e.target as HTMLElement).closest('.gc-status-icon')) return;
+			e.stopPropagation();
+			if (task.childIds?.length) {
+				this.toggleExpand(task.id);
+			}
+		});
+
+		// 右键菜单（编辑入口统一移到右键）
+		registerTaskContextMenu(card, task, this.app, this.plugin, '', () => {
+			this.refreshTaskList();
+		});
+	}
+
+	/**
+	 * 获取色带修饰符
+	 */
+	private getTaskBandModifier(task: GCTask): string {
+		if (task.status === 'done' || task.completed) {
+			return TaskCardClasses.modifiers.completed;
+		}
+		if (task.status === 'canceled' || task.cancelled) {
+			return TaskCardClasses.modifiers.canceled;
+		}
+		const bandSuffix = getPriorityBandClass(task.priority);
+		switch (bandSuffix) {
+			case 'band-high': return TaskCardClasses.modifiers.bandHigh;
+			case 'band-low': return TaskCardClasses.modifiers.bandLow;
+			default: return TaskCardClasses.modifiers.bandNormal;
+		}
+	}
+
+	/**
+	 * 检查父任务是否已取消
+	 */
+	private checkParentCanceled(task: GCTask): boolean {
+		if (!task.parentId) return false;
+		const parent = this.plugin.taskCache.getAllTasks().find((t: GCTask) => t.id === task.parentId);
+		return parent?.status === 'canceled' || parent?.cancelled === true;
 	}
 }
